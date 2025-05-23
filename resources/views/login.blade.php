@@ -1,6 +1,6 @@
 @extends('layouts.login_new')
 @section('content')
-    <link rel="stylesheet" href="{{asset('main/vendor/css/pages/page-auth.css')}}">
+    <link rel="stylesheet" href="{{asset('main/css/pages/page-auth.css')}}">
     <style>
         .invalid-feedback {
             display: block;

@@ -1,7 +1,7 @@
 @extends('layouts.admin_new')
 @section('title',$dataTitle??$mainTitle??$title??'Dashboard')
 @section('style')
-    <link rel="stylesheet" href="{{asset('main/vendor/libs/apex-charts/apex-charts.css')}}"/>
+    <link rel="stylesheet" href="{{asset('main/libs/apex-charts/apex-charts.css')}}"/>
 
 @endsection
 
@@ -209,7 +209,7 @@
     </div>
 @endsection
 @section('script')
-    <script src="{{asset('main/vendor/libs/apex-charts/apexcharts.js')}}"></script>
+    <script src="{{asset('main/libs/apex-charts/apexcharts.js')}}"></script>
     <script>
         let labelColor, headingColor, currentTheme, bodyColor;
 

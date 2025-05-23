@@ -15,8 +15,8 @@
         content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"/>
 
     <title>@yield('title', config('app.name')) - {{ config('app.name') }}</title>
-
-    <meta name="description" content=""/>
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <meta name="description" content="Core system ICT "/>
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{{asset('favicon.ico')}}"/>
@@ -29,27 +29,33 @@
         rel="stylesheet"/>
 
     <!-- Icons -->
-    <link rel="stylesheet" href="{{asset('main/vendor/fonts/remixicons/remixicon.min.css')}}"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"/>
 
     <!-- Menu waves for no-customizer fix -->
-    {{--    <link rel="stylesheet" href="{{asset('main/vendor/libs/node-waves/node-waves.css')}}"/>--}}
+    {{--    <link rel="stylesheet" href="{{asset('main/libs/node-waves/node-waves.css')}}"/>--}}
 
     <!-- Vendors CSS -->
-    <link rel="stylesheet" href="{{asset('main/vendor/libs/perfect-scrollbar/perfect-scrollbar.css')}}"/>
-    <link rel="stylesheet" href="{{asset('main/vendor/libs/sweetalert2/sweetalert2.css')}}"/>
-    <link rel="stylesheet" href="{{asset('main/vendor/libs/spinkit/spinkit.css')}}"/>
+    <link rel="stylesheet" href="{{asset('main/libs/perfect-scrollbar/perfect-scrollbar.css')}}"/>
+    <link rel="stylesheet" href="{{asset('main/libs/sweetalert2/sweetalert2.css')}}"/>
+    <link rel="stylesheet" href="{{asset('main/libs/spinkit/spinkit.css')}}"/>
 
     <!-- Page CSS -->
     @yield('style')
 
     <!-- Core CSS -->
-{{--    <link rel="stylesheet" href="{{asset('css/demo.css')}}"/>--}}
-    <link rel="stylesheet" href="{{asset('main/vendor/css/status.min.css')}}"/>
+    {{--    <link rel="stylesheet" href="{{asset('css/demo.css')}}"/>--}}
+    <link rel="stylesheet" href="{{asset('main/css/status.min.css')}}"/>
 
-    <link rel="stylesheet" href="{{asset('main/vendor/css/core.min.css')}}" class="template-customizer-core-css"/>
-    <link rel="stylesheet" href="{{asset('main/vendor/css/theme-default.css')}}" class="template-customizer-theme-css"/>
+    <link rel="stylesheet" href="{{asset('main/css/core.min.css')}}" class="template-customizer-core-css"/>
+    <link rel="stylesheet" href="{{asset('main/css/theme-default.css')}}" class="template-customizer-theme-css"/>
 
     <style>
+        [class^="ri-"], [class*=" ri-"] {
+            font-size: 18px;
+            line-height: 1;
+            vertical-align: middle
+        }
+
         .form-fieldset {
             padding: 1rem;
             margin-bottom: 1rem;
@@ -82,10 +88,10 @@
         }
     </style>
     <!-- Helpers -->
-    <script src="{{asset('main/vendor/js/helpers.js')}}"></script>
+    <script src="{{asset('main/js/helpers.js')}}"></script>
     <!--! Template customizer & Theme config files MUST be included after core stylesheets and helpers.js in the <head> section -->
     <!--? Template customizer: To hide customizer set displayCustomizer value false in config.js.  -->
-    <script src="{{asset('main/vendor/js/template-customizer.js')}}"></script>
+    <script src="{{asset('main/js/template-customizer.min.js')}}"></script>
     <!--? Config:  Mandatory theme config file contain global vars & default theme options, Set your preferred theme option in this file.  -->
     <script src="{{asset('js/config.js')}}"></script>
 
@@ -109,7 +115,7 @@
                 id="layout-navbar">
                 <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
                     <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
-                        <i class="ri-menu-fill ri-22px"></i>
+                        <i class="ri-menu-fill ri-xl"></i>
                     </a>
                 </div>
 
@@ -128,24 +134,24 @@
                         <li class="nav-item dropdown-style-switcher dropdown me-1 me-xl-0">
                             <a class="nav-link btn btn-text-secondary rounded-pill btn-icon dropdown-toggle hide-arrow"
                                href="javascript:void(0);" data-bs-toggle="dropdown">
-                                <i class='ri-22px'></i>
+                                <i class='ri-xl'></i>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end dropdown-styles">
                                 <li>
                                     <a class="dropdown-item" href="javascript:void(0);" data-theme="light">
-                                        <span class="align-middle"><i class='ri-sun-line ri-22px me-3'></i>Terang</span>
+                                        <span class="align-middle"><i class='ri-sun-line ri-xl me-3'></i>Terang</span>
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item" href="javascript:void(0);" data-theme="dark">
                                         <span class="align-middle"><i
-                                                class="ri-moon-clear-line ri-22px me-3"></i>Gelap</span>
+                                                class="ri-moon-clear-line ri-xl me-3"></i>Gelap</span>
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item" href="javascript:void(0);" data-theme="system">
                                         <span class="align-middle"><i
-                                                class="ri-computer-line ri-22px me-3"></i>Sistem</span>
+                                                class="ri-computer-line ri-xl me-3"></i>Sistem</span>
                                     </a>
                                 </li>
                             </ul>
@@ -180,12 +186,12 @@
                                 <li>
                                     <div class="dropdown-divider"></div>
                                 </li>
-{{--                                <li>--}}
-{{--                                    <a class="dropdown-item" href="#">--}}
-{{--                                        <i class="ri-user-3-line ri-22px me-3"></i><span--}}
-{{--                                            class="align-middle">Profil</span>--}}
-{{--                                    </a>--}}
-{{--                                </li>--}}
+                                {{--                                <li>--}}
+                                {{--                                    <a class="dropdown-item" href="#">--}}
+                                {{--                                        <i class="ri-user-3-line ri-xl me-3"></i><span--}}
+                                {{--                                            class="align-middle">Profil</span>--}}
+                                {{--                                    </a>--}}
+                                {{--                                </li>--}}
                                 <li>
                                     <div class="d-grid px-4 pt-2 pb-1">
                                         <a class="btn btn-sm btn-danger d-flex" href="{{route('logout')}}">
@@ -214,8 +220,8 @@
                 <footer class="content-footer footer bg-footer-theme">
                     <div class="container-xxl">
                         <div
-                            class="footer-container d-flex align-items-center justify-content-between py-3 flex-md-row flex-column">
-                            <div class="mb-2 mb-md-0">
+                            class="footer-container d-flex align-items-center justify-content-center py-3 flex-md-row flex-column">
+                            <div class="mb-2 mb-md-0 text-center">
                                 ©
                                 <script>
                                     document.write(new Date().getFullYear());
@@ -225,8 +231,6 @@
                                 <a href="{{route('admin.index')}}" target="_blank"
                                    class="footer-link fw-medium">PT. Inovasi Cipta Teknologi</a>
                             </div>
-                            <div class="d-none d-lg-inline-block">
-                            </div>
                         </div>
                     </div>
                 </footer>
@@ -234,7 +238,7 @@
 
                 <button type="button" href="#" id="backToTopBtn" class="btn btn-lg px-3 back-to-top " role="button"
                         aria-label="Ke Atas" title="Ke Atas">
-                    <i class="ri ri-2x ri-arrow-up-line"></i>
+                    <i class="ri ri-arrow-up-line ri-2x"></i>
                 </button>
 
                 <div class="content-backdrop fade"></div>
@@ -251,14 +255,14 @@
 
 <!-- Core JS -->
 <!-- build:js assets/vendor/js/core.js -->
-<script src="{{asset('main/vendor/libs/jquery/jquery.js')}}"></script>
-<script src="{{asset('main/vendor/js/bootstrap.js')}}"></script>
-<script src="{{asset('main/vendor/libs/perfect-scrollbar/perfect-scrollbar.js')}}"></script>
-<script src="{{asset('main/vendor/js/menu.js')}}"></script>
+<script src="{{asset('main/libs/jquery/jquery.js')}}"></script>
+<script src="{{asset('main/js/bootstrap.js')}}"></script>
+<script src="{{asset('main/libs/perfect-scrollbar/perfect-scrollbar.js')}}"></script>
+<script src="{{asset('main/js/menu.js')}}"></script>
 <!-- endbuild -->
 
 <!-- Vendors JS -->
-<script src="{{asset('main/vendor/libs/sweetalert2/sweetalert2.js')}}"></script>
+<script src="{{asset('main/libs/sweetalert2/sweetalert2.js')}}"></script>
 <!-- Main JS -->
 <script src="{{asset('js/main.js')}}"></script>
 
@@ -285,7 +289,6 @@
 
 </style>
 <!-- Page JS -->
-@yield('script')
 
 @if(session()->has('alert'))
     <script>
@@ -313,6 +316,12 @@
     setInterval(updateClock, 1000);
 
     document.addEventListener('DOMContentLoaded', function () {
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+
         let backToTopButton = document.getElementById('backToTopBtn');
 
         window.addEventListener('scroll', function () {
@@ -332,5 +341,7 @@
         });
     })
 </script>
+
+@yield('script')
 </body>
 </html>

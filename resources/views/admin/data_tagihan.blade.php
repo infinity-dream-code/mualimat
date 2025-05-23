@@ -1,10 +1,10 @@
 @extends('layouts.admin_new')
 @section('title',$dataTitle??$mainTitle??$title??'')
 @section('style')
-    <link rel="stylesheet" href="{{asset('main/vendor/libs/select2/select2.css')}}">
-    <link rel="stylesheet" href="{{asset('main/vendor/libs/datatables-bs5/datatables.bootstrap5.css')}}">
-    <link rel="stylesheet" href="{{asset('main/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css')}}">
-    <link rel="stylesheet" href="{{asset('main/vendor/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.css')}}">
+    <link rel="stylesheet" href="{{asset('main/libs/select2/select2.css')}}">
+    <link rel="stylesheet" href="{{asset('main/libs/datatables-bs5/datatables.bootstrap5.css')}}">
+    <link rel="stylesheet" href="{{asset('main/libs/datatables-responsive-bs5/responsive.bootstrap5.css')}}">
+    <link rel="stylesheet" href="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.css')}}">
 @endsection
 @section('content')
     <h3 class="page-heading d-flex text-gray-900 fw-bold flex-column justify-content-center my-0">
@@ -180,11 +180,11 @@
 @endsection
 
 @section('script')
-    <script src="{{asset('main/vendor/libs/select2/select2.js')}}"></script>
-    <script src="{{asset('main/vendor/libs/datatables-bs5/datatables-bootstrap5.js')}}"></script>
+    <script src="{{asset('main/libs/select2/select2.js')}}"></script>
+    <script src="{{asset('main/libs/datatables-bs5/datatables-bootstrap5.js')}}"></script>
     <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}"></script>
-    <script src="{{asset('main/vendor/libs/moment/moment.js')}}"></script>
-    <script src="{{asset('main/vendor/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.js')}}"></script>
+    <script src="{{asset('main/libs/moment/moment.js')}}"></script>
+    <script src="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.js')}}"></script>
 
     <script type="text/javascript">
         const select2 = $(`[data-control='select2']`);
