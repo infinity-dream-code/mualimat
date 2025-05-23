@@ -6,6 +6,72 @@ function debounce(func, delay) {
     };
 }
 
+function reformatNumber(data, row, column, node) {
+    // replace spaces with nothing; replace commas with points.
+    if (column === 1) {
+        return data.replace(',', '.').replaceAll(' ', '');
+    } else {
+        return data;
+    }
+}
+
+// function addCustomNumberFormat(xlsx, numberFormat) {
+//     let numFmtsElement = xlsx.xl['styles.xml'].getElementsByTagName('numFmts')[0];
+//     let numFmtElement = '<numFmt numFmtId="176" formatCode="' + numberFormat + '"/>';
+//     $( numFmtsElement ).append( numFmtElement );
+//     $( numFmtsElement ).attr("count", "7");
+//
+//     let celXfsElement = xlsx.xl['styles.xml'].getElementsByTagName('cellXfs');
+//     let cellStyle = '<xf numFmtId="176" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"'
+//         + ' applyFont="1" applyFill="1" applyBorder="1"/>';
+//     $( celXfsElement ).append( cellStyle );
+//     $( celXfsElement ).attr("count", "69");
+// }
+
+function addCustomNumberFormat(xlsx, numberFormat) {
+
+    //kodingan seko stackoverflow ramudeng njir
+    let numFmtsElement = xlsx.xl['styles.xml'].getElementsByTagName('numFmts')[0];
+    let celXfsElement = xlsx.xl['styles.xml'].getElementsByTagName('cellXfs')[0];
+
+    // Define the Rupiah custom format
+    const rupiahFormat = 'Rp.\\ #,##0;[Red]Rp.\\ -#,##0';
+
+    // Check if `numFmts` already exists, otherwise create it
+    if (!numFmtsElement) {
+        const stylesXml = xlsx.xl['styles.xml'];
+        const newNumFmtsElement = stylesXml.createElement('numFmts');
+        newNumFmtsElement.setAttribute('count', '1');
+        stylesXml.documentElement.getElementsByTagName('styleSheet')[0].appendChild(newNumFmtsElement);
+        numFmtsElement = newNumFmtsElement;
+    }
+
+    // Add the custom number format
+    const numFmtElement = xlsx.xl['styles.xml'].createElement('numFmt');
+    numFmtElement.setAttribute('numFmtId', '176'); // Ensure this ID is not already used
+    numFmtElement.setAttribute('formatCode', rupiahFormat);
+    numFmtsElement.appendChild(numFmtElement);
+
+    // Update the count attribute
+    const currentNumFmtsCount = parseInt(numFmtsElement.getAttribute('count') || '0', 10);
+    numFmtsElement.setAttribute('count', currentNumFmtsCount + 1);
+
+    // Add a new cell style using the custom format
+    const cellStyle = '<xf numFmtId="176" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>';
+    celXfsElement.innerHTML += cellStyle;
+
+    // Update the count attribute for `cellXfs`
+    const currentCellXfsCount = parseInt(celXfsElement.getAttribute('count') || '0', 10);
+    celXfsElement.setAttribute('count', currentCellXfsCount + 1);
+}
+
+
+function formatTargetColumn(xlsx, col) {
+    let sheet = xlsx.xl.worksheets['sheet1.xml'];
+    $('row c[r^="' + col + '"]', sheet).attr('s', '68');
+}
+
+
 function newexportaction(e, dt, button, config) {
     let self = this;
     let oldStart = dt.settings()[0]._iDisplayStart;
@@ -54,7 +120,37 @@ function dtButtons(options, buttons) {
             extend: 'excel',
             title: '',
             text: '<i class="ri ri-file-excel-line me-2"></i>Excel',
-            modifier: {page: 'all'}
+            customize: function (xlsx) {
+                const sheet = xlsx.xl.worksheets['sheet1.xml'];
+
+                const currencyColumns = [];
+                DT[`${options.tableId}`].settings().init().columns.forEach((col, index) => {
+                    if (col.columnType === 'currency' || col.columnType === 'money' || col.columnType === 'rupiah') {
+                        currencyColumns.push(index);
+                    }
+                });
+
+                $('row c[r]', sheet).each(function () {
+                    const cell = $(this);
+                    const cellRef = cell.attr('r');
+                    const columnIndex = cellRef.replace(/[0-9]/g, '').charCodeAt(0) - 65; // Get column index
+
+                    if (currencyColumns.includes(columnIndex)) {
+                        // console.log(columnIndex, cellRef)
+                        addCustomNumberFormat(xlsx, '#,##0.##');
+                        formatTargetColumn(xlsx, cellRef);
+                        // // Apply a custom number format for currency: $#,##0.00
+                        // const numFmtId = '164';  // Custom format ID for currency ($#,##0.00)
+                        // cell.attr('s', '56'); // Apply a predefined style ID for currency (if necessary)
+                        // cell.attr('t', 'n'); // Set the type to number for correct formatting
+                    }
+                });
+
+                $('row:first c', sheet).attr('s', '22');
+                const styles = xlsx.xl['styles.xml'];
+                $(styles).find('cellXfs xf').eq(21).attr('fillId', '3');
+                $(styles).find('fills fill').eq(3).html('<patternFill patternType="solid"><fgColor rgb="FFFFF00"/></patternFill>');
+            },
         },
         pdf: {
             extend: 'pdf',
@@ -71,7 +167,7 @@ function dtButtons(options, buttons) {
             extend: 'print',
             title: '',
             text: '<i class="ri ri-printer-line me-2"></i>Print',
-        }
+        },
     };
 
     const buttonConfigs = buttons.map(button => buttonConfigMap[button]).filter(Boolean);
@@ -80,15 +176,76 @@ function dtButtons(options, buttons) {
         ...config,
         className: 'dropdown-item',
         exportOptions: {
-            columns: function (idx, data, node) {
-                return options.dataColumns[idx].exportable !== false;
+            columns: function (index, data, node) {
+                let exportableColumn = options.dataColumns[index]?.exportable;
+                return exportableColumn === true;
             }, format: {
-                body: function (inner, index) {
-                    if (inner.length <= 0) return inner;
-                    if (config.extend === "excel" && inner.length >= 10 && !isNaN(parseFloat(inner)) && isFinite(inner)) {
-                        return "\0" + inner;
+                header: function (data, columnIdx) {
+                    return data.toUpperCase();
+                },
+                body: function (data, row, column, node) {
+                    if (data === null) return '';
+                    const exportableColumns = options.dataColumns.filter(col => col.exportable === true);
+                    const columnInfo = exportableColumns[column];
+                    let columnType = columnInfo.columnType;
+
+                    const numberColumn = columnInfo.numberColumn;
+                    // let rawData = table.row(row).data();
+                    // console.log(rawData)
+                    // console.log(exportableColumns)
+
+                    if (columnType !== null) {
+                        switch (columnType.toLowerCase()) {
+                            case 'row':
+                            case 'number':
+                            case 'no':
+                                return row + 1;
+                            case 'basicdate':
+                                let basicDate = new Date(data);
+                                let basicDateOptions = {
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric'
+                                };
+                                return basicDate.toLocaleDateString('id-ID', basicDateOptions);
+                            case 'date':
+                            case 'dateformat':
+                                let date = new Date(data);
+                                let options = {
+                                    weekday: 'long',
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric'
+                                };
+                                return date.toLocaleDateString('id-ID', options);
+                            case 'boolean':
+                                let columnData = columnInfo.data;
+                                columnData = columnData.toLowerCase();
+                                if (columnData === 'cicil') {
+                                    return data === 1 ? 'CICILAN' : 'BUKAN CICILAN';
+                                } else if (columnData === 'paidst') {
+                                    return data === 1 ? 'LUNAS' : 'BELUM LUNAS';
+                                }
+                                return data;
+                            case 'currency':
+                                if (config.extend !== 'excel') {
+                                    return new Intl.NumberFormat('id-ID', {
+                                        style: 'currency',
+                                        currency: 'IDR',
+                                    }).format(data);
+                                }
+                                return data;
+                        }
+
                     }
-                    let el = $.parseHTML(inner);
+                    if (config.extend === "excel" && !numberColumn) {
+                        return "\0" + data;
+                    }
+                    if (data.length <= 0) return data
+                    // if (config.extend === "excel" && data.length >= 10 && !isNaN(parseFloat(data)) && isFinite(data)) {
+                    //     return "\0" + data;
+                    // }
+                    let el = $.parseHTML(data);
                     let result = '';
                     $.each(el, function (index, item) {
                         if (item.classList && item.classList.contains('user-name')) {
@@ -101,6 +258,7 @@ function dtButtons(options, buttons) {
                 }
             },
             modifier: config.modifier,
+            orthogonal: 'export'
         },
         action: newexportaction
     }));
@@ -129,14 +287,39 @@ function createColumns(id, columns, location) {
     headerOrFooter.appendChild(row);
 }
 
-function dataTableCreate(options) {
+let DT = {};
+const languageKey = 'datatables_id_language';
+const languageUrl = 'https://cdn.datatables.net/plug-ins/2.0.6/i18n/id.json';
+
+async function fetchLanguageFile() {
+    try {
+        const response = await fetch(languageUrl);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+        localStorage.setItem(languageKey, JSON.stringify(data)); // Save to localStorage
+        return data;
+    } catch (error) {
+        console.error('Error fetching language file:', error);
+        return null;
+    }
+}
+
+async function dataTableCreate(options) {
     let idTable = $(`#${options.tableId}`);
     let searchPanel = [];
     let buttonsConfig = Array.isArray(options.buttons) && options.buttons.length > 0 ? options.buttons : false;
     const buttonDom = `${(buttonsConfig ? '<"row pb-3"<"dt-action-buttons d-flex justify-content-center justify-content-md-end px-5 px-md-3"B>">' : '')}`;
     const dom = `${buttonDom}<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>><"row dt-row"<"table-responsive"t>r><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>`;
 
-    idTable.DataTable({
+    let languageData = localStorage.getItem(languageKey);
+
+    if (!languageData) {
+        languageData = await fetchLanguageFile();
+    } else {
+        languageData = JSON.parse(languageData);
+    }
+
+    DT[`${options.tableId}`] = idTable.DataTable({
         autoWidth: false,
         responsive: false,
         columns: options.dataColumns,
@@ -144,7 +327,7 @@ function dataTableCreate(options) {
         scrollX: options.scrollX ?? false,
         searching: options.searching || false,
         processing: true,
-        serverSide: true,
+        serverSide: options.serverSide ?? true,
         paging: options.paging ?? true,
         pageLength: options.pageLength ?? 10,
         lengthMenu: options.lengthMenu ?? [10, 25, 50, 75, 100],
@@ -156,7 +339,7 @@ function dataTableCreate(options) {
                     selector: 'td:not(.exclude-selection)'
                 }
                 : {
-                    style: 'os',
+                    style: 'single',
                     selector: 'td:not(.exclude-selection)',
                 }
             : false,
@@ -166,10 +349,16 @@ function dataTableCreate(options) {
                 searchable: false,
                 orderable: false,
                 className: options.select ? '' : ' table_dt_no',
-                checkboxes: options.select ? {
-                    selectRow: true,
-                    selectAllRender: '<input type="checkbox" class="form-check-input select-all">'
-                } : false,
+                checkboxes: options.select ? options.select === 'multi'
+                        ? {
+                            selectRow: true,
+                            selectAllRender: '<input type="checkbox" class="form-check-input select-all">'
+                        }
+                        : {
+                            selectRow: true,
+                            selectAll: false,
+                        }
+                    : false,
             }
         ],
         buttons: buttonsConfig && [
@@ -179,11 +368,11 @@ function dataTableCreate(options) {
                 text: '<i class="ri ri-export-line me-2"></i>Export',
                 buttons: [
                     dtButtons(options, buttonsConfig)
-                ]
+                ],
             }
         ],
         language: {
-            url: 'https://cdn.datatables.net/plug-ins/2.0.6/i18n/id.json',
+            ...languageData,
             processing: 'Memuat Data...'
         },
         dom: dom,
@@ -236,7 +425,6 @@ function dataTableCreate(options) {
                     resetButton.prop('disabled', true);
                     resetButton.html(`<span class="spinner-border me-2" role="status" aria-hidden="true"></span>Reset`);
                 }
-
             }
         },
         createdRow: function (row, data, dataIndex) {
@@ -250,10 +438,10 @@ function dataTableCreate(options) {
         drawCallback: function (settings) {
             let labelNo = $(idTable.DataTable().table().header()).find('th').eq(0);
             labelNo && labelNo.removeClass('sorting_asc');
+
             if (options.formId) {
                 let submitButton = $(`#${options.formId} input[type="submit"], #${options.formId} button[type="submit"]`);
                 let resetButton = $(`#${options.formId} input[type="reset"], #${options.formId} button[type="reset"]`);
-
                 if (submitButton.length !== 0) {
                     const buttonHtml = submitButton.hasClass('btn-bayar')
                         ? `<span class="ri-cash-line me-2"></span>Bayar`
@@ -265,7 +453,6 @@ function dataTableCreate(options) {
                     resetButton.prop('disabled', false);
                 }
             }
-
         },
         initComplete: function (data) {
             //// for fixed header only
@@ -320,7 +507,7 @@ function dataTableCreate(options) {
 }
 
 function dataReload(id = null) {
-    id && $(`#${id}`).DataTable().ajax.reload();
+    id && DT[`${id}`].ajax.reload(null, false);
 }
 
 function dataReFilter(id = null, formId = null) {
@@ -331,21 +518,30 @@ function dataReFilter(id = null, formId = null) {
     // }
 }
 
-function getDT(options) {
+async function getDT(options) {
     if (options.columnUrl && options.dataColumns) {
         $.ajax({
             url: options.columnUrl,
             success: function (data) {
                 $.each(data, function (index, column) {
+                    let columnType;
                     let renderFunc = '';
                     if (column.columnType || column.columntype) {
-                        let columType = column.columnType || column.columntype;
-                        switch (columType.toLowerCase()) {
+                        columnType = column.columnType || column.columntype;
+                        switch (columnType.toLowerCase()) {
                             case 'row':
                             case 'number':
                             case 'no':
                                 renderFunc = function (data, type, row, meta) {
-                                    return meta.row + meta.settings._iDisplayStart + 1;
+                                    if (type === 'display' || type === 'filter') {
+                                        if(options.select){
+                                            return `<input type="checkbox" id="siswa-checkbox-${data}" class="dt-checkboxes form-check-input checkbox-siswa" value="${data}" aria-selected="false">`;
+                                        }
+                                        return meta.row + meta.settings._iDisplayStart + 1;
+                                    } else if (type === 'export') {
+                                        return meta.row;
+                                    }
+                                    return data;
                                 }
                                 break;
                             case 'suffix':
@@ -364,12 +560,30 @@ function getDT(options) {
                                     return data;
                                 };
                                 break;
+                            case 'money':
                             case 'currency':
                                 renderFunc = function (data, type, row) {
-                                    if (data === null || data === 0) {
-                                        return 'Rp. 0';
+                                    if (type === 'display' || type === 'filter') {
+                                        if (data === null || data === 0) {
+                                            return 'Rp. 0';
+                                        }
+                                        return $.fn.dataTable.render.number('.', ',', 0, 'Rp. ').display(data);
                                     }
-                                    return $.fn.dataTable.render.number('.', ',', 0, 'Rp. ').display(data);
+                                    return data;
+                                };
+                                break;
+                            case 'basicdate':
+                                renderFunc = function (data, type, row) {
+                                    if (type === 'display' || type === 'filter') {
+                                        let date = new Date(data);
+                                        let options = {
+                                            day: 'numeric',
+                                            month: 'long',
+                                            year: 'numeric'
+                                        };
+                                        return date.toLocaleDateString('id-ID', options);
+                                    }
+                                    return data;
                                 };
                                 break;
                             case 'date':
@@ -386,6 +600,21 @@ function getDT(options) {
                                         return date.toLocaleDateString('id-ID', options);
                                     }
                                     return data;
+                                };
+                                break;
+                            case 'periode':
+                            case 'yearmonth':
+                                renderFunc = function (data, type, row) {
+                                    if (!data || typeof data !== 'string' || data.length !== 6 || !/^\d{6}$/.test(data)) {
+                                        return '';
+                                    }
+                                    const monthsIndonesian = [
+                                        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                                        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+                                    ];
+                                    const year = Math.floor(data / 100);
+                                    const month = data % 100;
+                                    return (month >= 1 && month <= 12) ? `${monthsIndonesian[month - 1]} ${year}` : '';
                                 };
                                 break;
                             case 'timestamp':
@@ -419,23 +648,24 @@ function getDT(options) {
                                         noCaption,
                                         button,
                                         buttonLink,
+                                        dataVal = true,
                                     } = column;
 
                                     const iconStyle = buttonIcon ? `<i class="${buttonIcon}"></i>` : buttonIconSVG || '';
                                     const title = buttonText || '';
                                     const buttonTextContent = noCaption ? '' : buttonText;
-                                    const rowDataJson = JSON.stringify(row).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                                    const rowDataJson = dataVal ? JSON.stringify(row).replace(/'/g, "&#39;").replace(/"/g, "&quot;") : null;
 
                                     const createButton = (attributes, content) => `<button type="button" class="${buttonClass}" title="${title}" ${attributes}>${content}</button>`;
 
                                     switch (button) {
                                         case 'modal':
-                                            return createButton(`data-bs-toggle="modal" data-bs-target="${buttonLink}" data-val='${rowDataJson}'`, `${iconStyle}${buttonTextContent}`);
+                                            return createButton(`data-bs-toggle="modal" data-bs-target="${buttonLink}" ${rowDataJson ? "data-val='" + rowDataJson + "'" : ''}`, `${iconStyle}${buttonTextContent}`);
                                         case 'link':
                                             const link = buttonLink ? buttonLink.replace(':id', row.item_id) : '#';
                                             return `<a class="${buttonClass}" href="${link}" title="${title}">${iconStyle}${buttonTextContent}</a>`;
                                         case 'action':
-                                            return createButton(`data-val='${rowDataJson}'`, `${iconStyle}${buttonTextContent}`);
+                                            return createButton(`${rowDataJson ? "data-val='" + rowDataJson + "'" : ''}`, `${iconStyle}${buttonTextContent}`);
                                         default:
                                             return '';
                                     }
@@ -443,72 +673,85 @@ function getDT(options) {
                                 break;
                             case 'boolean':
                                 renderFunc = function (data, type, row) {
-                                    let trueVal = column.trueVal ?? 'benar';
-                                    let falseVal = column.falseVal ?? 'Salah';
-                                    if (column.booleanCheck) {
-                                        trueVal = '<i class="ri-check-line"></i>';
-                                        falseVal = '<i class="ri-close-line"></i>';
+                                    if (type === 'display' || type === 'filter') {
+                                        let trueVal = column.trueVal ?? 'benar';
+                                        let falseVal = column.falseVal ?? 'Salah';
+                                        if (column.booleanCheck) {
+                                            trueVal = '<i class="ri-check-line"></i>';
+                                            falseVal = '<i class="ri-close-line"></i>';
+                                        }
+                                        if (data === "1" || data === 1 || data === true) {
+                                            return `<span class="badge px-2 rounded-pill bg-label-success">${trueVal}</span>`
+                                        } else {
+                                            return `<span class="badge px-2 rounded-pill bg-label-danger">${falseVal}</span>`
+                                        }
                                     }
-                                    if (data === "1" || data === 1 || data === true) {
-                                        return `<span class="badge px-2 rounded-pill bg-label-success">${trueVal}</span>`
-                                    } else {
-                                        return `<span class="badge px-2 rounded-pill bg-label-danger">${falseVal}</span>`
-                                    }
+                                    return data;
                                 }
                                 break;
                             case 'importstatus':
                                 renderFunc = function (data, type, row) {
-                                    let saveVal = column.saveVal ?? 'Dapat Disimpan';
-                                    let updateVal = column.updateVal ?? 'Update';
-                                    let falseVal = column.falseVal ?? 'Tidak Dapat Disimpan';
-                                    if (data === "1" || data === 1 || data === true) {
-                                        return `<span class="badge px-2 rounded-pill bg-label-success">${saveVal}</span>`;
-                                    } else if (data === "2" || data === 2) {
-                                        return `<span class="badge px-2 rounded-pill bg-label-warning">${updateVal}</span>`;
-                                    } else if (data === "0" || data === 0 || data === false) {
-                                        return `<span class="badge px-2 rounded-pill bg-label-danger">${falseVal}</span>`;
+                                    if (type === 'display' || type === 'filter') {
+                                        let saveVal = column.saveVal ?? 'Dapat Disimpan';
+                                        let updateVal = column.updateVal ?? 'Update';
+                                        let falseVal = column.falseVal ?? 'Tidak Dapat Disimpan';
+                                        if (data === "1" || data === 1 || data === true) {
+                                            return `<span class="badge px-2 rounded-pill bg-label-success">${saveVal}</span>`;
+                                        } else if (data === "2" || data === 2) {
+                                            return `<span class="badge px-2 rounded-pill bg-label-warning">${updateVal}</span>`;
+                                        } else if (data === "0" || data === 0 || data === false) {
+                                            return `<span class="badge px-2 rounded-pill bg-label-danger">${falseVal}</span>`;
+                                        }
                                     }
+                                    return data;
                                 }
                                 break;
                             case 'checkbox':
                                 renderFunc = function (data, type, row) {
-                                    let name = column.selectName ? column.selectName : 'checkbox';
-                                    return `<input type="checkbox" class="dt-checkboxes form-check-input" name="${column.selectName ? column.selectName : 'checkbox'}[]" value="${data}">`;
+                                    if (type === 'display' || type === 'filter') {
+                                        let name = column.selectName ? column.selectName : 'checkbox';
+                                        return `<input type="checkbox" class="dt-checkboxes form-check-input" name="${column.selectName ? column.selectName : 'checkbox'}[]" value="${data}">`;
+                                    }
+                                    return data;
                                 }
                                 break;
                             case 'input':
                                 //for text/number only
                                 renderFunc = function (data, type, row) {
-                                    let attributes = [
-                                        `type="${column.inputType ?? 'text'}"`,
-                                        `placeholder="${column.inputPlaceholder ?? $column.name}"`,
-                                        `name="${column.inputName ?? `input[${column.name}]`}"`,
-                                        `class="${column.inputClass ?? 'form-control'}"`,
-                                    ];
+                                    if (type === 'display' || type === 'filter') {
 
-                                    const nameLength = column.inputPlaceholder ?? $column.name;
+                                        let attributes = [
+                                            `type="${column.inputType ?? 'text'}"`,
+                                            `placeholder="${column.inputPlaceholder ?? $column.name}"`,
+                                            `name="${column.inputName ?? `input[${column.name}]`}"`,
+                                            `class="${column.inputClass ?? 'form-control'}"`,
+                                        ];
 
-                                    if (nameLength.length > 0) {
-                                        attributes.push(`style="width: 218.938px;"`)
+                                        const nameLength = column.inputPlaceholder ?? $column.name;
+
+                                        if (nameLength.length > 0) {
+                                            attributes.push(`style="width: 218.938px;"`)
+                                        }
+
+                                        if (column.inputReadonly === true) {
+                                            attributes.push(`readonly`);
+                                        }
+
+                                        if (column.inputDisabled === true) {
+                                            attributes.push(`disabled`);
+                                        }
+
+                                        if (Number.isInteger(column.inputMin)) {
+                                            attributes.push(`min="${column.inputMin}"`);
+                                        }
+
+                                        if (Number.isInteger(column.inputMax)) {
+                                            attributes.push(`max="${column.inputMax}"`);
+                                        }
+
+                                        return `<input ${attributes.join(' ')}>`;
                                     }
-
-                                    if (column.inputReadonly === true) {
-                                        attributes.push(`readonly`);
-                                    }
-
-                                    if (column.inputDisabled === true) {
-                                        attributes.push(`disabled`);
-                                    }
-
-                                    if (Number.isInteger(column.inputMin)) {
-                                        attributes.push(`min="${column.inputMin}"`);
-                                    }
-
-                                    if (Number.isInteger(column.inputMax)) {
-                                        attributes.push(`max="${column.inputMax}"`);
-                                    }
-
-                                    return `<input ${attributes.join(' ')}>`;
+                                    return data;
                                 }
                                 break;
                             case 'custom_code_tagihan':
@@ -523,8 +766,8 @@ function getDT(options) {
                                         '1200002': 'Loket Manual - Potongan',
                                         '1': 'Transfer Online',
                                         '4': 'Transfer Online',
-                                        null: '',
-                                        '': ''
+                                        null: 'Nomor VA',
+                                        '': 'Nomor VA'
                                     };
                                     return descriptions[data] || data;
                                 }
@@ -550,6 +793,8 @@ function getDT(options) {
                         exportable: column.exportable ?? false,
                         visible: column.visible ?? true,
                         excludeFromSelection: column.excludeFromSelection ?? false,
+                        columnType: columnType ?? null,
+                        numberColumn: column.numberColumn ?? false,
                     })
                 })
                 const locations = ['thead', 'tfoot'];

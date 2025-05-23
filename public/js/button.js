@@ -136,6 +136,7 @@ function createButton(text, eb) {
     }
 }
 
+
 // function idevTable(formId, attrs = []) {
 //     var datastring = $("#form-filter-" + formId).serialize();
 //     var url = $("#form-filter-" + formId).attr("action");
