@@ -3,7 +3,21 @@
  * Copyright 2011-2024 The Bootstrap Authors
  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
  */
-:root, [data-bs-theme=light] {
+@font-face {
+    font-family: 'MiSans Global';
+    src: url('https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Medium.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'MiSans Global';
+    src: url('https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Bold.woff2') format('woff2');
+    font-weight: bold;
+    font-style: normal;
+}
+
+:root,[data-bs-theme=light] {
     --bs-blue: #26c6f9;
     --bs-indigo: #666cff;
     --bs-purple: #6f42c1;
@@ -12,101 +26,108 @@
     --bs-orange: #fdb528;
     --bs-yellow: #ffd950;
     --bs-green: #72e128;
-    /*--bs-green: #2fb344;*/
     --bs-teal: #20c997;
     --bs-cyan: #28c3d7;
     --bs-black: #262b43;
     --bs-white: #fff;
-    --bs-gray: rgba(38, 43, 67, 0.6);
-    --bs-gray-dark: rgba(38, 43, 67, 0.8);
-    --bs-gray-25: rgba(38, 43, 67, 0.015);
-    --bs-gray-50: rgba(38, 43, 67, 0.03);
+    --bs-gray: #7d808e;
+    --bs-gray-dark: #515569;
+    --bs-gray-25: #fafafa;
+    --bs-gray-50: #f2f3f4;
+    --bs-gray-75: #eeeef0;
+    --bs-gray-100: #e9e9ec;
+    --bs-gray-200: #d4d5d9;
+    --bs-gray-300: #bdbfc6;
+    --bs-gray-400: #a8aab4;
+    --bs-gray-500: #9295a1;
+    --bs-gray-600: #7d808e;
+    --bs-gray-700: #676a7b;
+    --bs-gray-800: #515569;
+    --bs-gray-900: #3b4055;
     --bs-primary: #666cff;
     --bs-secondary: #6d788d;
     --bs-success: #72e128;
-    /*--bs-success: #2fb344;*/
     --bs-info: #26c6f9;
     --bs-warning: #fdb528;
     --bs-danger: #ff4d49;
     --bs-light: #dfdfe3;
-    --bs-dark: #4b4b4b;
-    --bs-gray: rgba(38, 43, 67, 0.06);
+    --bs-dark: #312d4b;
+    --bs-gray: #e9e9ec;
     --bs-primary-rgb: 102, 108, 255;
     --bs-secondary-rgb: 109, 120, 141;
-    /*--bs-success-rgb: 47, 179, 68;*/
     --bs-success-rgb: 114, 225, 40;
     --bs-info-rgb: 38, 198, 249;
     --bs-warning-rgb: 253, 181, 40;
     --bs-danger-rgb: 255, 77, 73;
     --bs-light-rgb: 223, 223, 227;
-    --bs-dark-rgb: 75, 75, 75;
-    --bs-gray-rgb: 38, 43, 67;
+    --bs-dark-rgb: 49, 45, 75;
+    --bs-gray-rgb: 233, 233, 236;
     --bs-primary-text-emphasis: #292b66;
     --bs-secondary-text-emphasis: #2c3038;
     --bs-success-text-emphasis: #2e5a10;
     --bs-info-text-emphasis: #0f4f64;
     --bs-warning-text-emphasis: #654810;
     --bs-danger-text-emphasis: #661f1d;
-    --bs-light-text-emphasis: rgba(38, 43, 67, 0.7);
-    --bs-dark-text-emphasis: rgba(38, 43, 67, 0.7);
-    --bs-primary-bg-subtle: #e0e2ff;
-    --bs-secondary-bg-subtle: #e2e4e8;
-    --bs-success-bg-subtle: #e3f9d4;
-    --bs-info-bg-subtle: #d4f4fe;
-    --bs-warning-bg-subtle: #fff0d4;
-    --bs-danger-bg-subtle: #ffdbdb;
-    --bs-light-bg-subtle: rgba(248, 249, 249, 0.53);
-    --bs-dark-bg-subtle: rgba(38, 43, 67, 0.401);
-    --bs-primary-border-subtle: #c2c4ff;
-    --bs-secondary-border-subtle: #c5c9d1;
-    --bs-success-border-subtle: #c7f3a9;
-    --bs-info-border-subtle: #a8e8fd;
-    --bs-warning-border-subtle: #fee1a9;
-    --bs-danger-border-subtle: #ffb8b6;
-    --bs-light-border-subtle: rgba(38, 43, 67, 0.12);
-    --bs-dark-border-subtle: rgba(38, 43, 67, 0.5);
+    --bs-light-text-emphasis: #676a7b;
+    --bs-dark-text-emphasis: #676a7b;
+    --bs-primary-bg-subtle: #e7e7ff;
+    --bs-secondary-bg-subtle: #e8e9ed;
+    --bs-success-bg-subtle: #e8fadd;
+    --bs-info-bg-subtle: #dcf6fe;
+    --bs-warning-bg-subtle: #fff3dd;
+    --bs-danger-bg-subtle: #ffe3e2;
+    --bs-light-bg-subtle: #f4f4f6;
+    --bs-dark-bg-subtle: #dedde2;
+    --bs-primary-border-subtle: #c3c6ff;
+    --bs-secondary-border-subtle: #c6cad3;
+    --bs-success-border-subtle: #c8f3ab;
+    --bs-info-border-subtle: #aae9fd;
+    --bs-warning-border-subtle: #fee2ab;
+    --bs-danger-border-subtle: #ffbab8;
+    --bs-light-border-subtle: #d4d5d9;
+    --bs-dark-border-subtle: #afadb9;
     --bs-white-rgb: 255, 255, 255;
     --bs-black-rgb: 38, 43, 67;
-    --bs-font-sans-serif: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-    --bs-font-monospace: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --bs-font-sans-serif: "MiSans Global", -apple-system, blinkmacsystemfont, "Segoe UI", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    --bs-font-monospace: "SFMono-Regular", menlo, monaco, consolas, "Liberation Mono", "Courier New", monospace;
     --bs-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
     --bs-root-font-size: 16px;
     --bs-body-font-family: var(--bs-font-sans-serif);
     --bs-body-font-size: 0.9375rem;
     --bs-body-font-weight: 400;
     --bs-body-line-height: 1.375;
-    --bs-body-color: #676b7b;
-    --bs-body-color-rgb: 103, 107, 123;
+    --bs-body-color: #676a7b;
+    --bs-body-color-rgb: 103, 106, 123;
     --bs-body-bg: #f7f7f9;
     --bs-body-bg-rgb: 247, 247, 249;
     --bs-emphasis-color: #262b43;
     --bs-emphasis-color-rgb: 38, 43, 67;
-    --bs-secondary-color: rgba(103, 107, 123, 0.75);
-    --bs-secondary-color-rgb: 103, 107, 123;
-    --bs-secondary-bg: rgba(38, 43, 67, 0.12);
-    --bs-secondary-bg-rgb: 38, 43, 67;
-    --bs-tertiary-color: rgba(103, 107, 123, 0.5);
-    --bs-tertiary-color-rgb: 103, 107, 123;
-    --bs-tertiary-bg: rgba(38, 43, 67, 0.06);
-    --bs-tertiary-bg-rgb: 38, 43, 67;
-    --bs-heading-color: #3b4056;
+    --bs-secondary-color: #a8aab4;
+    --bs-secondary-color-rgb: 168, 170, 180;
+    --bs-secondary-bg: #d4d5d9;
+    --bs-secondary-bg-rgb: 212, 213, 217;
+    --bs-tertiary-color: rgba(103, 106, 123, 0.5);
+    --bs-tertiary-color-rgb: 103, 106, 123;
+    --bs-tertiary-bg: #dfdfe3;
+    --bs-tertiary-bg-rgb: 223, 223, 227;
+    --bs-heading-color: color-mix(in sRGB, #262b43 90%, #fff);
     --bs-link-color: #666cff;
     --bs-link-color-rgb: 102, 108, 255;
     --bs-link-decoration: none;
     --bs-link-hover-color: #5c61e6;
     --bs-link-hover-color-rgb: 92, 97, 230;
     --bs-code-color: #e83e8c;
-    --bs-highlight-color: #676b7b;
+    --bs-highlight-color: #676a7b;
     --bs-highlight-bg: #fff7dc;
     --bs-border-width: 1px;
     --bs-border-style: solid;
-    --bs-border-color: #e5e6e8;
-    --bs-border-color-translucent: rgba(38, 43, 67, 0.175);
+    --bs-border-color: color-mix(in sRGB, #262b43 12%, #fff);
+    --bs-border-color-translucent: rgba(38, 43, 67, 0.075);
     --bs-border-radius: 0.375rem;
     --bs-border-radius-sm: 0.25rem;
     --bs-border-radius-lg: 0.5rem;
     --bs-border-radius-xl: 0.625rem;
-    --bs-border-radius-xxl: 2rem;
+    --bs-border-radius-xxl: 1rem;
     --bs-border-radius-2xl: var(--bs-border-radius-xxl);
     --bs-border-radius-pill: 50rem;
     --bs-box-shadow: 0 0.25rem 0.875rem 0 rgba(38, 43, 67, 0.16);
@@ -115,7 +136,7 @@
     --bs-box-shadow-inset: inset 0 1px 2px rgba(38, 43, 67, 0.075);
     --bs-focus-ring-width: 0.15rem;
     --bs-focus-ring-opacity: 0.75;
-    --bs-focus-ring-color: rgba(38, 43, 67, 0.75);
+    --bs-focus-ring-color: rgba(103, 106, 123, 0.75);
     --bs-form-valid-color: #72e128;
     --bs-form-valid-border-color: #72e128;
     --bs-form-invalid-color: #ff4d49;
@@ -32365,15 +32386,19 @@ html:not([dir=rtl]) .menu-inner > .menu-header::after {
     position: absolute;
     top: 50%;
     display: block;
-    font-family: "remixicon";
+    /*font-family: "remixicon";*/
+    content: "\ea13";
     font-size: 1.375rem;
+    font-family: "remixicon";
+    font-style: normal;
+    /*font-size: 0.75rem;*/
     color: #3b4056;
     transform: translateY(-50%)
 }
 
-html:not([dir=rtl]) .menu-toggle::after {
-    content: ""
-}
+/*html:not([dir=rtl]) .menu-toggle::after {*/
+/*    content: "/ea13"*/
+/*}*/
 
 [dir=rtl] .menu-toggle::after {
     content: ""
@@ -32491,7 +32516,8 @@ html:not([dir=rtl]) .menu-toggle::after {
 }
 
 .menu-vertical .menu-item.open:not(.menu-item-closing) > .menu-link:after {
-    transform: translateY(-50%) rotate(90deg)
+    transform: translateY(-50%) rotate(180deg);
+    content: "\f1af";
 }
 
 [dir=rtl] .menu-vertical .menu-item.open:not(.menu-item-closing) > .menu-link:after {
@@ -32510,14 +32536,20 @@ html:not([dir=rtl]) .menu-toggle::after {
 }
 
 .layout-wrapper:not(.layout-horizontal) .menu-vertical .menu-inner > .menu-item .menu-sub > .menu-item > .menu-link::before {
-    content: "";
-    height: 8px;
-    width: 8px;
-    border-radius: 50rem;
-    background: currentColor;
+    content: "\f3c2";
+    font-family: "remixicon";
+    font-style: normal;
+    font-weight: bolder; /* Reset font weight */
+    font-size: 0.75rem; /* Adjust size as needed */
     position: absolute;
     left: 1.1875rem;
-    color: #a8aab4
+    color: #a8aab4; /* Set the icon color */
+    line-height: 1;
+}
+
+.layout-wrapper:not(.layout-horizontal) .menu-vertical .menu-inner > .menu-item .menu-sub > .menu-item.active > .menu-link::before {
+    content: "\f3c1";
+    /*font-family: "remixicon";*/
 }
 
 [dir=rtl] .layout-wrapper:not(.layout-horizontal) .menu-vertical .menu-inner > .menu-item .menu-sub > .menu-item > .menu-link::before {
