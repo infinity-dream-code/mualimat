@@ -194,7 +194,7 @@
     <script src="{{asset('main/libs/moment/moment.js')}}"></script>
     <script src="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.js')}}"></script>
 
-    <script type="text/javascript">
+    <script type="text/javascript" defer>
         const select2 = $(`[data-control='select2']`);
 
         let dtOptions = {
