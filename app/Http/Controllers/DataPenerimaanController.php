@@ -7,12 +7,13 @@ use App\Models\mst_kelas;
 use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
 use App\Models\scctbill;
+use App\Models\scctcust;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
-use mysql_xdevapi\Exception;
+use Illuminate\Support\Facades\DB;
 
 class DataPenerimaanController extends Controller
 {
