@@ -97,6 +97,10 @@
         table.main-table th {
             font-size: inherit;
         }
+
+        .text-end {
+            text-align: right !important;
+        }
     </style>
     @yield('style')
 </head>
