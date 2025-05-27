@@ -196,6 +196,7 @@
 
     <script type="text/javascript" defer>
         const select2 = $(`[data-control='select2']`);
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         let dtOptions = {
             tableId: 'main_table',
