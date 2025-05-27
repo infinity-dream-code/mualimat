@@ -43,155 +43,6 @@ class DataPenerimaanController extends Controller
         ];
     }
 
-    public function getData(Request $request)
-    {
-        $draw = $request->get('draw');
-        $start = $request->get("start");
-        $rowperpage = $request->get("length");
-        $columnName_arr = $request->get('columns');
-        $search_arr = $request->get('search');
-
-        $defaultColumn = 'scctbill.PAIDDT';
-        $defaultOrder = 'desc';
-
-        if ($request->filter['tanggal-transaksi'] != null && preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $request->filter['tanggal-transaksi'])) {
-            if ($request->has('order')) {
-                $columnIndex_arr = $request->get('order');
-                $columnIndex = $columnIndex_arr[0]['column'];
-                $columnSortOrder = $columnIndex_arr[0]['dir'];
-            } else {
-                $columnIndex = $defaultColumn;
-                $columnSortOrder = $defaultOrder;
-            }
-
-            $columnName = $columnName_arr[$columnIndex]['data'];
-            $searchValue = $search_arr['value'];
-
-            if (!$columnName || $columnName == 'no') {
-                $columnName = $defaultColumn;
-                $columnSortOrder = $defaultOrder;
-            }
-
-            $filters = [];
-            $filterQuery = null;
-
-            $filter = $request->input('filter');
-            if ($filter) {
-                foreach ($filter as $key => $val) {
-                    if (strtolower($val) != 'all' && $val !== null && $val !== '') {
-                        $colName = match ($key) {
-                            'tanggal-transaksi' => 'scctbill.PAIDDT',
-                            'tahun_akademik' => 'scctbill.BTA',
-                            'post' => 'scctbill.BILLNM',
-                            'kelas' => 'scctcust.DESC02',
-                            'siswa' => 'scctcust.nmcust',
-                            default => null
-                        };
-                        if ($key == 'tanggal-transaksi') {
-                            if (preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $val)) {
-                                $val = preg_replace('/[-\/~]/', '-', $val);
-
-                                list($startDate, $endDate) = explode(' - ', $val);
-                                $startDate = Carbon::createFromFormat('d-m-Y', $startDate)->startOfDay();
-                                $endDate = Carbon::createFromFormat('d-m-Y', $endDate)->endOfDay();
-                                if ($startDate && $endDate) {
-                                    ($colName) && $filters[] = [$colName, $startDate, $endDate, 'whereBetween'];
-                                }
-                            }
-                        } elseif ($key == 'siswa') {
-                            $val = is_numeric($val) ? $val : '%' . $val . '%';
-                            $colName = is_numeric($val) ? 'scctcust.nocust' : $colName;
-                            ($colName) && $filters[] = [$colName, 'like', $val];
-                        } else {
-                            ($colName) && $filters[] = [$colName, '=', $val];
-                        }
-                    }
-                };
-
-                if (!empty($filters)) {
-                    $filterQuery = function ($query) use ($filters) {
-                        foreach ($filters as $filter) {
-                            if (count($filter) === 3) {
-                                $query->where($filter[0], $filter[1], $filter[2]);
-                            } elseif (count($filter) === 4) {
-                                if ($filter[3] == 'whereBetween') {
-                                    $query->whereBetween($filter[0], [$filter[1], $filter[2]]);
-                                } else {
-                                    $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
-                                }
-                            }
-                        }
-                    };
-                }
-            }
-
-            $whereAny = [
-                'scctcust.nmcust',
-                'scctcust.nocust',
-            ];
-
-            $select = array_unique(array_merge($whereAny, [
-                'scctbill.AA',
-                'scctbill.BILLNM',
-                'scctbill.BILLAM',
-                'scctbill.PAIDST',
-                'scctbill.PAIDDT',
-                'scctbill.BTA',
-                'scctbill.FIDBANK',
-                'scctbill.FUrutan',
-                'scctcust.CODE02',
-                'scctcust.DESC02',
-
-            ]));
-
-            $query = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
-                ->where('scctbill.PAIDST', 1)
-                ->where('scctbill.FSTSBolehBayar', 1)
-                ->where('scctcust.STCUST', 1)
-                ->where('scctbill.PAIDDT', '!=', null)
-                ->whereAny($whereAny, 'like', '%' . $searchValue . '%')
-                ->where(function ($query) use ($filterQuery) {
-                    if ($filterQuery) {
-                        $filterQuery($query);
-                    }
-                });
-
-            // Total records
-            $totalRecords = scctbill::select('count(*) as allcount')
-                ->where('PAIDST', 1)
-                ->where('scctbill.FSTSBolehBayar', 1)
-                ->where('PAIDDT', '!=', null)
-                ->count();
-
-            $totalRecordswithFilter = (clone $query)
-                ->count();
-
-            $records = (clone $query)->orderBy($columnName, $columnSortOrder)
-                ->select($select)
-                ->whereAny($whereAny, 'like', '%' . $searchValue . '%')
-                ->where(function ($query) use ($filterQuery) {
-                    if ($filterQuery) {
-                        $filterQuery($query);
-                    }
-                })
-                ->skip($start)
-                ->take($rowperpage)
-                ->get()
-                ->map(function ($item, $index) {
-                    $item->print = true;
-                    return $item;
-                })->toArray();
-        }
-
-        $response = array(
-            "draw" => intval($draw),
-            "recordsTotal" => $totalRecords ?? 0,
-            "recordsFiltered" => $totalRecordswithFilter ?? 0,
-            "data" => $records ?? [],
-        );
-        return response()->json($response);
-    }
-
     public function index()
     {
         $data['title'] = $this->title;
@@ -300,7 +151,7 @@ class DataPenerimaanController extends Controller
 
                             return $item;
                         });
-                }else{
+                } else {
                     return response()->json(['message' => 'Tanggal transaksi tidak valid'], 422);
                 }
             }
@@ -339,5 +190,386 @@ class DataPenerimaanController extends Controller
         } else {
             return response()->json(['message' => 'Silakhan Lakukan pembayaran terlebih dahulu'], 422);
         }
+    }
+
+    public function cetakKartuSiswa(Request $request)
+    {
+        if (!$request['custid']) return response()->json(['error' => 'siswa tidak ditemukan']);
+        $request['draw'] = 2;
+        $request['start'] = 0;
+        $request['length'] = "poll";
+        try {
+            $val = Crypt::decrypt($request['custid']);
+        } catch (DecryptException $e) {
+            return response()->json(['error' => 'siswa tidak ditemukan']);
+        }
+
+        $siswa = scctcust::where('custid', $val)->first();
+        if (!$siswa) return response()->json(['error' => 'siswa tidak ditemukan']);
+
+        $request->merge([
+            'filter' => array_merge($request->input('filter', []), [
+                'custid' => $val
+            ])
+        ]);
+
+        $filter = $request;
+        $tagihans = $this->getData($filter);
+
+        try {
+            $tagihans = json_decode(json_encode($tagihans), true);
+            $tagihans = $tagihans['original']['data'];
+            if (!$tagihans) return response()->json(['message' => 'Tagihan Tidak Ditemukan'], 422);
+//            dd($tagihans, $siswa);
+            $pdf = Pdf::loadView('cetak.kartu-siswa', ['tagihans' => $tagihans, 'siswa' => $siswa]);
+            return $pdf->download('kartu-siswa.pdf');
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Tagihan Tidak Ditemukan', 'error' => $e], 422);
+        }
+    }
+
+    public function getData(Request $request)
+    {
+        $draw = $request->get('draw');
+        if ($request->filter['tanggal-transaksi'] != null && preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $request->filter['tanggal-transaksi'])) {
+
+            $start = $request->get("start");
+            $rowperpage = $request->get("length");
+
+            $columnIndex_arr = $request->get('order', []);
+            $columnName_arr = $request->get('columns', []);
+            $order_arr = $request->get('order', []);
+            $search_arr = $request->get('search', []);
+            $searchValue = $search_arr['value'] ?? '';
+
+            $columnName = 'BILLAC';
+            $columnSortOrder = 'DESC';
+
+            if (!empty($order_arr)) {
+                $columnIndex = $columnIndex_arr[0]['column'] ?? null;
+                if ($columnIndex !== null && !empty($columnName_arr[$columnIndex]['data']) && $columnName_arr[$columnIndex]['data'] !== 'no') {
+                    $columnName = $columnName_arr[$columnIndex]['data'];
+                    $columnSortOrder = $order_arr[0]['dir'] ?? 'desc';
+                }
+            }
+
+            $filters = [];
+            $filterQuery = null;
+
+            $filter = $request->input('filter');
+            if ($filter) {
+                foreach ($filter as $key => $val) {
+                    if (is_array($val) || strtolower($val) != 'all' && $val !== null && $val !== '') {
+                        $colName = match ($key) {
+                            'dari_tanggal', 'sampai_tanggal' => 'scctbill.FTGLTagihan',
+                            'tanggal-transaksi' => 'scctbill.PAIDDT',
+                            'tahun_akademik' => 'scctbill.BTA',
+                            'post' => 'scctbill.BILLNM',
+                            'kelas' => 'scctcust.DESC02',
+                            'siswa' => 'scctcust.nmcust',
+                            'custid' => 'scctbill.CUSTID',
+                            default => null
+                        };
+                        if ($key == 'tanggal-transaksi') {
+                            if (preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $val)) {
+                                $val = preg_replace('/[-\/~]/', '-', $val);
+
+                                list($startDate, $endDate) = explode(' - ', $val);
+                                $startDate = Carbon::createFromFormat('d-m-Y', $startDate)->startOfDay();
+                                $endDate = Carbon::createFromFormat('d-m-Y', $endDate)->endOfDay();
+                                if ($startDate && $endDate) {
+                                    ($colName) && $filters[] = [$colName, $startDate, $endDate, 'whereBetween'];
+                                }
+                            }
+                        } else if ($key == 'kelas') {
+                            $val = explode("~", $val);
+                            if (count($val) == 3) {
+                                $filters[] = ['scctcust.CODE02', '=', $val[0]];
+                                $filters[] = ['scctcust.DESC02', '=', $val[1]];
+                                $filters[] = ['scctcust.DESC03', '=', $val[2]];
+                            }
+                        } else if ($key == 'post') {
+                            ($colName) && $filters[] = [$colName, 'in', $val];
+                        } elseif ($key == 'siswa') {
+                            $val = is_numeric($val) ? $val : '%' . $val . '%';
+                            $colName = is_numeric($val) ? 'scctcust.nocust' : $colName;
+                            ($colName) && $filters[] = [$colName, 'like', $val];
+                        } else {
+                            ($colName) && $filters[] = [$colName, '=', $val];
+                        }
+                    }
+                };
+
+                if (!empty($filters)) {
+                    $filterQuery = function ($query) use ($filters) {
+                        foreach ($filters as $filter) {
+                            switch (count($filter)) {
+                                case 3:
+                                    $filter[1] === 'in'
+                                        ? $query->whereIn($filter[0], $filter[2])
+                                        : $query->where($filter[0], $filter[1], $filter[2]);
+                                    break;
+
+                                case 4:
+                                    $filter[3] === 'whereBetween'
+                                        ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
+                                        : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
+                                    break;
+                            }
+                        }
+                    };
+                }
+            }
+
+            $whereAny = [
+                'scctcust.nmcust',
+                'scctcust.nocust',
+            ];
+
+            $select = array_unique(array_merge($whereAny, [
+                'scctbill.AA',
+                'scctbill.BILLNM',
+                'scctbill.BILLAM',
+                'scctbill.PAIDST',
+                'scctbill.PAIDDT',
+                'scctbill.BTA',
+                'scctbill.CUSTID',
+                'scctbill.FIDBANK',
+                'scctbill.FUrutan',
+                'scctcust.CODE02',
+                'scctcust.DESC02',
+
+            ]));
+
+            $query = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
+                ->where('scctbill.PAIDST', 1)
+                ->where('scctbill.FSTSBolehBayar', 1)
+                ->where('scctcust.STCUST', 1)
+                ->where('scctbill.PAIDDT', '!=', null)
+                ->whereAny($whereAny, 'like', '%' . $searchValue . '%')
+                ->where(function ($query) use ($filterQuery) {
+                    if ($filterQuery) {
+                        $filterQuery($query);
+                    }
+                });
+
+            // Total records
+            $totalRecords = scctbill::select('count(*) as allcount')
+                ->where('PAIDST', 1)
+                ->where('scctbill.FSTSBolehBayar', 1)
+                ->where('PAIDDT', '!=', null)
+                ->count();
+
+            $totalRecordswithFilter = (clone $query)
+                ->count();
+
+            $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
+            $records = (clone $query)->orderBy($columnName, $columnSortOrder)
+                ->select($select)
+                ->whereAny($whereAny, 'like', '%' . $searchValue . '%')
+                ->where(function ($query) use ($filterQuery) {
+                    if ($filterQuery) {
+                        $filterQuery($query);
+                    }
+                })
+                ->skip($start)
+                ->take($rowperpage)
+                ->get()
+                ->map(function ($item, $index) {
+                    $item->item_id = crypt::encrypt($item->AA);
+                    $item->CUSTID = crypt::encrypt($item->CUSTID);
+                    return $item;
+                })->toArray();
+        }
+
+        $response = array(
+            "draw" => intval($draw),
+            "recordsTotal" => $totalRecords ?? 0,
+            "recordsFiltered" => $totalRecordswithFilter ?? 0,
+            "data" => $records ?? [],
+        );
+        return response()->json($response);
+    }
+
+    public function cetakRekapPenerimaan(Request $request)
+    {
+        if ($request->filter['tanggal-transaksi'] != null
+            && preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $request->filter['tanggal-transaksi'])
+            && $request->filter['kelas'] != null && $request->filter['kelas'] != 'all') {
+            $filters = [];
+            $filterQuery = null;
+            $filter_scctbill = [];
+            $post = false;
+            $kelas = [];
+            $tanggalMulai = null;
+            $tanggalSelesai = null;
+            $filter = $request->input('filter');
+            if ($filter) {
+                foreach ($filter as $key => $val) {
+                    if (is_array($val) || strtolower($val) != 'all' && $val !== null && $val !== '') {
+                        $colName = match ($key) {
+                            'dari_tanggal', 'sampai_tanggal' => 'scctbill.FTGLTagihan',
+                            'tanggal-transaksi' => 'scctbill.PAIDDT',
+                            'tahun_akademik' => 'scctbill.BTA',
+                            'post' => 'scctbill.BILLNM',
+                            'kelas' => 'scctcust.DESC02',
+                            'siswa' => 'scctcust.nmcust',
+                            'custid' => 'scctbill.CUSTID',
+                            default => null
+                        };
+
+                        if ($key == 'tanggal-transaksi') {
+                            if (preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $val)) {
+                                $val = preg_replace('/[-\/~]/', '-', $val);
+                                list($startDate, $endDate) = explode(' - ', $val);
+                                $startDate = Carbon::createFromFormat('d-m-Y', $startDate)->startOfDay();
+                                $endDate = Carbon::createFromFormat('d-m-Y', $endDate)->endOfDay();
+                                $tanggalMulai = $startDate->format('l F Y');
+                                $tanggalSelesai = $endDate->format('l F Y');
+                                if ($startDate && $endDate) {
+                                    ($colName) && $filters[] = [$colName, $startDate, $endDate, 'whereBetween'];
+                                }
+                            }
+                        } else if ($key == 'kelas') {
+                            $val = explode("~", $val);
+                            $kelas = $val;
+                            if (count($val) == 3) {
+                                $filters[] = ['scctcust.CODE02', '=', $val[0]];
+                                $filters[] = ['scctcust.DESC02', '=', $val[1]];
+                                $filters[] = ['scctcust.DESC03', '=', $val[2]];
+                            }
+                        } else if ($key == 'post') {
+                            $post = $val;
+                            ($colName) && $filters[] = [$colName, 'in', $val];
+                        } else if ($key == 'siswa') {
+                            $val = is_numeric($val) ? $val : '%' . $val . '%';
+                            $colName = is_numeric($val) ? 'scctcust.nocust' : $colName;
+                            ($colName) && $filters[] = [$colName, 'like', $val];
+                        } else {
+                            ($colName) && $filters[] = [$colName, '=', $val];
+                        }
+                    }
+                };
+            }
+
+            $filter_main = [];
+            $filter_scctbill = [];
+
+            foreach ($filters as $item) {
+                if (str_contains($item[0], "scctbill")) {
+                    $filter_scctbill[] = $item;
+                } else {
+                    $filter_main[] = $item;
+                }
+            }
+
+            $whereAny = [
+                'scctcust.nmcust',
+                'scctcust.nocust',
+            ];
+
+            $select = array_unique(array_merge($whereAny, [
+                'scctcust.CODE02',
+                'scctcust.DESC02',
+                'scctcust.DESC03',
+
+            ]));
+
+            $mstTagihan = mst_tagihan::select(['tagihan'])
+                ->where(function ($query) use ($post) {
+                    if ($post) {
+                        $query->whereIn('tagihan', $post);
+                    }
+                })
+                ->orderBy('urut', 'asc')
+                ->get();
+
+            $records = scctcust::leftJoin('scctbill', function ($join) use ($filter_scctbill) {
+                $join->on('scctbill.CUSTID', '=', 'scctcust.CUSTID')
+                    ->where('scctbill.PAIDST', 1)
+                    ->where('scctbill.FSTSBolehBayar', 1)
+                    ->whereNotNull('scctbill.PAIDDT')
+                    ->where(function ($query) use ($filter_scctbill) {
+                        foreach ($filter_scctbill as $filter) {
+                            switch (count($filter)) {
+                                case 3:
+                                    $filter[1] === 'in'
+                                        ? $query->whereIn($filter[0], $filter[2])
+                                        : $query->where($filter[0], $filter[1], $filter[2]);
+                                    break;
+                                case 4:
+                                    $filter[3] === 'whereBetween'
+                                        ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
+                                        : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
+                                    break;
+                            }
+                        }
+                    });
+            })->where(function ($query) use ($filter_main) {
+                foreach ($filter_main as $filter) {
+                    switch (count($filter)) {
+                        case 3:
+                            $filter[1] === 'in'
+                                ? $query->whereIn($filter[0], $filter[2])
+                                : $query->where($filter[0], $filter[1], $filter[2]);
+                            break;
+
+                        case 4:
+                            $filter[3] === 'whereBetween'
+                                ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
+                                : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
+                            break;
+                    }
+                }
+            })->where('scctcust.STCUST', 1)
+                ->select($select)
+                ->groupBy('scctcust.CUSTID');
+
+            foreach ($mstTagihan as $val) {
+                $namaPost = $val['tagihan'];
+                $records->addSelect(DB::raw("SUM(CASE WHEN scctbill.BILLNM = '{$namaPost}' THEN scctbill.BILLAM ELSE 0 END) AS '{$namaPost}'"));
+            }
+
+            $records = $records->get();
+
+            $kelas = mst_kelas::where('unit', $kelas[0])
+                ->where('jenjang', $kelas[1])
+                ->where('kelas', $kelas[2])
+                ->first();
+            if ($records && $mstTagihan) {
+
+                $customPaper = [0, 0, 1684, 842];
+
+                $pdf = Pdf::loadView('cetak.rekap-penerimaan',
+                    [
+                        'tagihans' => $records,
+                        'mstTagihan' => $mstTagihan,
+                        'kelas' => $kelas,
+                        'tanggalMulai' => $tanggalMulai,
+                        'tanggalSelesai' => $tanggalSelesai,
+                    ])
+                    ->setOptions([
+                        'isHtml5ParserEnabled' => true,
+                        'isPhpEnabled' => true,
+//                        'dpi' => 96,
+                        ])
+//                    ->setPaper('a4', 'landscape');
+                    ->setPaper($customPaper);
+                return $pdf->download('rekap-penerimaan.pdf');
+            }
+        }
+
+        return response()->json(['message' => 'Gagal mencetak Rekap Penerimaan'], 422);
+
+//        $sqlWithPlaceholders = $records->toSql();
+//
+//        $bindings = $records->getBindings();
+//
+//        $fullSql = Str::replaceArray('?', array_map(function ($b) {
+//            return is_numeric($b) ? $b : "'" . addslashes($b) . "'";
+//        }, $bindings), $sqlWithPlaceholders);
+
+//        dd($records);
+
     }
 }
