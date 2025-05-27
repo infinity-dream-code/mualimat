@@ -327,11 +327,13 @@ async function dataTableCreate(options) {
         scrollX: options.scrollX ?? false,
         searching: options.searching || false,
         processing: true,
+        // rowId: 'item_id',
         serverSide: options.serverSide ?? true,
         paging: options.paging ?? true,
         pageLength: options.pageLength ?? 10,
         lengthMenu: options.lengthMenu ?? [10, 25, 50, 75, 100],
         retrieve: options.retrieve ?? false,
+        cache: options.cache ?? false,
         select: options.select
             ? options.select === 'multi'
                 ? {
@@ -500,6 +502,9 @@ async function dataTableCreate(options) {
                 }
             }, 0)
         },
+        createdRow: function (row, data, dataIndex) {
+            row.setAttribute('id', `${options.tableId}-row-` + (dataIndex + 1));
+        },
         error: function (xhr, error, code) {
             errorAlert('Data tidak dapat dimuat')
         }
@@ -534,8 +539,9 @@ async function getDT(options) {
                             case 'no':
                                 renderFunc = function (data, type, row, meta) {
                                     if (type === 'display' || type === 'filter') {
-                                        if(options.select){
-                                            return `<input type="checkbox" id="siswa-checkbox-${data}" class="dt-checkboxes form-check-input checkbox-siswa" value="${data}" aria-selected="false">`;
+                                        if (options.select) {
+                                            let thisValue = data ?? meta.row + meta.settings._iDisplayStart + 1;
+                                            return `<input type="checkbox" id="siswa-checkbox-${data}" class="dt-checkboxes form-check-input checkbox-siswa" value="${thisValue}" aria-selected="false">`;
                                         }
                                         return meta.row + meta.settings._iDisplayStart + 1;
                                     } else if (type === 'export') {
