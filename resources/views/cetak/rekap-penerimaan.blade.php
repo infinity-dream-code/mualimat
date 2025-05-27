@@ -36,8 +36,8 @@
         <thead class="table-border" style="background-color: #ededed;">
         <tr>
             <th>#</th>
+            <th>Nis</th>
             <th>Nama</th>
-            <th>Kelas</th>
             @foreach($mstTagihan as $item)
                 <th>{{$item->tagihan}}</th>
             @endforeach
@@ -47,8 +47,8 @@
         @foreach($tagihans as $tagihan)
             <tr>
                 <td>{{$loop->index}}</td>
-                <td>{{$tagihan->NMCUST}}</td>
-                <td>{{$tagihan->DESC02.$tagihan->DESC03}}</td>
+                <td>{{$tagihan->nocust}}</td>
+                <td>{{$tagihan->nmcust}}</td>
                 @foreach($mstTagihan as $item)
                     <td>{{$tagihan[$item->tagihan]}}</td>
                 @endforeach
