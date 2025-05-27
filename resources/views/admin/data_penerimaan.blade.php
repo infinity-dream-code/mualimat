@@ -285,9 +285,30 @@
                 }
             });
 
-            date.on('cancel.daterangepicker', function (ev, picker) {
-                $(this).val('');
-            });
+            document.getElementById('cetak-kartu-siswa').addEventListener('click', function (e) {
+                e.preventDefault();
+                let url = '{{route('admin.data-penerimaan.cetak-kartu-siswa')}}';
+                const form = new FormData(document.getElementById('rekapForm'));
+                const params = new URLSearchParams();
+                for (const [key, value] of form.entries()) {
+                    params.append(key, value);
+                }
+                let data = DT[`${dtOptions.tableId}`].rows({selected: true}).data();
+
+                if (!data[0]) {
+                    warningAlert('silahkan pilih siswa!')
+                    return;
+                }
+                params.append('custid', data[0].CUSTID)
+                const fullUrl = `${url}?${params.toString()}`;
+                const request = new Request(
+                    fullUrl, {
+                        method: "GET",
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/pdf'
+                        }
+                    });
 
             date.on('apply.daterangepicker', function (ev, picker) {
                 let duration = picker.endDate.diff(picker.startDate, 'days');
