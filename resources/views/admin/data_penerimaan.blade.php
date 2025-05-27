@@ -87,9 +87,10 @@
                                     Nama Tagihan
                                 </label>
                                 <select class="form-select" id="post"
-                                        name="filter[post]"
+                                        name="filter[post][]"
                                         data-control="select2"
-                                        data-placeholder="Pilih Tahun Akademik">
+                                        data-placeholder="Pilih Tahun Akademik"
+                                        multiple="multiple">
                                     <option value="all">Semua</option>
                                     @isset($post)
                                         @foreach($post as $item)
