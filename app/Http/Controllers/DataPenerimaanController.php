@@ -424,8 +424,9 @@ class DataPenerimaanController extends Controller
                                 list($startDate, $endDate) = explode(' - ', $val);
                                 $startDate = Carbon::createFromFormat('d-m-Y', $startDate)->startOfDay();
                                 $endDate = Carbon::createFromFormat('d-m-Y', $endDate)->endOfDay();
-                                $tanggalMulai = $startDate->format('l F Y');
-                                $tanggalSelesai = $endDate->format('l F Y');
+//                                $tanggalMulai = $startDate->format('l, t F Y');
+                                $tanggalMulai = $startDate->isoFormat('dddd, D MMMM YYYY');
+                                $tanggalSelesai = $endDate->isoFormat('dddd, D MMMM YYYY');
                                 if ($startDate && $endDate) {
                                     ($colName) && $filters[] = [$colName, $startDate, $endDate, 'whereBetween'];
                                 }
