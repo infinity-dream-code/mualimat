@@ -50,7 +50,7 @@
                 <td>{{$tagihan->nocust}}</td>
                 <td>{{$tagihan->nmcust}}</td>
                 @foreach($mstTagihan as $item)
-                    <td>{{$tagihan[$item->tagihan]}}</td>
+                    <td class="text-end">@rupiah($tagihan[$item->tagihan])</td>
                 @endforeach
             </tr>
         @endforeach
