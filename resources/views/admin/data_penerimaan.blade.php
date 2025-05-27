@@ -89,7 +89,7 @@
                                 <select class="form-select" id="post"
                                         name="filter[post][]"
                                         data-control="select2"
-                                        data-placeholder="Pilih Tahun Akademik"
+                                        data-placeholder="Pilih Tagihan"
                                         multiple="multiple">
                                     <option value="all">Semua</option>
                                     @isset($post)
