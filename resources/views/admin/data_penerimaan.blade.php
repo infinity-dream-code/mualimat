@@ -152,7 +152,7 @@
                     </div>
                     <div class="row">
                         <div class="d-flex justify-content-center flex-column flex-md-row justify-content-md-end gap-4">
-                            <button type="button" class="btn btn-google-plus btn-print-rekap">
+                            <button type="button" class="btn btn-google-plus btn-print-rekap" id="cetak-rekap">
                                 <span class="ri-file-pdf-2-line me-2"></span>
                                 Cetak PDF
                             </button>
