@@ -28,7 +28,7 @@ Route::prefix('admin')->name('admin.')->middleware('check.session')->group(funct
         Route::controller(\App\Http\Controllers\DataPenerimaanController::class)->group(function () {
             Route::get('get-data', 'getData')->name('get-data');
             Route::get('get-column', 'getColumn')->name('get-column');
-            Route::get('cetak-rekap', 'cetak')->name('cetak-rekap');
+            Route::get('cetak-rekap', 'cetakRekapPenerimaan')->name('cetak-rekap');
             Route::get('cetak-tagihan-dibayar', 'cetakPembayaran')->name('cetak-tagihan-dibayar');
             Route::resource('', \App\Http\Controllers\DataPenerimaanController::class)->parameters(['' => 'id']);
         });
