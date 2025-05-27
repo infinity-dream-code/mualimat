@@ -29,7 +29,8 @@ class DataPenerimaanController extends Controller
     public function getColumn()
     {
         return [
-            ['data' => null, 'name' => 'no', 'columnType' => 'row'],
+            ['data' => 'AA', 'name' => 'no', 'columnType' => 'row'],
+//            ['data' => 'item_id', 'name' => 'ITEM ID', 'visible' => false],
             ['data' => 'nocust', 'name' => 'NIS', 'searchable' => true, 'orderable' => true],
             ['data' => 'nmcust', 'name' => 'NAMA', 'searchable' => true, 'orderable' => true],
             ['data' => 'CODE02', 'name' => 'Unit', 'searchable' => true, 'orderable' => true],
