@@ -276,7 +276,7 @@
 }
 
 html:not([dir=rtl]) .select2-container--default .select2-selection--multiple .select2-selection__choice {
-    padding-right: 1rem
+    padding-right: 1.5rem
 }
 
 [dir=rtl] .select2-container--default .select2-selection--multiple .select2-selection__choice {
@@ -285,11 +285,12 @@ html:not([dir=rtl]) .select2-container--default .select2-selection--multiple .se
 
 .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
     position: absolute;
-    font-weight: 500;
+    font-weight: bold;
+    font-size: large;
     color: inherit;
     display: inline-block;
     cursor: pointer;
-    opacity: .5
+    opacity: 1;
 }
 
 html:not([dir=rtl]) .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
@@ -300,13 +301,10 @@ html:not([dir=rtl]) .select2-container--default .select2-selection--multiple .se
     left: .3rem
 }
 
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
-    opacity: .8;
-    color: inherit
-}
-
-.select2-container--default.select2-container--disabled .select2-selection__choice__remove {
-    display: none
+.select2-container--default .select2-selection--multiple .select2-selection__choice:has(.select2-selection__choice__remove:hover) {
+    color: #fff;
+    border-color: #497dff;
+    background-color:  var(--bs-danger);
 }
 
 .select2-container--default.select2-container--disabled .select2-selection--multiple {
@@ -503,7 +501,7 @@ html:not([dir=rtl]) .form-floating.form-floating-select2 label {
 }
 
 .light-style .select2-container--default .select2-selection--multiple .select2-selection__choice {
-    color: #676b7b;
+    color: #3b4056;
     background-color: #eeeef0
 }
 
