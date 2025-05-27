@@ -310,10 +310,42 @@
                         }
                     });
 
-            date.on('apply.daterangepicker', function (ev, picker) {
-                let duration = picker.endDate.diff(picker.startDate, 'days');
-                if (duration > 6) {
-                    picker.setEndDate(picker.startDate.clone().add(2, 'days'));
+                fetch(request)
+                    .then(res => res.blob())
+                    .then(blob => {
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                    })
+                    .catch(error => {
+                        if (error.status === 422) {
+                            const errors = error.error || error.errors;
+                            errorAlert(error.message);
+                            if (errors) {
+                                processErrors(errors)
+                            }
+                        } else {
+                            const errorMessages = {
+                                401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                                403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
+                                404: 'Halaman yang dituju tidak ditemukan 🧐',
+                                405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
+                                419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                                429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
+                            };
+                            errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
+                        }
+                    });
+            })
+
+            document.getElementById('cetak-rekap').addEventListener('click', function (e) {
+                e.preventDefault();
+                loadingAlert(`Membuat Rekap ... <br> Proses ini membutuhkan waktu beberapa saat<br><hr>
+                    <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
+                `);                let url = '{{route('admin.data-penerimaan.cetak-rekap')}}';
+                const form = new FormData(document.getElementById('rekapForm'));
+                const params = new URLSearchParams();
+                for (const [key, value] of form.entries()) {
+                    params.append(key, value);
                 }
             });
         });
