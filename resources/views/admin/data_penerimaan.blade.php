@@ -156,6 +156,10 @@
                                 <span class="ri-file-pdf-2-line me-2"></span>
                                 Cetak PDF
                             </button>
+                            <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">
+                                <span class="ri-profile-line me-2"></span>
+                                Cetak Kartu Siswa
+                            </button>
                             <button type="reset" class="btn btn-secondary" disabled>
                                 <span class="ri-reset-left-line me-2"></span>
                                 Reset
