@@ -9,6 +9,29 @@
             </td>
         </tr>
     </table>
+    <table width="100%" class="main-table">
+        <tr>
+            <td style="width: auto"
+                class="border-right-0">Tanggal Transaksi</td>
+            <td class="border-left-0">
+                : <strong>{{$tanggalMulai}} - {{$tanggalSelesai}}</strong>
+            </td>
+        </tr>
+        <tr>
+            <td style="width: auto"
+                class="border-right-0">Unit</td>
+            <td class="border-left-0">
+                : <strong>{{$kelas->unit}}</strong>
+            </td>
+        </tr>
+        <tr>
+            <td style="width: auto"
+                class="border-right-0">Kelas</td>
+            <td class="border-left-0">
+                : <strong>{{$kelas->jenjang}} - {{$kelas->kelas}}</strong>
+            </td>
+        </tr>
+    </table>
     <table width="100%" class="table-border main-table">
         <thead class="table-border" style="background-color: #ededed;">
         <tr>
