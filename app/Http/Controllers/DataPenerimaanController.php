@@ -539,7 +539,9 @@ class DataPenerimaanController extends Controller
                 ->first();
             if ($records && $mstTagihan) {
 
-                $customPaper = [0, 0, 1684, 842];
+//                $customPaper = [0, 0, 1684, 842];
+                $customPaper =[0, 0, 935.43, 595.28];
+
 
                 $pdf = Pdf::loadView('cetak.rekap-penerimaan',
                     [
