@@ -228,7 +228,15 @@
                     <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
                 `);
                 let data = $(`#${dtOptions.formId}`).serialize();
-                if (data) {
+
+                function isValidInput(data) {
+                    const params = new URLSearchParams(data);
+                    const kelasValue = params.get('filter[kelas]');
+                    const invalidValues = [null, '', 'undefined', 'all'];
+                    return !invalidValues.includes(kelasValue);
+                }
+
+                if (isValidInput(data)) {
                     const csrfToken = $('meta[name="csrf-token"]').attr('content')
                     let ajaxOptions = {
                         url: '{{route('admin.data-tagihan.cetak-rekap-tagihan')}}',
@@ -283,7 +291,7 @@
                         }
                     })
                 } else {
-                    warningAlert('Isikan form')
+                    warningAlert('Silahkan pilih salah satu kelas terlebih dahulu!')
                 }
             });
 

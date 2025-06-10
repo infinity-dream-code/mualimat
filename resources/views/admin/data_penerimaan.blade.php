@@ -353,42 +353,52 @@
                     params.append(key, value);
                 }
 
-                const fullUrl = `${url}?${params.toString()}`;
-                const request = new Request(
-                    fullUrl, {
-                        method: "GET",
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/pdf'
-                        }
-                    });
+                function isValidInput(params) {
+                    const kelasValue = params.get('filter[kelas]');
+                    const invalidValues = [null, '', 'undefined', 'all'];
+                    return !invalidValues.includes(kelasValue);
+                }
 
-                fetch(request)
-                    .then(res => res.blob())
-                    .then(blob => {
-                        const url = URL.createObjectURL(blob);
-                        window.open(url, '_blank');
-                        successAlert('Sukses, Rekap terbuka pada tab baru');
-                    })
-                    .catch(error => {
-                        if (error.status === 422) {
-                            const errors = error.error || error.errors;
-                            errorAlert(error.message);
-                            if (errors) {
-                                processErrors(errors)
+                if (isValidInput(params)) {
+                    const fullUrl = `${url}?${params.toString()}`;
+                    const request = new Request(
+                        fullUrl, {
+                            method: "GET",
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/pdf'
                             }
-                        } else {
-                            const errorMessages = {
-                                401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
-                                403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
-                                404: 'Halaman yang dituju tidak ditemukan 🧐',
-                                405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
-                                419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
-                                429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
-                            };
-                            errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
-                        }
-                    });
+                        });
+
+                    fetch(request)
+                        .then(res => res.blob())
+                        .then(blob => {
+                            const url = URL.createObjectURL(blob);
+                            window.open(url, '_blank');
+                            successAlert('Sukses, Rekap terbuka pada tab baru');
+                        })
+                        .catch(error => {
+                            if (error.status === 422) {
+                                const errors = error.error || error.errors;
+                                errorAlert(error.message);
+                                if (errors) {
+                                    processErrors(errors)
+                                }
+                            } else {
+                                const errorMessages = {
+                                    401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                                    403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
+                                    404: 'Halaman yang dituju tidak ditemukan 🧐',
+                                    405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
+                                    419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                                    429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
+                                };
+                                errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
+                            }
+                        });
+                }else{
+                    warningAlert('Silahkan pilih salah satu kelas terlebih dahulu!')
+                }
             });
         });
 
