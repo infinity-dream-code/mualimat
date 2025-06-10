@@ -15,21 +15,13 @@
         content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"/>
 
     <title>@yield('title', config('app.name')) - {{ config('app.name') }}</title>
-    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <meta name="csrf-token" content="{{ csrf_token() }}"/>
     <meta name="description" content="Core system ICT "/>
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{{asset('favicon.ico')}}"/>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&ampdisplay=swap"
-        rel="stylesheet"/>
-
     <!-- Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"/>
 
     <!-- Menu waves for no-customizer fix -->
     {{--    <link rel="stylesheet" href="{{asset('main/libs/node-waves/node-waves.css')}}"/>--}}
@@ -38,6 +30,33 @@
     <link rel="stylesheet" href="{{asset('main/libs/perfect-scrollbar/perfect-scrollbar.css')}}"/>
     <link rel="stylesheet" href="{{asset('main/libs/sweetalert2/sweetalert2.css')}}"/>
     <link rel="stylesheet" href="{{asset('main/libs/spinkit/spinkit.css')}}"/>
+
+    @hasSection('filepond')
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/filepond@4.32.7/dist/filepond.min.css"
+              integrity="sha256-R/TKiFR8YXiqvCSFSm3ek/rIjgEoFS5PpaAMkv/brg4=" crossorigin="anonymous">
+
+        <link rel="stylesheet" href="{{asset('libs/filepond/dist/custom.css')}}">
+    @endif
+
+    @hasSection('datatable')
+        <link rel="stylesheet" href="{{asset('main/libs/datatables-bs5/datatables.bootstrap5.css')}}">
+        @hasSection('datatable-responsive')
+            <link rel="stylesheet" href="{{asset('main/libs/datatables-responsive-bs5/responsive.bootstrap5.css')}}">
+        @endif
+    @endif
+
+    @hasSection('bootstrap-datepicker')
+        <link rel="stylesheet" href="{{asset('main/libs/bootstrap-datepicker/bootstrap-datepicker.css')}}">
+    @endif
+
+    @hasSection('bootstrap-daterangepicker')
+        <link rel="stylesheet" href="{{asset('main/libs/bootstrap-datepicker/bootstrap-datepicker.css')}}">
+    @endif
+
+    @hasSection('select2')
+        <link rel="stylesheet" href="{{asset('main/libs/select2/select2.css')}}">
+        <link rel="stylesheet" href="{{asset('main/libs/select2/select2-bootstrap.css')}}">
+    @endif
 
     <!-- Page CSS -->
     @yield('style')
@@ -255,18 +274,26 @@
 
 <!-- Core JS -->
 <!-- build:js assets/vendor/js/core.js -->
-<script src="{{asset('main/libs/jquery/jquery.js')}}"></script>
-<script src="{{asset('main/js/bootstrap.js')}}"></script>
-<script src="{{asset('main/libs/perfect-scrollbar/perfect-scrollbar.js')}}"></script>
+{{--<script src="{{asset('main/libs/jquery/jquery.js')}}"></script>--}}
+{{--<script src="{{asset('main/js/bootstrap.js')}}"></script>--}}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
+        integrity="sha256-y3ibfOyBqlgBd+GzwFYQEVOZdNJD06HeDXihongBXKs=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/perfect-scrollbar@1.5.6/dist/perfect-scrollbar.min.js"
+        integrity="sha256-B69LaJOkADtiChnrAMKFvAyqbzM3Thpr6EyGtViOFG8=" crossorigin="anonymous"></script>
 <script src="{{asset('main/js/menu.js')}}"></script>
 <!-- endbuild -->
 
 <!-- Vendors JS -->
-<script src="{{asset('main/libs/sweetalert2/sweetalert2.js')}}"></script>
+{{--<script src="{{asset('main/libs/sweetalert2/sweetalert2.js')}}"></script>--}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.22.0/dist/sweetalert2.all.min.js"
+        integrity="sha256-WjwoxFTbs4JzyDmrHgK4VgR+Dz7he8HYwCbocAlNn9k=" crossorigin="anonymous"></script>
 <!-- Main JS -->
 <script src="{{asset('js/main.js')}}"></script>
 
 <script src="{{asset('js/alerts.min.js')}}"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"/>
 
 <style>
     .back-to-top {
@@ -342,6 +369,130 @@
     })
 </script>
 
+@hasSection('errorInputHelper')
+    <script src="{{asset('js/helper/errorInputHelper.min.js')}}"></script>
+@endif
+@hasSection('momentjs')
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js"></script>
+@endif
+
+@hasSection('bootstrap-datepicker')
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"
+            integrity="sha256-iZp9dyOMJKPFdn1UMra9ZMhPZAlSGZUzdhqqEgijE+Q=" crossorigin="anonymous" defer></script>
+@endif
+
+@hasSection('bootstrap-daterangepicker')
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-daterangepicker@3.1.0/daterangepicker.min.js" defer></script>
+@endif
+
+@hasSection('select2')
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"
+            integrity="sha256-AFAYEOkzB6iIKnTYZOdUf9FFje6lOTYdwRJKwTN5mks=" crossorigin="anonymous" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/id.js" defer></script>
+@endif
+
+@hasSection('datatable')
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.11/js/jquery.dataTables.min.js"
+            integrity="sha256-ozFG+tjHIo3E3JAEPj5Q1Rzq2LImeurDKwqPO+ilK4Y=" crossorigin="anonymous" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.11/js/dataTables.bootstrap5.min.js"
+            integrity="sha256-3iXHrfSd4xzI1YyrooF0jG4OVwGiSAoU1+WdYwEwYZk=" crossorigin="anonymous" defer></script>
+    <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}" defer></script>
+
+    @hasSection('datatable-responsive')
+        <script src="https://cdn.jsdelivr.net/npm/datatables.net-responsive@2.5.1/js/dataTables.responsive.min.js"
+                integrity="sha256-LLmmrr9hYXrjHj5w9Q2Asxvom2ErkK3bWcnZ3bdQ5lE=" crossorigin="anonymous" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/datatables.net-responsive-bs5@2.5.1/js/responsive.bootstrap5.min.js"
+                integrity="sha256-fxJmiDt8K09elieA/J28vsEvSsmFgGUvoLsEgH/uUx4=" crossorigin="anonymous" defer></script>
+    @endif
+
+    @hasSection('datatable-select')
+        <script src="https://cdn.jsdelivr.net/npm/datatables.net-select@1.6.2/js/dataTables.select.min.js"
+                integrity="sha256-EahoU/AaV9Q11O9bRdXQ9r/qUi/I6UhMQte2hAVAPzg=" crossorigin="anonymous" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/datatables.net-select-bs5@1.6.2/js/select.bootstrap5.min.js"
+                integrity="sha256-Aha9/czvjvbiHnjkH+WVatxmHGPKsSffrkpk1f9Kw2A=" crossorigin="anonymous" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/jquery-datatables-checkboxes@1.2.14/js/dataTables.checkboxes.min.js"
+                integrity="sha256-0fpVa2zI7evUwBEHoZUbn4GsMQtXIvE4TXUMPz3hA50=" crossorigin="anonymous" defer></script>
+    @endif
+
+    @hasSection('datatable-buttons')
+        <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons@2.3.6/js/dataTables.buttons.min.js"
+                integrity="sha256-XOiR0CeeG5rD5uACHdDcx3mjlFKSo1brzobDCeAdv18=" crossorigin="anonymous" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons-bs5@2.3.6/js/buttons.bootstrap5.min.js"
+                integrity="sha256-6gtqbO3KDs9qfc4P5XqrGZzqbTVfKZ9rZqug7qdM4vs=" crossorigin="anonymous" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"
+                integrity="sha256-rMfkFFWoB2W1/Zx+4bgHim0WC7vKRVrq6FTeZclH1Z4=" crossorigin="anonymous" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.20/build/pdfmake.min.js"
+                integrity="sha256-wv06XiTbCWyRObt9Jmdl3kM7C4ZtA7o1bC702a4aU7c=" crossorigin="anonymous" defer></script>
+    @endif
+
+    @hasSection('datatable-row-group')
+        <script src="https://cdn.jsdelivr.net/npm/datatables.net-rowgroup@1.3.1/js/dataTables.rowGroup.min.js"
+                integrity="sha256-II17PfUGfmM5g4TNj100OnoDitu3mRE7dkNB9d5lNKg=" crossorigin="anonymous" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/datatables.net-rowgroup-bs5@1.3.1/js/rowGroup.bootstrap5.min.js"
+                integrity="sha256-tTIgAuWvIg+N7pTyrXIDHiLLYxkMyprz91c+IhFsc3Y=" crossorigin="anonymous" defer></script>
+    @endif
+
+    @hasSection('datatable-fixed-columns')
+        <script src="https://cdn.jsdelivr.net/npm/datatables.net-fixedcolumns@4.3.1/js/dataTables.fixedColumns.min.js"
+                integrity="sha256-9g/RKjIQyATtXtSK/jdoSIsGcLE1vhZw/yRxVMrHvAI=" crossorigin="anonymous" defer></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/datatables.net-fixedcolumns-bs5@4.3.1/js/fixedColumns.bootstrap5.min.js"
+            integrity="sha256-wFjO7w88Qc9nHptwSqp504v5zmpgLa16oozFHM9/9R0=" crossorigin="anonymous" defer></script>
+    @endif
+@endif
+
+@hasSection('filepond')
+    <script
+        src="https://cdn.jsdelivr.net/npm/filepond-plugin-file-validate-type@1.2.9/dist/filepond-plugin-file-validate-type.min.js"
+        integrity="sha256-iNzotay9f+s57lx/JEVaRWbOsGGXZlPPZlSQ34OHx+A=" crossorigin="anonymous"></script>
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/filepond-plugin-file-validate-size@2.2.8/dist/filepond-plugin-file-validate-size.min.js"
+        integrity="sha256-XaHceW4NII52xG26aOw+77JG8yEk95GAZs8h7ZAv1xo=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/filepond@4.32.7/dist/filepond.min.js"
+            integrity="sha256-BRICH2AsAT7Vx36hU5PcHTuKBbusAU4j6fge+/dHO1M=" crossorigin="anonymous" defer></script>
+
+
+    <script type="text/javascript" defer>
+        let filePondElements = [];
+
+        function initializeFilePond(id) {
+            let inputElement = document.querySelector('input#' + id);
+            filePondElements[id] = FilePond.create(inputElement, {
+                credits: null,
+                allowFileEncode: false,
+                required: false,
+                storeAsFile: true,
+                acceptedFileTypes: [
+                    'application/vnd.ms-excel',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'application/wps-office.xlsx',
+                    'application/wps-office.xls'
+                ],
+                labelIdle: 'Klik untuk membuka file manager, atau seret file ke dalam box ini.',
+                allowFileTypeValidation: true,
+                allowFileSizeValidation: true,
+                labelMaxFileSizeExceeded: 'File terlalu besar',
+                labelMaxFileSize: 'Ukuran maksimal file: {filesize}',
+                labelFileTypeNotAllowed: 'Format file salah!',
+                fileValidateTypeLabelExpectedTypes: 'file harus berformat .xls atau .xlsx',
+                maxFileSize: 1024000,
+            });
+        }
+
+        function resetFilePond(id) {
+            filePondElements[id].removeFiles();
+        }
+
+        document.addEventListener('DOMContentLoaded', function (e) {
+            FilePond.registerPlugin(
+                FilePondPluginFileValidateType,
+                FilePondPluginFileValidateSize,
+            )
+        });
+    </script>
+@endif
 @yield('script')
 </body>
 </html>

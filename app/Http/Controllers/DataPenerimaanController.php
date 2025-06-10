@@ -55,143 +55,6 @@ class DataPenerimaanController extends Controller
         return view('admin.data_penerimaan', $data);
     }
 
-    public function cetak(Request $request)
-    {
-        ini_set('max_execution_time', 300);
-//        $pdf = Pdf::loadView('cetak.data-penerimaan')->setPaper('a4', 'landscape');
-//        return $pdf->download('rekap-tagihan.pdf');
-
-        try {
-            $filters = [];
-            $filterQuery = null;
-
-            $filter = $request->input('filter');
-            if ($filter) {
-                if ($request->filter['tanggal-transaksi'] != null && preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $request->filter['tanggal-transaksi'])) {
-                    foreach ($filter as $key => $val) {
-                        if (strtolower($val) != 'all' && $val !== null && $val !== '') {
-                            $colName = match ($key) {
-                                'tanggal-transaksi' => 'scctbill.PAIDDT',
-                                'tahun_akademik' => 'scctbill.BTA',
-                                'post' => 'scctbill.BILLNM',
-                                'kelas' => 'scctcust.DESC02',
-                                'siswa' => 'scctcust.nmcust',
-                                default => null
-                            };
-                            if ($key == 'tanggal-transaksi') {
-                                if (preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $val)) {
-                                    $val = preg_replace('/[-\/~]/', '-', $val);
-
-                                    list($startDate, $endDate) = explode(' - ', $val);
-                                    $startDate = Carbon::createFromFormat('d-m-Y', $startDate)->startOfDay();
-                                    $endDate = Carbon::createFromFormat('d-m-Y', $endDate)->endOfDay();
-                                    if ($startDate && $endDate) {
-                                        ($colName) && $filters[] = [$colName, $startDate, $endDate, 'whereBetween'];
-                                    }
-                                }
-                            } elseif ($key == 'siswa') {
-                                $val = is_numeric($val) ? $val : '%' . $val . '%';
-                                $colName = is_numeric($val) ? 'scctcust.nocust' : $colName;
-                                ($colName) && $filters[] = [$colName, 'like', $val];
-                            } else {
-                                ($colName) && $filters[] = [$colName, '=', $val];
-                            }
-                        }
-                    }
-
-                    if (!empty($filters)) {
-                        $filterQuery = function ($query) use ($filters) {
-                            foreach ($filters as $filter) {
-                                if (count($filter) === 3) {
-                                    $query->where($filter[0], $filter[1], $filter[2]);
-                                } elseif (count($filter) === 4) {
-                                    if ($filter[3] == 'whereBetween') {
-                                        $query->whereBetween($filter[0], [$filter[1], $filter[2]]);
-                                    } else {
-                                        $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
-                                    }
-                                }
-                            }
-                        };
-                    }
-
-
-                    $posts = mst_tagihan::select('urut', 'tagihan', 'kode')->get()
-                        ->map(function ($item) use ($filterQuery) {
-                            $item->tagihans = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
-                                ->select([
-                                    'scctcust.nmcust',
-                                    'scctcust.nocust',
-                                    'scctbill.AA',
-                                    'scctbill.BILLNM',
-                                    'scctbill.BILLAM',
-                                    'scctbill.PAIDST',
-                                    'scctbill.PAIDDT',
-                                    'scctbill.BTA',
-                                    'scctbill.FIDBANK',
-                                    'scctbill.FUrutan',
-                                    'scctcust.CODE02',
-                                    'scctcust.DESC02',
-                                ])
-                                ->where('scctbill.BILLNM', $item->tagihan)
-                                ->where('scctbill.PAIDST', 1)
-                                ->where('scctbill.FSTSBolehBayar', 1)
-                                ->where('scctcust.STCUST', 1)
-                                ->where('scctbill.PAIDDT', '!=', null)
-                                ->where(function ($query) use ($filterQuery) {
-                                    if ($filterQuery) {
-                                        $filterQuery($query);
-                                    }
-                                })
-                                ->orderBy('scctbill.CUSTID', 'desc')
-                                ->orderBy('scctbill.BTA', 'desc')
-                                ->orderBy('scctbill.PAIDDT', 'desc')
-                                ->get()
-                                ->toArray();;
-
-                            return $item;
-                        });
-                } else {
-                    return response()->json(['message' => 'Tanggal transaksi tidak valid'], 422);
-                }
-            }
-
-//            dd($posts[0]['tagihan']);
-//            return  view('pdf.data_penerimaan.rekap_penerimaan', ['posts' => $posts]);
-
-//            $view = view('cetak.data-penerimaan', compact('posts'))->render();
-//            return response()->json(['html' => $view]);
-
-            if ($posts) {
-                $pdf = Pdf::loadView('cetak.data-penerimaan', ['posts' => $posts])->setPaper('a4', 'landscape');
-                return $pdf->download('rekap-tagihan.pdf');
-            } else {
-                return response()->json(['message' => 'Data Kosong'], 422);
-            }
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Tidak dapat mencetak rekap', 'error' => $e->getMessage(), 'e' => $e], 422);
-        }
-    }
-
-    public function cetakPembayaran(Request $request)
-    {
-        try {
-            $decryptedId = Crypt::decrypt($request->id_tagihan);
-        } catch (DecryptException $e) {
-            return response()->json(['message' => 'Data tidak ditemukan'], 422);
-        }
-
-        $tagihans = scctbill::where('id', $decryptedId)->get();
-        $siswa = mst_siswa::where('id', $tagihans[0]->CUSTID)->first();
-        if ($siswa && $tagihans) {
-            $siswa = $request->session()->get('siswa_tagihan_baru_dibayar');
-            $pdf = Pdf::loadView('pdf.kuitansi', ['tagihans' => $tagihans, 'siswa' => $siswa]);
-            return $pdf->download('bukti-pembayaran - ' . $siswa->nama . ' - ' . $siswa->nis . '.pdf');
-        } else {
-            return response()->json(['message' => 'Silakhan Lakukan pembayaran terlebih dahulu'], 422);
-        }
-    }
-
     public function cetakKartuSiswa(Request $request)
     {
         if (!$request['custid']) return response()->json(['error' => 'siswa tidak ditemukan']);
@@ -223,7 +86,7 @@ class DataPenerimaanController extends Controller
 //            dd($tagihans, $siswa);
             $pdf = Pdf::loadView('cetak.kartu-siswa', ['tagihans' => $tagihans, 'siswa' => $siswa]);
             return $pdf->download('kartu-siswa.pdf');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json(['message' => 'Tagihan Tidak Ditemukan', 'error' => $e], 422);
         }
     }
@@ -367,19 +230,19 @@ class DataPenerimaanController extends Controller
             $records = (clone $query)->orderBy($columnName, $columnSortOrder)
                 ->select($select)
                 ->whereAny($whereAny, 'like', '%' . $searchValue . '%')
-                ->where(function ($query) use ($filterQuery) {
-                    if ($filterQuery) {
-                        $filterQuery($query);
-                    }
-                })
                 ->skip($start)
                 ->take($rowperpage)
-                ->get()
-                ->map(function ($item, $index) {
-                    $item->item_id = crypt::encrypt($item->AA);
-                    $item->CUSTID = crypt::encrypt($item->CUSTID);
+                ->get();
+
+            if ($request->get("length") != "poll") {
+                $records = $records->map(function ($item, $index) {
+                    $item->item_id = Crypt::encrypt($item['AA']);
+                    $item->CUSTID = Crypt::encrypt($item['CUSTID']);
                     return $item;
-                })->toArray();
+                });
+            }
+
+            $records->toArray();
         }
 
         $response = array(
@@ -454,7 +317,6 @@ class DataPenerimaanController extends Controller
             }
 
             $filter_main = [];
-            $filter_scctbill = [];
 
             foreach ($filters as $item) {
                 if (str_contains($item[0], "scctbill")) {
@@ -476,71 +338,72 @@ class DataPenerimaanController extends Controller
 
             ]));
 
-            $mstTagihan = mst_tagihan::select(['tagihan'])
-                ->where(function ($query) use ($post) {
-                    if ($post) {
-                        $query->whereIn('tagihan', $post);
-                    }
-                })
-                ->orderBy('urut', 'asc')
-                ->get();
-
-            $records = scctcust::leftJoin('scctbill', function ($join) use ($filter_scctbill) {
-                $join->on('scctbill.CUSTID', '=', 'scctcust.CUSTID')
-                    ->where('scctbill.PAIDST', 1)
-                    ->where('scctbill.FSTSBolehBayar', 1)
-                    ->whereNotNull('scctbill.PAIDDT')
-                    ->where(function ($query) use ($filter_scctbill) {
-                        foreach ($filter_scctbill as $filter) {
-                            switch (count($filter)) {
-                                case 3:
-                                    $filter[1] === 'in'
-                                        ? $query->whereIn($filter[0], $filter[2])
-                                        : $query->where($filter[0], $filter[1], $filter[2]);
-                                    break;
-                                case 4:
-                                    $filter[3] === 'whereBetween'
-                                        ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
-                                        : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
-                                    break;
-                            }
+            try {
+                $mstTagihan = mst_tagihan::select(['tagihan'])
+                    ->where(function ($query) use ($post) {
+                        if ($post) {
+                            $query->whereIn('tagihan', $post);
                         }
-                    });
-            })->where(function ($query) use ($filter_main) {
-                foreach ($filter_main as $filter) {
-                    switch (count($filter)) {
-                        case 3:
-                            $filter[1] === 'in'
-                                ? $query->whereIn($filter[0], $filter[2])
-                                : $query->where($filter[0], $filter[1], $filter[2]);
-                            break;
+                    })
+                    ->orderBy('urut', 'asc')
+                    ->get();
 
-                        case 4:
-                            $filter[3] === 'whereBetween'
-                                ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
-                                : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
-                            break;
+                $records = scctcust::leftJoin('scctbill', function ($join) use ($filter_scctbill) {
+                    $join->on('scctbill.CUSTID', '=', 'scctcust.CUSTID')
+                        ->where('scctbill.PAIDST', 1)
+                        ->where('scctbill.FSTSBolehBayar', 1)
+                        ->whereNotNull('scctbill.PAIDDT')
+                        ->where(function ($query) use ($filter_scctbill) {
+                            foreach ($filter_scctbill as $filter) {
+                                switch (count($filter)) {
+                                    case 3:
+                                        $filter[1] === 'in'
+                                            ? $query->whereIn($filter[0], $filter[2])
+                                            : $query->where($filter[0], $filter[1], $filter[2]);
+                                        break;
+                                    case 4:
+                                        $filter[3] === 'whereBetween'
+                                            ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
+                                            : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
+                                        break;
+                                }
+                            }
+                        });
+                })->where(function ($query) use ($filter_main) {
+                    foreach ($filter_main as $filter) {
+                        switch (count($filter)) {
+                            case 3:
+                                $filter[1] === 'in'
+                                    ? $query->whereIn($filter[0], $filter[2])
+                                    : $query->where($filter[0], $filter[1], $filter[2]);
+                                break;
+
+                            case 4:
+                                $filter[3] === 'whereBetween'
+                                    ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
+                                    : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
+                                break;
+                        }
                     }
+                })->where('scctcust.STCUST', 1)
+                    ->select($select)
+                    ->groupBy('scctcust.CUSTID');
+
+                foreach ($mstTagihan as $val) {
+                    $namaPost = $val['tagihan'];
+                    $records->addSelect(DB::raw("SUM(CASE WHEN scctbill.BILLNM = '{$namaPost}' THEN scctbill.BILLAM ELSE 0 END) AS '{$namaPost}'"));
                 }
-            })->where('scctcust.STCUST', 1)
-                ->select($select)
-                ->groupBy('scctcust.CUSTID');
 
-            foreach ($mstTagihan as $val) {
-                $namaPost = $val['tagihan'];
-                $records->addSelect(DB::raw("SUM(CASE WHEN scctbill.BILLNM = '{$namaPost}' THEN scctbill.BILLAM ELSE 0 END) AS '{$namaPost}'"));
-            }
+                $records = $records->get();
 
-            $records = $records->get();
-
-            $kelas = mst_kelas::where('unit', $kelas[0])
-                ->where('jenjang', $kelas[1])
-                ->where('kelas', $kelas[2])
-                ->first();
-            if ($records && $mstTagihan) {
+                $kelas = mst_kelas::where('unit', $kelas[0])
+                    ->where('jenjang', $kelas[1])
+                    ->where('kelas', $kelas[2])
+                    ->first();
+                if (!$records || !$mstTagihan) throw new \Exception('Gagal mengambil data tagihan');
 
 //                $customPaper = [0, 0, 1684, 842];
-                $customPaper =[0, 0, 935.43, 595.28];
+                $customPaper = [0, 0, 935.43, 595.28];
 
 
                 $pdf = Pdf::loadView('cetak.rekap-penerimaan',
@@ -555,15 +418,16 @@ class DataPenerimaanController extends Controller
                         'isHtml5ParserEnabled' => true,
                         'isPhpEnabled' => true,
 //                        'dpi' => 96,
-                        ])
+                    ])
 //                    ->setPaper('a4', 'landscape');
                     ->setPaper($customPaper);
                 return $pdf->download('rekap-penerimaan.pdf');
+            } catch (\Exception $e) {
+                return response()->json(['message' => 'Tidak dapat mencetak rekap penerimaan!<br> *Silahkan hubungi administrator', 'error' => $e], 422);
             }
+        } else {
+            return response()->json(['message' => 'Tidak dapat mencetak rekap penerimaan!<br> *Kelas Harus Diisi, silahkan pilih salah satu kelas'], 422);
         }
-
-        return response()->json(['message' => 'Gagal mencetak Rekap Penerimaan'], 422);
-
 //        $sqlWithPlaceholders = $records->toSql();
 //
 //        $bindings = $records->getBindings();
@@ -573,6 +437,5 @@ class DataPenerimaanController extends Controller
 //        }, $bindings), $sqlWithPlaceholders);
 
 //        dd($records);
-
     }
 }

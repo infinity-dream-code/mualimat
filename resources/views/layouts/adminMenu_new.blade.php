@@ -27,7 +27,7 @@
     <ul class="menu-inner py-1">
         <li class="menu-item  {{ Request::is(['admin'])  ? 'active' : '' }}">
             <a href="{{route('admin.index')}}" class="menu-link">
-                <i class="menu-icon  ri ri-home-3-line"></i>
+                <i class="menu-icon ri ri-home-3-line"></i>
                 <div data-i18n="Beranda">Beranda</div>
             </a>
         </li>
@@ -61,6 +61,21 @@
                     <path d="M11 18l9 0"/>
                 </svg>
                 <div data-i18n="Data Penerimaan">Data Penerimaan</div>
+            </a>
+        </li>
+        <li class="menu-item  {{ Request::is(['admin/cek-pelunasan'])  ? 'active' : '' }}">
+            <a href="{{route('admin.cek-pelunasan.index')}}" class="menu-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     class="menu-icon icon icon-tabler icons-tabler-outline icon-tabler-checkup-list">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/>
+                    <path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z"/>
+                    <path d="M9 14h.01"/>
+                    <path d="M9 17h.01"/>
+                    <path d="M12 16l1 1l3 -3"/>
+                </svg>
+                <div data-i18n="Data Penerimaan">Cek Pelunasan</div>
             </a>
         </li>
         <li class="menu-item mt-auto pb-2">

@@ -287,6 +287,9 @@
 
             document.getElementById('cetak-kartu-siswa').addEventListener('click', function (e) {
                 e.preventDefault();
+                loadingAlert(`Membuat Kartu Siswa ... <br> Proses ini membutuhkan waktu beberapa saat<br><hr>
+                    <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
+                `);
                 let url = '{{route('admin.data-penerimaan.cetak-kartu-siswa')}}';
                 const form = new FormData(document.getElementById('rekapForm'));
                 const params = new URLSearchParams();
@@ -315,6 +318,7 @@
                     .then(blob => {
                         const url = URL.createObjectURL(blob);
                         window.open(url, '_blank');
+                        successAlert('Sukses, Rekap terbuka pada tab baru');
                     })
                     .catch(error => {
                         if (error.status === 422) {
@@ -341,7 +345,8 @@
                 e.preventDefault();
                 loadingAlert(`Membuat Rekap ... <br> Proses ini membutuhkan waktu beberapa saat<br><hr>
                     <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
-                `);                let url = '{{route('admin.data-penerimaan.cetak-rekap')}}';
+                `);
+                let url = '{{route('admin.data-penerimaan.cetak-rekap')}}';
                 const form = new FormData(document.getElementById('rekapForm'));
                 const params = new URLSearchParams();
                 for (const [key, value] of form.entries()) {

@@ -1,11 +1,5 @@
 @extends('layouts.admin_new')
 @section('title',$dataTitle??$mainTitle??$title??'')
-@section('style')
-    <link rel="stylesheet" href="{{asset('main/libs/select2/select2.css')}}">
-    <link rel="stylesheet" href="{{asset('main/libs/datatables-bs5/datatables.bootstrap5.css')}}">
-    <link rel="stylesheet" href="{{asset('main/libs/datatables-responsive-bs5/responsive.bootstrap5.css')}}">
-    <link rel="stylesheet" href="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.css')}}">
-@endsection
 @section('content')
     <h3 class="page-heading d-flex text-gray-900 fw-bold flex-column justify-content-center my-0">
         @if(isset($dataTitle) && isset($mainTitle) && $mainTitle != $dataTitle)
@@ -49,18 +43,12 @@
                     </li>
                 </ul>
             </div>
-            <form id="rekapForm">
+            <form id="filterForm">
                 <fieldset class="form-fieldset">
+
                     <div class="row">
                         <div class="col-lg-6">
-                            <div class="mb-5">
-                                <label class="form-label" for="tanggal-pembuatan">Tanggal Pembuatan<span
-                                        class="text-warning">*</span>(tanggal-bulan-tahun - tanggal-bulan-tahun)</label>
-                                <input type="text" id="tanggal-pembuatan" name="filter[tanggal-pembuatan]"
-                                       placeholder="tanggal/bulan/tahun"
-                                       class="form-control" autocomplete="false" inputmode="numeric"/>
-                            </div>
-                            <div class="mb-5">
+                            <div class="col mb-5">
                                 <label class="form-label" for="tahun_akademik">
                                     Tahun Akademik
                                 </label>
@@ -79,14 +67,15 @@
                                     @endisset
                                 </select>
                             </div>
-                            <div class="mb-5">
+                            <div class="col mb-5">
                                 <label class="form-label" for="post">
                                     Nama Tagihan
                                 </label>
                                 <select class="form-select" id="post"
-                                        name="filter[post]"
+                                        name="filter[post][]"
                                         data-control="select2"
-                                        data-placeholder="Pilih Tahun Akademik">
+                                        data-placeholder="Pilih Tagihan"
+                                        multiple="multiple">
                                     <option value="all">Semua</option>
                                     @isset($post)
                                         @foreach($post as $item)
@@ -129,8 +118,8 @@
                                     @isset($kelas)
                                         @foreach($kelas as $item)
                                             <option
-                                                value="{{$item->jenjang}}">{{$item->unit}}
-                                                - {{$item->kelas}} {{$item->jenjang}}</option>
+                                                value="{{$item->unit}}~{{$item->jenjang}}~{{$item->kelas}}">{{$item->unit}}
+                                                - {{$item->jenjang}} {{$item->kelas}}</option>
                                         @endforeach
                                     @else
                                         <option>data kosong</option>
@@ -139,7 +128,7 @@
                             </div>
                             <div class="col mb-5">
                                 <label class="form-label" for="filter[siswa]">
-                                    Siswa
+                                    Nis/Nama Siswa
                                 </label>
                                 <input class="form-control" id="filter[siswa]" name="filter[siswa]"
                                        placeholder="Masukkan NIS/NAMA Siswa" data-placeholder="Pilih siswa">
@@ -148,9 +137,13 @@
                     </div>
                     <div class="row">
                         <div class="d-flex justify-content-center flex-column flex-md-row justify-content-md-end gap-4">
-                            <button type="button" class="btn btn-google-plus btn-print-rekap">
-                                <span class="ri-file-pdf-2-line me-2"></span>
-                                Cetak PDF
+                            <button type="button" class="btn btn-facebook btn-print-rekap" id="cetak-rekap">
+                                <span class="ri-file-text-line me-2"></span>
+                                Cetak Rekap
+                            </button>
+                            <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">
+                                <span class="ri-profile-line me-2"></span>
+                                Cetak Kartu Siswa
                             </button>
                             <button type="reset" class="btn btn-secondary" disabled>
                                 <span class="ri-reset-left-line me-2"></span>
@@ -178,20 +171,21 @@
         </div>
     </div>
 @endsection
-
+@section('momentjs',true)
+@section('bootstrap-daterangepicker',true)
+@section('datatable',true)
+@section('datatable-select',true)
+@section('datatable-row-grup',true)
+@section('datatable-fixed-columns',true)
+@section('select2',true)
 @section('script')
-    <script src="{{asset('main/libs/select2/select2.js')}}"></script>
-    <script src="{{asset('main/libs/datatables-bs5/datatables-bootstrap5.js')}}"></script>
-    <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}"></script>
-    <script src="{{asset('main/libs/moment/moment.js')}}"></script>
-    <script src="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.js')}}"></script>
-
     <script type="text/javascript">
         const select2 = $(`[data-control='select2']`);
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         let dtOptions = {
             tableId: 'main_table',
-            formId: 'rekapForm',
+            formId: 'filterForm',
             columnUrl: '{{($columnsUrl??null)}}',
             dataUrl: '{{($datasUrl??null)}}',
             dataColumns: [],
@@ -202,6 +196,7 @@
             fixedHeader: false,
             pageLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
+            select: true
         };
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -236,7 +231,7 @@
                 if (data) {
                     const csrfToken = $('meta[name="csrf-token"]').attr('content')
                     let ajaxOptions = {
-                        url: '{{route('admin.data-tagihan.cetak-rekap')}}',
+                        url: '{{route('admin.data-tagihan.cetak-rekap-tagihan')}}',
                         type: 'get',
                         data: data,
                         datatype: 'json',
@@ -347,9 +342,64 @@
                     picker.setEndDate(picker.startDate.clone().add(2, 'days'));
                 }
             });
+
+            document.getElementById('cetak-kartu-siswa').addEventListener('click', function (e) {
+                e.preventDefault();
+                loadingAlert(`Membuat Kartu Tagihan Siswa ... <br> Proses ini membutuhkan waktu beberapa saat<br><hr>
+                    <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
+                `);
+                let url = '{{route('admin.data-tagihan.cetak-kartu-siswa')}}';
+                const form = new FormData(document.getElementById('filterForm'));
+                const params = new URLSearchParams();
+                for (const [key, value] of form.entries()) {
+                    params.append(key, value);
+                }
+                let data = DT[`${dtOptions.tableId}`].rows({selected: true}).data();
+
+                if (!data[0]) {
+                    warningAlert('silahkan pilih siswa!')
+                    return;
+                }
+                params.append('custid', data[0].CUSTID)
+                const fullUrl = `${url}?${params.toString()}`;
+                const request = new Request(
+                    fullUrl, {
+                        method: "GET",
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/pdf'
+                        }
+                    });
+
+                fetch(request)
+                    .then(res => res.blob())
+                    .then(blob => {
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                        successAlert('Sukses, Kartu tagihan terbuka pada tab baru');
+                    })
+                    .catch(error => {
+                        if (error.status === 422) {
+                            const errors = error.error || error.errors;
+                            errorAlert(error.message);
+                            if (errors) {
+                                processErrors(errors)
+                            }
+                        } else {
+                            const errorMessages = {
+                                401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                                403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
+                                404: 'Halaman yang dituju tidak ditemukan 🧐',
+                                405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
+                                419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                                429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
+                            };
+                            errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
+                        }
+                    });
+            })
         });
 
-    </script>
 
-    {!! ($modalLink??'') !!}
+    </script>
 @endsection

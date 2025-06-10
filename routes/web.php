@@ -40,7 +40,16 @@ Route::prefix('admin')->name('admin.')->middleware('check.session')->group(funct
             Route::get('get-data', 'getData')->name('get-data');
             Route::get('get-column', 'getColumn')->name('get-column');
             Route::get('cetak-rekap', 'cetak')->name('cetak-rekap');
+            Route::get('cetak-rekap-tagihan', 'cetakRekapTagihan')->name('cetak-rekap-tagihan');
+            Route::get('cetak-kartu-siswa', 'cetakKartuSiswa')->name('cetak-kartu-siswa');
             Route::resource('', \App\Http\Controllers\DataTagihanController::class)->parameters(['' => 'id']);
         });
+    });
+
+    Route::prefix('cek-pelunasan')->name('cek-pelunasan.')->controller(\App\Http\Controllers\CekPelunasanController::class)->group(function () {
+        Route::get('get-data', 'getData')->name('get-data');
+        Route::get('get-column', 'getColumn')->name('get-column');
+        Route::get('cetak-kartu-siswa', 'cetakKartuSiswa')->name('cetak-kartu-siswa');
+        Route::resource('', \App\Http\Controllers\CekPelunasanController::class)->parameters(['' => 'id']);
     });
 });

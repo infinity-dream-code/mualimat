@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\MasterData\mst_kelas;
-use App\Models\MasterData\mst_tagihan;
-use App\Models\MasterData\mst_thn_aka;
+use App\Models\mst_kelas;
+use App\Models\mst_tagihan;
+use App\Models\mst_thn_aka;
 use App\Models\scctbill;
 use App\Models\scctcust;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -21,16 +21,15 @@ class CekPelunasanController extends Controller
     private string $title;
     private string $datasUrl;
     private string $columnsUrl;
-    private string $detailDatasUrl;
     private string $mainTitle;
 
     public function __construct()
     {
         $this->title = 'Rekap Data';
         $this->mainTitle = 'Cek Pelunasan';
-        $this->datasUrl = route('admin.rekap-data.cek-pelunasan.get-data');
+        $this->datasUrl = route('admin.cek-pelunasan.get-data');
         $this->detailDatasUrl = '';
-        $this->columnsUrl = route('admin.rekap-data.cek-pelunasan.get-column');
+        $this->columnsUrl = route('admin.cek-pelunasan.get-column');
     }
 
     public function index()
@@ -44,13 +43,13 @@ class CekPelunasanController extends Controller
         $data['kelas'] = mst_kelas::get();
         $data['tagihan'] = mst_tagihan::orderBy('urut', 'asc')->get();
 
-        return view('admin.rekap_data.cek_pelunasan.index_new', $data);
+        return view('admin.cek_pelunasan.index_new', $data);
     }
 
     public function getColumn()
     {
         return [
-            ['data' => null, 'name' => 'no', 'columnType' => 'row'],
+            ['data' => 'AA', 'name' => 'no', 'columnType' => 'row'],
             ['data' => 'BTA', 'name' => 'Tahun Pelajaran', 'searchable' => true, 'orderable' => true],
             ['data' => 'NOCUST', 'name' => 'NIS', 'searchable' => true, 'orderable' => true],
             ['data' => 'NUM2ND', 'name' => 'No Pendaftaran', 'searchable' => true, 'orderable' => true],
@@ -64,13 +63,12 @@ class CekPelunasanController extends Controller
 
     public function cetakKartuSiswa(Request $request)
     {
-        $filter = $request;
-        if (!$filter['custid']) return response()->json(['error' => 'siswa tidak ditemukan']);
-        $filter['draw'] = 2;
-        $filter['start'] = 0;
-        $filter['length'] = "poll";
+        if (!$request['custid']) return response()->json(['error' => 'siswa tidak ditemukan']);
+        $request['draw'] = 2;
+        $request['start'] = 0;
+        $request['length'] = "poll";
         try {
-            $val = Crypt::decrypt($filter['custid']);
+            $val = Crypt::decrypt($request['custid']);
         } catch (DecryptException $e) {
             return response()->json(['error' => 'siswa tidak ditemukan']);
         }
@@ -78,16 +76,23 @@ class CekPelunasanController extends Controller
         $siswa = scctcust::where('custid', $val)->first();
         if (!$siswa) return response()->json(['error' => 'siswa tidak ditemukan']);
 
-        $filter['custid'] = $val;
-        $tagihans = $this->getData($filter);
+        $request->merge([
+            'filter' => array_merge($request->input('filter', []), [
+                'custid' => $val
+            ])
+        ]);
 
+        $filter = $request;
         try {
+            $tagihans = $this->getData($filter);
+//            dd($tagihans);
+
             $tagihans = json_decode(json_encode($tagihans), true);
             $tagihans = $tagihans['original']['data'];
             if (!$tagihans) return response()->json(['message' => 'Tagihan Tidak Ditemukan'], 422);
-            $pdf = Pdf::loadView('pdf.data_tagihan.kartu-siswa', ['tagihans' => $tagihans, 'siswa' => $siswa]);
+            $pdf = Pdf::loadView('cetak.kartu-siswa', ['tagihans' => $tagihans, 'siswa' => $siswa]);
             return $pdf->download('kartu-siswa.pdf');
-        } catch (\Dompdf\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json(['message' => 'Tagihan Tidak Ditemukan', 'error' => $e], 422);
         }
     }
@@ -189,8 +194,8 @@ class CekPelunasanController extends Controller
         ]));
 
         $query = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
-            ->where('scctbill.PAIDST', 0)
             ->where('scctbill.FSTSBolehBayar', 1)
+            ->where('scctcust.stcust', 1)
             ->whereAny($whereAny, 'like', '%' . $searchValue . '%')
             ->where(function ($query) use ($filterQuery) {
                 if ($filterQuery) {
@@ -200,7 +205,6 @@ class CekPelunasanController extends Controller
 
         $totalRecords = Cache::remember('total_penerimaan_count', 600, function () {
             return scctbill::select('count(*) as allcount')
-                ->where('scctbill.PAIDST', 0)
                 ->where('scctbill.FSTSBolehBayar', 1)
                 ->count();
         });
@@ -208,17 +212,23 @@ class CekPelunasanController extends Controller
         $totalRecordswithFilter = (clone $query)->count();
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
-        $records = (clone $query)
-            ->orderBy($columnName, $columnSortOrder)
+        $records = (clone $query)->orderBy($columnName, $columnSortOrder)
             ->select($select)
+            ->whereAny($whereAny, 'like', '%' . $searchValue . '%')
             ->skip($start)
             ->take($rowperpage)
-            ->get()
-            ->map(function ($item, $index) {
+            ->get();
+
+        if ($request->get("length") != "poll") {
+            $records = $records->map(function ($item, $index) {
                 $item->item_id = Crypt::encrypt($item['AA']);
                 $item->CUSTID = Crypt::encrypt($item['CUSTID']);
                 return $item;
-            })->toArray();
+            });
+        }
+
+        $records->toArray();
+
         $response = array(
             "draw" => intval($draw),
             "recordsTotal" => $totalRecords ?? 0,
@@ -227,5 +237,4 @@ class CekPelunasanController extends Controller
         );
         return response()->json($response);
     }
-
 }

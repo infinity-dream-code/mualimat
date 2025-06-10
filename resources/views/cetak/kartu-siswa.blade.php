@@ -20,7 +20,17 @@
                 :<strong> {{$nis ? $siswa->NOCUST : $siswa->NUM2ND }}</strong>
             </td>
             <td style="width: auto" class="border-right-0">Kelas</td>
-            <td class="border-left-0">:<strong> {{$siswa->DESC02??''}}  {{$siswa->DESC03??''}}</strong></td>
+            <td class="border-left-0">:<strong> {{$siswa->DESC02??''}} - {{$siswa->DESC03??''}}</strong></td>
+        </tr>
+        <tr>
+            <td style="width: auto"
+                class="border-right-0">NOVA
+            </td>
+            <td class="border-left-0">
+                :<strong> {{$nis ? config('app.nova').str_pad($siswa->NOCUST, 10, '0', STR_PAD_LEFT) : ''}}</strong>
+            </td>
+            <td style="width: auto" class="border-right-0">Unit</td>
+            <td class="border-left-0">:<strong> {{$siswa->CODE02??''}}</strong></td>
         </tr>
         <tr>
             <td class="border-right-0">Nama Siswa</td>
@@ -68,7 +78,7 @@
                 <td>{{$tagihan['BTA']}}</td>
                 <td class="{{$BILLNMClass}}">{{$BILLNM}}</td>
                 <td align="right">@rupiah($tagihan['BILLAM'])</td>
-                <td>{{$tagihan['PAIDST'] == 0 ? 'BELUM LUNAS': 'LUNAS'}}</td>
+                <td align="center">{!! $tagihan['PAIDST'] == 0 ? '<span style="color:red;">BELUM LUNAS</span>': '<span style="color:green;">LUNAS</span>'!!}</td>
             </tr>
         @endforeach
         </tbody>

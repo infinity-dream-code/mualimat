@@ -33,7 +33,7 @@
         </tr>
     </table>
     <table width="100%" class="table-border main-table">
-        <thead class="table-border" style="background-color: #ededed;">
+        <thead style="background-color: #e5e6e8;">
         <tr>
             <th>#</th>
             <th>Nis</th>
@@ -55,5 +55,13 @@
             </tr>
         @endforeach
         </tbody>
+        <tfoot style="background-color: #e5e6e8;">
+        <tr>
+            <td colspan="3">Total</td>
+            @foreach($mstTagihan as $item)
+                <td class="text-end">@rupiah($tagihans->sum($item->tagihan))</td>
+            @endforeach
+        </tr>
+        </tfoot>
     </table>
 @endsection
