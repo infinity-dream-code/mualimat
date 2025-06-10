@@ -178,10 +178,10 @@
                                 <span class="ri-info-card-line me-2"></span>
                                 Cetak Kartu Siswa
                             </button>
-                            <button type="button" class="btn btn-facebook" id="cetak-pelaporan">
-                                <span class="ri-printer-line me-2"></span>
-                                Cetak Pelaporan
-                            </button>
+{{--                            <button type="button" class="btn btn-facebook" id="cetak-pelaporan">--}}
+{{--                                <span class="ri-printer-line me-2"></span>--}}
+{{--                                Cetak Pelaporan--}}
+{{--                            </button>--}}
                             <button type="reset" class="btn btn-secondary button_reset_cari">
                                 <span class="ri-reset-left-line me-2"></span>
                                 Reset
