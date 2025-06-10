@@ -309,7 +309,7 @@ async function dataTableCreate(options) {
     let searchPanel = [];
     let buttonsConfig = Array.isArray(options.buttons) && options.buttons.length > 0 ? options.buttons : false;
     const buttonDom = `${(buttonsConfig ? '<"row pb-3"<"dt-action-buttons d-flex justify-content-center justify-content-md-end px-5 px-md-3"B>">' : '')}`;
-    const dom = `${buttonDom}<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>><"row dt-row"<"table-responsive"t>r><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>`;
+    const dom = `${buttonDom}<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>><"row dt-row"<"table-responsive"t>r><"row"<"col-sm-12 col-md-6 text-wrap"i><"col-sm-12 col-md-6"p>>`;
 
     let languageData = localStorage.getItem(languageKey);
 
