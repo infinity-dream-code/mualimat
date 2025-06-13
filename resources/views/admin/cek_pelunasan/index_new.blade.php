@@ -326,10 +326,10 @@
             }
         })
 
-        document.getElementById('cetak-pelaporan').addEventListener('click', function (e) {
-            e.preventDefault();
-            infoAlert('Testing cetak pelaporan');
-        })
+        // document.getElementById('cetak-pelaporan').addEventListener('click', function (e) {
+        //     e.preventDefault();
+        //     infoAlert('Testing cetak pelaporan');
+        // })
 
         document.getElementById('cetak-kartu-siswa').addEventListener('click', function (e) {
             e.preventDefault();
