@@ -16,10 +16,9 @@
         }
     </style>
 
+    <link rel="stylesheet" href="{{asset('main/libs/select2/select2.css')}}">
     <link rel="stylesheet" href="{{asset('main/libs/datatables-bs5/datatables.bootstrap5.css')}}">
     <link rel="stylesheet" href="{{asset('main/libs/datatables-responsive-bs5/responsive.bootstrap5.css')}}">
-    <link rel="stylesheet" href="{{asset('main/libs/select2/select2.css')}}">
-    <link rel="stylesheet" href="{{asset('main/libs/select2/select2-bootstrap.css')}}">
     <link rel="stylesheet" href="{{asset('main/libs/bootstrap-datepicker/bootstrap-datepicker.css')}}">
 
 @endsection
