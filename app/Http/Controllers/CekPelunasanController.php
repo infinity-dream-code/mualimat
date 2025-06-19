@@ -41,7 +41,6 @@ class CekPelunasanController extends Controller
         $data['post'] = mst_tagihan::select(['tagihan'])->get();
         $data['thn_aka'] = mst_thn_aka::select(['thn_aka'])->where('thn_aka', '!=', null)->get();
         $data['kelas'] = mst_kelas::get();
-        $data['tagihan'] = mst_tagihan::orderBy('urut', 'asc')->get();
 
         return view('admin.cek_pelunasan.index_new', $data);
     }
