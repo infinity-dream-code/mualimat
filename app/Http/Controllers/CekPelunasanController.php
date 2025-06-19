@@ -167,14 +167,18 @@ class CekPelunasanController extends Controller
             if (!empty($filters)) {
                 $filterQuery = function ($query) use ($filters) {
                     foreach ($filters as $filter) {
-                        if (count($filter) === 3) {
-                            $query->where($filter[0], $filter[1], $filter[2]);
-                        } elseif (count($filter) === 4) {
-                            if ($filter[3] == 'whereBetween') {
-                                $query->whereBetween($filter[0], [$filter[1], $filter[2]]);
-                            } else {
-                                $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
-                            }
+                        switch (count($filter)) {
+                            case 3:
+                                $filter[1] === 'in'
+                                    ? $query->whereIn($filter[0], $filter[2])
+                                    : $query->where($filter[0], $filter[1], $filter[2]);
+                                break;
+
+                            case 4:
+                                $filter[3] === 'whereBetween'
+                                    ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
+                                    : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
+                                break;
                         }
                     }
                 };
