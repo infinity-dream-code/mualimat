@@ -62,22 +62,42 @@
             </div>
             <div class="card-body py-0">
                 <form id="filterForm">
-                    <h5>Filter</h5>
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="mb-3 row">
-                                <label for="filter[tahun_pelajaran]" class="col-sm-4 col-form-label form-label">
-                                    Tahun Pelajaran
-                                </label>
-                                <div class="col">
-                                    <select class="form-select" id="filter[tahun_pelajaran]"
-                                            name="filter[tahun_pelajaran]"
+                    <fieldset class="form-fieldset">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="mb-5">
+                                    <label class="form-label" for="tahun_akademik">
+                                        Tahun Akademik
+                                    </label>
+                                    <select class="form-select" id="tahun_akademik"
+                                            name="filter[tahun_akademik]"
                                             data-control="select2"
                                             data-placeholder="Pilih Tahun Akademik">
+                                        <option value="all">Semua</option>
                                         @isset($thn_aka)
                                             @foreach($thn_aka as $item)
                                                 <option
-                                                        value="{{$item->thn_aka}}" {{$loop->index == 1?'selected':''}}>{{$item->thn_aka}}</option>
+                                                    value="{{$item->thn_aka}}">{{$item->thn_aka}}</option>
+                                            @endforeach
+                                        @else
+                                            <option>data kosong</option>
+                                        @endisset
+                                    </select>
+                                </div>
+                                <div class="mb-5">
+                                    <label class="form-label" for="post">
+                                        Nama Tagihan
+                                    </label>
+                                    <select class="form-select" id="post"
+                                            name="filter[post][]"
+                                            data-control="select2"
+                                            data-placeholder="Pilih Tagihan"
+                                            multiple="multiple">
+                                        <option value="all">Semua</option>
+                                        @isset($post)
+                                            @foreach($post as $item)
+                                                <option
+                                                    value="{{$item->tagihan}}">{{$item->tagihan}}</option>
                                             @endforeach
                                         @else
                                             <option>data kosong</option>
@@ -85,89 +105,74 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="mb-3 row">
-                                <label for="filter[nis]"
-                                       class="col-sm-4 col-form-label text-capitalize form-label">NIS</label>
-                                <div class="col">
-                                    <input type="text" class="form-control form-control"
-                                           placeholder="nis" id="filter[nis]" name="filter[nis]">
-                                </div>
-                            </div>
-                            <div class="mb-3 row">
-                                <label for="filter[nama]"
-                                       class="col-sm-4 col-form-label text-capitalize form-label">Nama</label>
-                                <div class="col">
-                                    <input type="text" class="form-control form-control"
-                                           placeholder="nama" id="filter[nama]" name="filter[nama]">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col">
-                            <div class="mb-3 row">
-                                <label for="filter[kelas]" class="col-sm-4 col-form-label form-label">
-                                    Kelas
-                                </label>
-                                <div class="col">
-                                    <select class="form-select" id="filter[kelas]"
-                                            name="filter[kelas]"
+                            <div class="col">
+                                <div class="col mb-5">
+                                    <label class="form-label" for="filter[angkatan]]">
+                                        Angkatan Siswa
+                                    </label>
+                                    <select class="form-select" id="filter[angkatan]"
+                                            name="filter[angkatan]"
                                             data-control="select2"
-                                            data-placeholder="Pilih Tahun Akademik">
+                                            data-placeholder="Pilih Angkatan Siswa">
+                                        <option value="all">Semua</option>
+                                        @isset($thn_aka)
+                                            @foreach($thn_aka as $item)
+                                                <option
+                                                    value="{{$item->thn_aka}}">{{$item->thn_aka}}</option>
+                                            @endforeach
+                                        @else
+                                            <option>data kosong</option>
+                                        @endisset
+                                    </select>
+                                </div>
+                                <div class="col mb-5">
+                                    <label class="form-label" for="filter[kelas]">
+                                        Kelas
+                                    </label>
+                                    <select class="form-select" id="filter[kelas]" name="filter[kelas]"
+                                            data-control="select2" data-placeholder="Pilih Kelas">
                                         <option value="all">Semua</option>
                                         @isset($kelas)
                                             @foreach($kelas as $item)
-                                                <option value="{{$item->unit}},{{$item->jenjang}},{{$item->kelas}}">
-                                                    {{$item->unit}} - {{$item->jenjang}} {{$item->kelas}} </option>
-                                            @endforeach
-                                        @else
-                                            <option>data kosong</option>
-                                        @endisset
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="mb-3 row">
-                                <label for="filter[thn_aka]" class="col-sm-4 col-form-label form-label">
-                                    Tahun Angkatan
-                                </label>
-                                <div class="col">
-                                    <select class="form-select" id="filter[thn_aka]"
-                                            name="filter[thn_aka]"
-                                            data-control="select2"
-                                            data-placeholder="Pilih Tahun Akademik">
-                                        <option value="all">Semua</option>
-                                        @isset($thn_aka)
-                                            @foreach($thn_aka as $item)
-                                                <option value="{{$item->id}}">
-                                                    {{$item->thn_aka}} </option>
-                                            @endforeach
-                                        @else
-                                            <option>data kosong</option>
-                                        @endisset
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="mb-3 row">
-                                <label for="filter[nama_tagihan]" class="col-sm-4 col-form-label form-label">
-                                    Nama Tagihan
-                                </label>
-                                <div class="col">
-                                    <select class="form-select" id="filter[nama_tagihan]"
-                                            name="filter[nama_tagihan]"
-                                            data-control="select2"
-                                            data-placeholder="Pilih Tahun Akademik">
-                                        <option value="all">Semua</option>
-                                        @isset($tagihan)
-                                            @foreach($tagihan as $item)
                                                 <option
-                                                        value="{{$item->tagihan}}">{{$item->tagihan}}</option>
+                                                    value="{{$item->unit}}~{{$item->jenjang}}~{{$item->kelas}}">{{$item->unit}}
+                                                    - {{$item->jenjang}} {{$item->kelas}}</option>
                                             @endforeach
                                         @else
                                             <option>data kosong</option>
                                         @endisset
                                     </select>
+                                </div>
+                                <div class="col mb-5">
+                                    <label class="form-label" for="filter[siswa]">
+                                        Siswa
+                                    </label>
+                                    <input class="form-control" id="filter[siswa]" name="filter[siswa]"
+                                           placeholder="Masukkan NIS/NAMA Siswa" data-placeholder="Pilih siswa">
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        <div class="row">
+                            <div class="d-flex justify-content-center flex-column flex-md-row justify-content-md-end gap-4">
+{{--                                <button type="button" class="btn btn-facebook btn-print-rekap" id="cetak-rekap">--}}
+{{--                                    <span class="ri-file-text-line me-2"></span>--}}
+{{--                                    Cetak Rekap--}}
+{{--                                </button>--}}
+                                <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">
+                                    <span class="ri-profile-line me-2"></span>
+                                    Cetak Kartu Siswa
+                                </button>
+                                <button type="reset" class="btn btn-secondary" disabled>
+                                    <span class="ri-reset-left-line me-2"></span>
+                                    Reset
+                                </button>
+                                <button type="submit" class="btn btn-primary" disabled>
+                                    <span class="ri-search-line me-2"></span>
+                                    Cari
+                                </button>
+                            </div>
+                        </div>
+                    </fieldset>
                 </form>
 
                 <div class="w-100 py-5">
