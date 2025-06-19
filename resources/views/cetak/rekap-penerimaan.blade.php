@@ -5,7 +5,7 @@
     <table width="100%">
         <tr>
             <td colspan="2" align="center">
-                <h4>Rekap Pembayaran</h4>
+                <h4>Rekap Penerimaan Pembayaran</h4>
             </td>
         </tr>
     </table>
