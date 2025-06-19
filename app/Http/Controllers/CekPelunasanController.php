@@ -153,7 +153,12 @@ class CekPelunasanController extends Controller
                             $filters[] = ['scctcust.DESC03', '=', $val[2]];
                         }
                     } else if ($key == 'post') {
-                        ($colName) && $filters[] = [$colName, 'in', $val];
+                        $array = array_filter($val, function ($value) {
+                            return $value !== 'all';
+                        });
+                        if (count($array) > 0) {
+                            ($colName) && $filters[] = [$colName, 'in', $array];
+                        }
                     } elseif ($key == 'siswa') {
                         $val = is_numeric($val) ? $val : '%' . $val . '%';
                         $colName = is_numeric($val) ? 'scctcust.nocust' : $colName;
