@@ -50,6 +50,10 @@
         </tr>
         </thead>
         <tbody>
+        @php
+            $paid = 0;
+            $unpaid = 0;
+        @endphp
         @foreach($tagihans as $tagihan)
             @php
                 $BILLNM = $tagihan['BILLNM'];
