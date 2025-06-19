@@ -174,29 +174,6 @@
                         </div>
                     </fieldset>
                 </form>
-
-                <div class="w-100 py-5">
-                    <div class="row">
-                        <div class="d-flex justify-content-center flex-column flex-md-row justify-content-md-end gap-4">
-                            <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">
-                                <span class="ri-info-card-line me-2"></span>
-                                Cetak Kartu Siswa
-                            </button>
-{{--                            <button type="button" class="btn btn-facebook" id="cetak-pelaporan">--}}
-{{--                                <span class="ri-printer-line me-2"></span>--}}
-{{--                                Cetak Pelaporan--}}
-{{--                            </button>--}}
-                            <button type="reset" class="btn btn-secondary button_reset_cari">
-                                <span class="ri-reset-left-line me-2"></span>
-                                Reset
-                            </button>
-                            <button type="submit" class="btn btn-primary button_cari_cari">
-                                <span class="ri-search-line me-2"></span>
-                                Cari
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
             <div class="card-datatable table-responsive text-nowrap px-5card-siswa">
                 <table class="table table-sm table-bordered table-hover"
