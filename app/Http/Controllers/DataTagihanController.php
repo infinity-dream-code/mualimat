@@ -397,7 +397,7 @@ class DataTagihanController extends Controller
         $filter = $request->input('filter');
         if ($filter) {
             foreach ($filter as $key => $val) {
-                if (strtolower($val) != 'all' && $val !== null && $val !== '') {
+                if (is_array($val) || strtolower($val) != 'all' && $val !== null && $val !== '') {
                     $colName = match ($key) {
                         'tanggal-pembuatan' => 'scctbill.FTGLTagihan',
                         'tahun_pelajaran' => 'scctbill.BTA',
