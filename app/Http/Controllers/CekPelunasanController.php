@@ -125,13 +125,12 @@ class CekPelunasanController extends Controller
         $filter = $request->input('filter');
         if ($filter) {
             foreach ($filter as $key => $val) {
-                if (strtolower($val) != 'all' && $val !== null && $val !== '') {
+                if (is_array($val) || strtolower($val) != 'all' && $val !== null && $val !== '') {
                     $colName = match ($key) {
-                        'tahun_pelajaran' => 'scctbill.BTA',
-                        'nama_tagihan' => 'scctbill.BILLNM',
+                        'tahun_akademik' => 'scctbill.BTA',
+                        'post' => 'scctbill.BILLNM',
                         'kelas' => 'scctcust.DESC02',
-                        'nama' => 'scctcust.NMCUST',
-                        'nis' => 'scctcust.NOCUST',
+                        'siswa' => 'scctcust.nmcust',
                         'custid' => 'scctbill.CUSTID',
                         default => null
                     };
