@@ -250,10 +250,12 @@
                 });
             }
 
+            let startOfMonth = moment().startOf('month');
+            let today = moment();
             let date = $('#tanggal-transaksi');
             date.daterangepicker({
-                startDate: moment(),
-                endDate: moment(),
+                startDate: startOfMonth,
+                endDate: today,
                 autoUpdateInput: true,
                 todayHighlight: true,
                 autoclose: true,
