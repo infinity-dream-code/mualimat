@@ -92,5 +92,20 @@
             </tr>
         @endforeach
         </tbody>
+        <tfoot style="background-color: #ededed; font-weight: bold;">
+        <tr>
+            <td colspan="3">Total Tagihan</td>
+            <td align="right">@rupiah($paid + $unpaid)</td>
+            <td rowspan="3"></td>
+        </tr>
+        <tr>
+            <td colspan="3">Total Tagihan Terbayar</td>
+            <td align="right">@rupiah($paid)</td>
+        </tr>
+        <tr>
+            <td colspan="3">Total Sisa Tagihan</td>
+            <td align="right">@rupiah($unpaid)</td>
+        </tr>
+        </tfoot>
     </table>
 @endsection
