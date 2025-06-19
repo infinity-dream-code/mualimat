@@ -145,8 +145,19 @@ class CekPelunasanController extends Controller
                                 ($colName) && $filters[] = [$colName, $startDate, $endDate, 'whereBetween'];
                             }
                         }
-                    } elseif ($key == 'nama') {
-                        ($colName) && $filters[] = [$colName, 'like', '%' . $val . '%'];
+                    } else if ($key == 'kelas') {
+                        $val = explode("~", $val);
+                        if (count($val) == 3) {
+                            $filters[] = ['scctcust.CODE02', '=', $val[0]];
+                            $filters[] = ['scctcust.DESC02', '=', $val[1]];
+                            $filters[] = ['scctcust.DESC03', '=', $val[2]];
+                        }
+                    } else if ($key == 'post') {
+                        ($colName) && $filters[] = [$colName, 'in', $val];
+                    } elseif ($key == 'siswa') {
+                        $val = is_numeric($val) ? $val : '%' . $val . '%';
+                        $colName = is_numeric($val) ? 'scctcust.nocust' : $colName;
+                        ($colName) && $filters[] = [$colName, 'like', $val];
                     } else {
                         ($colName) && $filters[] = [$colName, '=', $val];
                     }
