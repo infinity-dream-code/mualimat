@@ -34,17 +34,20 @@
             @foreach($mstTagihan as $item)
                 <th>{{$item->tagihan}}</th>
             @endforeach
+            <th>Total</th>
         </tr>
         </thead>
         <tbody>
         @foreach($tagihans as $tagihan)
             <tr>
-                <td>{{$loop->index}}</td>
+                <td>{{$loop->index + 1}}</td>
                 <td>{{$tagihan->nocust}}</td>
                 <td>{{$tagihan->nmcust}}</td>
                 @foreach($mstTagihan as $item)
                     <td class="text-end">@rupiah($tagihan[$item->tagihan])</td>
+                    @php$totalPenerimaanSiswaIni += $tagihan[$item->tagihan]@endphp
                 @endforeach
+                <td>@rupiah($totalPenerimaanSiswaIni??0)</td>
             </tr>
         @endforeach
         </tbody>
@@ -54,6 +57,7 @@
             @foreach($mstTagihan as $item)
                 <td class="text-end">@rupiah($tagihans->sum($item->tagihan))</td>
             @endforeach
+            <td></td>
         </tr>
         </tfoot>
     </table>
