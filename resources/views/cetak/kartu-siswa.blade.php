@@ -57,25 +57,31 @@
         @foreach($tagihans as $tagihan)
             @php
                 $BILLNM = $tagihan['BILLNM'];
-                    $nextBILLNM =  false;
-                    $beforeBILLNM =  false;
-                    $BILLNMClass = '';
-                    if (count($tagihans) > 1){
-                        if ($loop->index > 0 && $loop->index < (count($tagihans) - 1)){
-                            if($tagihans[$loop->index + 1]['BILLNM'] == $tagihan['BILLNM']) $nextBILLNM = true;
-                            if($tagihans[$loop->index - 1]['BILLNM'] == $tagihan['BILLNM']) $beforeBILLNM = true;
-                        }elseif ($loop->index ==0){
-                            if($tagihans[$loop->index + 1]['BILLNM'] == $tagihan['BILLNM']) $nextBILLNM = true;
-                        }elseif ($loop->index == (count($tagihans) - 1)){
-                            if($tagihans[$loop->index - 1]['BILLNM'] == $tagihan['BILLNM']) $beforeBILLNM = true;
-                        }
+                $nextBILLNM =  false;
+                $beforeBILLNM =  false;
+                $BILLNMClass = '';
+                if (count($tagihans) > 1){
+                    if ($loop->index > 0 && $loop->index < (count($tagihans) - 1)){
+                        if($tagihans[$loop->index + 1]['BILLNM'] == $tagihan['BILLNM']) $nextBILLNM = true;
+                        if($tagihans[$loop->index - 1]['BILLNM'] == $tagihan['BILLNM']) $beforeBILLNM = true;
+                    }elseif ($loop->index ==0){
+                        if($tagihans[$loop->index + 1]['BILLNM'] == $tagihan['BILLNM']) $nextBILLNM = true;
+                    }elseif ($loop->index == (count($tagihans) - 1)){
+                        if($tagihans[$loop->index - 1]['BILLNM'] == $tagihan['BILLNM']) $beforeBILLNM = true;
                     }
+                }
 //
-                    $BILLNMClass = !$nextBILLNM ? '' : ' border-bottom-0';
-                    $BILLNMClass .= !$beforeBILLNM?'':' border-top-0';
+                $BILLNMClass = !$nextBILLNM ? '' : ' border-bottom-0';
+                $BILLNMClass .= !$beforeBILLNM?'':' border-top-0';
 
-                    if($nextBILLNM && $beforeBILLNM) $BILLNM = '';
-                    if($beforeBILLNM) $BILLNM = '';
+                if($nextBILLNM && $beforeBILLNM) $BILLNM = '';
+                if($beforeBILLNM) $BILLNM = '';
+
+                if ($tagihan['PAIDST'] == 0) {
+                    $unpaid += $tagihan['BILLAM'];
+                } else{
+                    $paid += $tagihan['BILLAM'];
+                }
             @endphp
             <tr>
                 <th scope="row">{{$loop->index + 1}}</th>
