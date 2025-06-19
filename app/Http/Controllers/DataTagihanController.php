@@ -475,6 +475,7 @@ class DataTagihanController extends Controller
             'scctbill.CUSTID',
             'scctcust.CODE02',
             'scctcust.DESC02',
+            'scctcust.DESC03',
 
         ]));
 
