@@ -173,7 +173,7 @@
 
                 <div class="w-100 py-5">
                     <div class="row">
-                        <div class="d-flex justify-content-center justify-content-md-end gap-4">
+                        <div class="d-flex justify-content-center flex-column flex-md-row justify-content-md-end gap-4">
                             <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">
                                 <span class="ri-info-card-line me-2"></span>
                                 Cetak Kartu Siswa
