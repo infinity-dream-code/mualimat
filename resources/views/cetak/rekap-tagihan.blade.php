@@ -49,7 +49,6 @@
                     <td class="text-end">@rupiah($tagihan[$item->tagihan])</td>
                     @php
                         $totalTagihanSiswaIni += isset($tagihan[$item->tagihan]) ? $tagihan[$item->tagihan] : 0;
-                        $totalTagihanSiswa += $totalTagihanSiswaIni;
                     @endphp
                 @endforeach
                 <td>@rupiah($totalTagihanSiswaIni)</td>
@@ -61,6 +60,7 @@
             <td colspan="3">Total</td>
             @foreach($mstTagihan as $item)
                 <td class="text-end">@rupiah($tagihans->sum($item->tagihan))</td>
+                @php $totalTagihanSiswa += $tagihans->sum($item->tagihan); @endphp
             @endforeach
             <td class="text-end">@rupiah($totalTagihanSiswa)</td>
         </tr>
