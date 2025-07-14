@@ -355,7 +355,8 @@ class DataPenerimaanController extends Controller
                             $query->whereIn('tagihan', $post);
                         }
                     })
-                    ->orderBy('urut', 'asc')
+                    ->orderByRaw('kode IS NULL')
+                    ->orderBy('kode', 'asc')
                     ->get();
 
                 $records = scctcust::leftJoin('scctbill', function ($join) use ($filter_scctbill) {
