@@ -382,35 +382,45 @@
                             }
                         });
 
-                    fetch(request)
-                        .then(res => res.blob())
-                        .then(blob => {
-                            const url = URL.createObjectURL(blob);
-                            window.open(url, '_blank');
-                            successAlert('Sukses, Rekap terbuka pada tab baru');
-                        })
-                        .catch(error => {
-                            if (error.status === 422) {
-                                const errors = error.error || error.errors;
-                                errorAlert(error.message);
-                                if (errors) {
-                                    processErrors(errors)
-                                }
-                            } else {
-                                const errorMessages = {
-                                    401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
-                                    403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
-                                    404: 'Halaman yang dituju tidak ditemukan 🧐',
-                                    405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
-                                    419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
-                                    429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
-                                };
-                                errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
+                fetch(request)
+                    .then(async res => {
+                        if (!res.ok) {
+                            const errorBody = await res.json().catch(() => ({}));
+                            throw {
+                                status: res.status,
+                                message: errorBody.message || 'Terjadi kesalahan',
+                                error: errorBody.error,
+                                errors: errorBody.errors
+                            };
+                        }
+
+                        return res.blob();
+                    })
+                    .then(blob => {
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                        successAlert('Sukses, Rekap terbuka pada tab baru');
+                    })
+                    .catch(error => {
+                        if (error.status === 422) {
+                            const errors = error.error || error.errors;
+                            errorAlert(error.message);
+                            if (errors) {
+                                processErrors(errors)
                             }
-                        });
-                }else{
-                    warningAlert('Silahkan pilih salah satu kelas terlebih dahulu!')
-                }
+                        } else {
+                            const errorMessages = {
+                                401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                                403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
+                                404: 'Halaman yang dituju tidak ditemukan 🧐',
+                                405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
+                                419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                                429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
+                            };
+                            errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
+                        }
+                    });
+
             });
         });
 
