@@ -325,45 +325,48 @@ class DataPenerimaanController extends Controller
                         default => null
                     };
 
-                        if ($key == 'tanggal-transaksi') {
-                            if (preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $val)) {
-                                $val = preg_replace('/[-\/~]/', '-', $val);
-                                list($startDate, $endDate) = explode(' - ', $val);
-                                $startDate = Carbon::createFromFormat('d-m-Y', $startDate)->startOfDay();
-                                $endDate = Carbon::createFromFormat('d-m-Y', $endDate)->endOfDay();
+                    if ($key == 'tanggal-transaksi') {
+                        if (preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $val)) {
+                            $val = preg_replace('/[-\/~]/', '-', $val);
+                            list($startDate, $endDate) = explode(' - ', $val);
+                            $startDate = Carbon::createFromFormat('d-m-Y', $startDate)->startOfDay();
+                            $endDate = Carbon::createFromFormat('d-m-Y', $endDate)->endOfDay();
 //                                $tanggalMulai = $startDate->format('l, t F Y');
-                                $tanggalMulai = $startDate->isoFormat('dddd, D MMMM YYYY');
-                                $tanggalSelesai = $endDate->isoFormat('dddd, D MMMM YYYY');
-                                if ($startDate && $endDate) {
-                                    ($colName) && $filters[] = [$colName, $startDate, $endDate, 'whereBetween'];
-                                }
+                            $tanggalMulai = $startDate->isoFormat('dddd, D MMMM YYYY');
+                            $tanggalSelesai = $endDate->isoFormat('dddd, D MMMM YYYY');
+                            if ($startDate && $endDate) {
+                                ($colName) && $filters[] = [$colName, $startDate, $endDate, 'whereBetween'];
                             }
-                        } else if ($key == 'kelas') {
-                            $val = explode("~", $val);
-                            $kelas = $val;
-                            if (count($val) == 3) {
-                                $filters[] = ['scctcust.CODE02', '=', $val[0]];
-                                $filters[] = ['scctcust.DESC02', '=', $val[1]];
-                                $filters[] = ['scctcust.DESC03', '=', $val[2]];
-                            }
-                        } else if ($key == 'post') {
-                            $array = array_filter($val, function ($value) {
-                                return $value !== 'all';
-                            });
-                            if (count($array) > 0) {
-                                ($colName) && $filters[] = [$colName, 'in', $array];
-                            }
-                            $post = $array;
-                        } else if ($key == 'siswa') {
-                            $val = is_numeric($val) ? $val : '%' . $val . '%';
-                            $colName = is_numeric($val) ? 'scctcust.nocust' : $colName;
-                            ($colName) && $filters[] = [$colName, 'like', $val];
-                        } else {
-                            ($colName) && $filters[] = [$colName, '=', $val];
                         }
+                    } else if ($key == 'kelas') {
+                        $val = explode("~", $val);
+                        $kelas = $val;
+                        if (count($val) == 3) {
+                            $filters[] = ['scctcust.CODE02', '=', $val[0]];
+                            $filters[] = ['scctcust.DESC02', '=', $val[1]];
+                            $filters[] = ['scctcust.DESC03', '=', $val[2]];
+                        }
+                    } else if ($key == 'post') {
+                        $array = array_filter($val, function ($value) {
+                            return $value !== 'all';
+                        });
+                        if (count($array) > 0) {
+                            ($colName) && $filters[] = [$colName, 'in', $array];
+                        }
+                        $post = $array;
+                    }else if($key === 'unit'){
+                        $unit = mst_sekolah::where('CODE01', $val)->first();
+                        ($colName) && $filters[] = [$colName, '=', $val];
+                    } else if ($key == 'siswa') {
+                        $val = is_numeric($val) ? $val : '%' . $val . '%';
+                        $colName = is_numeric($val) ? 'scctcust.nocust' : $colName;
+                        ($colName) && $filters[] = [$colName, 'like', $val];
+                    } else {
+                        ($colName) && $filters[] = [$colName, '=', $val];
                     }
-                };
-            }
+                }
+            };
+        }
 
             $filter_main = [];
 
