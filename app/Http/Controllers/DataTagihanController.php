@@ -44,7 +44,16 @@ class DataTagihanController extends Controller
         $data['title'] = $this->title;
         $data['columnsUrl'] = $this->columnsUrl;
         $data['datasUrl'] = $this->datasUrl;
-        $data['post'] = mst_tagihan::select(['tagihan'])->get();
+        $data['post'] = mst_tagihan::select(['tagihan'])
+            ->orderByRaw("
+                        CASE
+                            WHEN kode BETWEEN '07' AND '12' THEN 0
+                            WHEN kode BETWEEN '01' AND '06' THEN 1
+                            ELSE 2
+                        END,
+                        kode ASC
+                    ")
+            ->get();
         $data['thn_aka'] = mst_thn_aka::select(['thn_aka'])->where('thn_aka', '!=', null)->get();
         $data['kelas'] = mst_kelas::get();
         $data['unit'] = mst_sekolah::get();
