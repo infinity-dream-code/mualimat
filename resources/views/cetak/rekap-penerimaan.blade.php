@@ -68,7 +68,7 @@
                         @rupiah($value)
                     </td>
                 @endforeach
-                <td>@rupiah($totalPenerimaanSiswaIni)</td>
+                <td class="text-end">@rupiah($totalPenerimaanSiswaIni)</td>
             </tr>
         @endforeach
         </tbody>
