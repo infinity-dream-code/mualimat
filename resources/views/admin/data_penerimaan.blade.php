@@ -424,6 +424,8 @@
 
             document.getElementById('cetak-rekap').addEventListener('click', function (e) {
                 e.preventDefault();
+                const form = new FormData(document.getElementById('rekapForm'));
+
                 const params = new URLSearchParams();
                 for (const [key, value] of form.entries()) {
                     params.append(key, value);
@@ -442,7 +444,6 @@
                     <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
                 `);
                 let url = '{{route('admin.data-penerimaan.cetak-rekap')}}';
-                const form = new FormData(document.getElementById('rekapForm'));
                 const fullUrl = `${url}?${params.toString()}`;
                 const request = new Request(
                     fullUrl, {
