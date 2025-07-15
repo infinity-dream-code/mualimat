@@ -368,38 +368,38 @@ class DataPenerimaanController extends Controller
             };
         }
 
-            $filter_main = [];
+        $filter_main = [];
 
-            foreach ($filters as $item) {
-                if (str_contains($item[0], "scctbill")) {
-                    $filter_scctbill[] = $item;
-                } else {
-                    $filter_main[] = $item;
-                }
+        foreach ($filters as $item) {
+            if (str_contains($item[0], "scctbill")) {
+                $filter_scctbill[] = $item;
+            } else {
+                $filter_main[] = $item;
             }
+        }
 
-            $whereAny = [
-                'scctcust.nmcust',
-                'scctcust.nocust',
-            ];
+        $whereAny = [
+            'scctcust.nmcust',
+            'scctcust.nocust',
+        ];
 
-            $select = array_unique(array_merge($whereAny, [
-                'scctcust.CODE02',
-                'scctcust.DESC02',
-                'scctcust.DESC03',
+        $select = array_unique(array_merge($whereAny, [
+            'scctcust.CODE02',
+            'scctcust.DESC02',
+            'scctcust.DESC03',
 
-            ]));
+        ]));
 
-            try {
-                $mstTagihan = mst_tagihan::select(['tagihan'])
-                    ->where(function ($query) use ($post) {
-                        if ($post) {
-                            $query->whereIn('tagihan', $post);
-                        }
-                    })
+        try {
+            $mstTagihan = mst_tagihan::select(['tagihan'])
+                ->where(function ($query) use ($post) {
+                    if ($post) {
+                        $query->whereIn('tagihan', $post);
+                    }
+                })
 //                    ->orderByRaw('kode IS NULL')
 //                    ->orderBy('kode', 'asc')
-                    ->orderByRaw("
+                ->orderByRaw("
                         CASE
                             WHEN kode BETWEEN '07' AND '12' THEN 0
                             WHEN kode BETWEEN '01' AND '06' THEN 1
@@ -407,87 +407,90 @@ class DataPenerimaanController extends Controller
                         END,
                         kode ASC
                     ")
-                    ->get();
+                ->get();
 
-                $records = scctcust::leftJoin('scctbill', function ($join) use ($filter_scctbill) {
-                    $join->on('scctbill.CUSTID', '=', 'scctcust.CUSTID')
-                        ->where('scctbill.PAIDST', 1)
-                        ->where('scctbill.FSTSBolehBayar', 1)
-                        ->whereNotNull('scctbill.PAIDDT')
-                        ->where(function ($query) use ($filter_scctbill) {
-                            foreach ($filter_scctbill as $filter) {
-                                switch (count($filter)) {
-                                    case 3:
-                                        $filter[1] === 'in'
-                                            ? $query->whereIn($filter[0], $filter[2])
-                                            : $query->where($filter[0], $filter[1], $filter[2]);
-                                        break;
-                                    case 4:
-                                        $filter[3] === 'whereBetween'
-                                            ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
-                                            : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
-                                        break;
-                                }
+            $records = DB::table('scctcust')->leftJoin('scctbill', function ($join) use ($filter_scctbill) {
+                $join->on('scctbill.CUSTID', '=', 'scctcust.CUSTID')
+                    ->where('scctbill.PAIDST', 1)
+                    ->where('scctbill.FSTSBolehBayar', 1)
+                    ->whereNotNull('scctbill.PAIDDT')
+                    ->where(function ($query) use ($filter_scctbill) {
+                        foreach ($filter_scctbill as $filter) {
+                            switch (count($filter)) {
+                                case 3:
+                                    $filter[1] === 'in'
+                                        ? $query->whereIn($filter[0], $filter[2])
+                                        : $query->where($filter[0], $filter[1], $filter[2]);
+                                    break;
+                                case 4:
+                                    $filter[3] === 'whereBetween'
+                                        ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
+                                        : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
+                                    break;
                             }
-                        });
-                })->where(function ($query) use ($filter_main) {
-                    foreach ($filter_main as $filter) {
-                        switch (count($filter)) {
-                            case 3:
-                                $filter[1] === 'in'
-                                    ? $query->whereIn($filter[0], $filter[2])
-                                    : $query->where($filter[0], $filter[1], $filter[2]);
-                                break;
-
-                            case 4:
-                                $filter[3] === 'whereBetween'
-                                    ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
-                                    : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
-                                break;
                         }
+                    });
+            })->where(function ($query) use ($filter_main) {
+                foreach ($filter_main as $filter) {
+                    switch (count($filter)) {
+                        case 3:
+                            $filter[1] === 'in'
+                                ? $query->whereIn($filter[0], $filter[2])
+                                : $query->where($filter[0], $filter[1], $filter[2]);
+                            break;
+
+                        case 4:
+                            $filter[3] === 'whereBetween'
+                                ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
+                                : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
+                            break;
                     }
-                })->where('scctcust.STCUST', 1)
-                    ->select($select)
-                    ->groupBy('scctcust.CUSTID');
-
-                foreach ($mstTagihan as $val) {
-                    $namaPost = $val['tagihan'];
-                    $records->addSelect(DB::raw("SUM(CASE WHEN scctbill.BILLNM = '{$namaPost}' THEN scctbill.BILLAM ELSE 0 END) AS '{$namaPost}'"));
                 }
+            })->where('scctcust.STCUST', 1)
+                ->select($select)
+                ->groupBy('scctcust.CUSTID');
 
-                $records = $records->get();
+            foreach ($mstTagihan as $val) {
+                $namaPost = $val['tagihan'];
+                $records->addSelect(DB::raw("SUM(CASE WHEN scctbill.BILLNM = '{$namaPost}' THEN scctbill.BILLAM ELSE 0 END) AS '{$namaPost}'"));
+            }
 
-                $kelas = mst_kelas::where('unit', $kelas[0])
-                    ->where('jenjang', $kelas[1])
-                    ->where('kelas', $kelas[2])
-                    ->first();
-                if (!$records || !$mstTagihan) throw new \Exception('Gagal mengambil data tagihan');
+//            $records = $records->get();
+            $records = DB::table(DB::raw("({$records->toSql()}) as sub"))
+                ->mergeBindings($records)
+                ->where(function ($q) use ($mstTagihan) {
+                    foreach ($mstTagihan as $val) {
+                        $namaPost = $val['tagihan'];
+                        $q->orWhere($namaPost, '>', 0);
+                    }
+                })->get();
+
+            if (!$records || !$mstTagihan) throw new \Exception('Gagal mengambil data tagihan');
+
 
 //                $customPaper = [0, 0, 1684, 842];
-                $customPaper = [0, 0, 935.43, 595.28];
+            $customPaper = [0, 0, 935.43, 595.28];
 
-
-                $pdf = Pdf::loadView('cetak.rekap-penerimaan',
-                    [
-                        'tagihans' => $records,
-                        'mstTagihan' => $mstTagihan,
-                        'kelas' => $kelas,
-                        'tanggalMulai' => $tanggalMulai,
-                        'tanggalSelesai' => $tanggalSelesai,
-                    ])
-                    ->setOptions([
-                        'isHtml5ParserEnabled' => true,
-                        'isPhpEnabled' => true,
+            $pdf = Pdf::loadView('cetak.rekap-penerimaan',
+                [
+                    'tagihans' => $records,
+                    'mstTagihan' => $mstTagihan,
+                    'kelas' => $kelas,
+                    'unit' => $unit,
+                    'tanggalMulai' => $tanggalMulai,
+                    'tanggalSelesai' => $tanggalSelesai,
+                ])
+                ->setOptions([
+                    'isHtml5ParserEnabled' => true,
+                    'isPhpEnabled' => true,
 //                        'dpi' => 96,
-                    ])
+                ])
 //                    ->setPaper('a4', 'landscape');
-                    ->setPaper($customPaper);
-                return $pdf->download('rekap-penerimaan.pdf');
-            } catch (\Exception $e) {
-                return response()->json(['message' => 'Tidak dapat mencetak rekap penerimaan!<br> *Silahkan hubungi administrator', 'error' => $e], 422);
-            }
-        } else {
-            return response()->json(['message' => 'Tidak dapat mencetak rekap penerimaan!<br> *Kelas Harus Diisi, silahkan pilih salah satu kelas'], 422);
+                ->setPaper($customPaper);
+
+            return $pdf->download('rekap-penerimaan.pdf');
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Tidak dapat mencetak rekap penerimaan!<br> *Silahkan hubungi administrator', 'error' => $e], 422);
         }
 //        $sqlWithPlaceholders = $records->toSql();
 //
