@@ -378,32 +378,34 @@
 
             document.getElementById('cetak-rekap').addEventListener('click', function (e) {
                 e.preventDefault();
-                loadingAlert(`Membuat Rekap ... <br> Proses ini membutuhkan waktu beberapa saat<br><hr>
-                    <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
-                `);
-                let url = '{{route('admin.data-penerimaan.cetak-rekap')}}';
-                const form = new FormData(document.getElementById('rekapForm'));
                 const params = new URLSearchParams();
                 for (const [key, value] of form.entries()) {
                     params.append(key, value);
                 }
 
-                function isValidInput(params) {
-                    const kelasValue = params.get('filter[kelas]');
-                    const invalidValues = [null, '', 'undefined', 'all'];
-                    return !invalidValues.includes(kelasValue);
+                const unitValue = params.get('filter[unit]');
+                const kelasValue = params.get('filter[kelas]');
+                const invalidValues = [null, '', 'undefined', 'all'];
+
+                if (invalidValues.includes(unitValue) && invalidValues.includes(kelasValue)){
+                    warningAlert('Silahkan pilih salah satu Tingkat/Kelas terlebih dahulu!');
+                    return;
                 }
 
-                if (isValidInput(params)) {
-                    const fullUrl = `${url}?${params.toString()}`;
-                    const request = new Request(
-                        fullUrl, {
-                            method: "GET",
-                            headers: {
-                                'X-CSRF-TOKEN': csrfToken,
-                                'Accept': 'application/pdf'
-                            }
-                        });
+                loadingAlert(`Membuat Rekap ... <br> Proses ini membutuhkan waktu beberapa saat<br><hr>
+                    <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
+                `);
+                let url = '{{route('admin.data-penerimaan.cetak-rekap')}}';
+                const form = new FormData(document.getElementById('rekapForm'));
+                const fullUrl = `${url}?${params.toString()}`;
+                const request = new Request(
+                    fullUrl, {
+                        method: "GET",
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/pdf'
+                        }
+                    });
 
                 fetch(request)
                     .then(async res => {
