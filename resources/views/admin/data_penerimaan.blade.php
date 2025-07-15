@@ -283,6 +283,52 @@
                 });
             }
 
+            $("[name='filter[unit]']").on('change', function() {
+                const selectedGroup = $(this).find(':selected').data('group');
+                const $kelasSelect = $("[name='filter[kelas]']");
+
+                $kelasSelect.find('option').each(function() {
+                    if($(this).val() === 'all') {
+                        $(this).prop('disabled', false);
+                        return;
+                    }
+                    const group = $(this).data('group');
+                    $(this).prop('disabled', group !== selectedGroup);
+                });
+
+                $kelasSelect.val('all').trigger('change.select2');
+            });
+
+            const $postInput = $('#post');
+            $postInput.on('select2:select', function(e) {
+                if (e.params.data.id === 'all') {
+                    $('#post option').prop('selected', true);
+                    $postInput.trigger('change');
+                }
+            });
+
+            $postInput.on('select2:unselect', function (e) {
+                if (e.params.data.id === 'all') {
+                    let selected = $postInput.val() || [];
+                    if (selected.length > 0) {
+                        $postInput.val([selected[0]]).trigger('change');
+                    } else {
+                        $postInput.val(null).trigger('change');
+                    }
+                }
+            });
+
+            $postInput.on('change', function () {
+                let selected = $postInput.val();
+                if (!selected || selected.length === 0) {
+                    let fallbackOption = $('#post option:not([value="all"])').first().val();
+                    console.log(fallbackOption)
+                    if (fallbackOption) {
+                        $postInput.val([fallbackOption]).trigger('change');
+                    }
+                }
+            });
+
             let startOfMonth = moment().startOf('month');
             let today = moment();
             let date = $('#tanggal-transaksi');
