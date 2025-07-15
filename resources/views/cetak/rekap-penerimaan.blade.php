@@ -53,17 +53,20 @@
         </thead>
         <tbody>
         @php $totalPenerimaanSiswa = 0; @endphp
-        @foreach($tagihans as $tagihan)
+        @foreach($tagihans as $siswa)
             @php $totalPenerimaanSiswaIni = 0; @endphp
             <tr>
                 <td>{{$loop->index + 1}}</td>
-                <td>{{$tagihan->nocust}}</td>
-                <td>{{$tagihan->nmcust}}</td>
+                <td>{{$siswa->nocust}}</td>
+                <td>{{$siswa->nmcust}}</td>
                 @foreach($mstTagihan as $item)
                     @php
-                        $totalPenerimaanSiswaIni += isset($tagihan[$item->tagihan]) ? $tagihan[$item->tagihan] : 0;
+                        $value = $siswa->{$item->tagihan} ?? 0;
+                        $totalPenerimaanSiswaIni += $value;
                     @endphp
-                    <td class="text-end">@rupiah($tagihan[$item->tagihan])</td>
+                    <td class="text-end">
+                        @rupiah($value)
+                    </td>
                 @endforeach
                 <td>@rupiah($totalPenerimaanSiswaIni)</td>
             </tr>
