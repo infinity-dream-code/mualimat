@@ -58,6 +58,7 @@ class DataPenerimaanController extends Controller
                     ")->get();
         $data['thn_aka'] = mst_thn_aka::select(['thn_aka'])->where('thn_aka', '!=', null)->get();
         $data['kelas'] = mst_kelas::get();
+        $data['unit'] = mst_sekolah::get();
 
         return view('admin.data_penerimaan', $data);
     }
