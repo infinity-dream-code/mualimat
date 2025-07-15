@@ -286,31 +286,44 @@ class DataPenerimaanController extends Controller
 
     public function cetakRekapPenerimaan(Request $request)
     {
-        if ($request->filter['tanggal-transaksi'] != null
-            && preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $request->filter['tanggal-transaksi'])
-            && $request->filter['kelas'] != null && $request->filter['kelas'] != 'all') {
-            $filters = [];
-            $filterQuery = null;
-            $filter_scctbill = [];
-            $post = false;
-            $kelas = [];
-            $tanggalMulai = null;
-            $tanggalSelesai = null;
-            $filter = $request->input('filter');
-            if ($filter) {
-                foreach ($filter as $key => $val) {
-                    if (is_array($val) || strtolower($val) != 'all' && $val !== null && $val !== '') {
-                        $colName = match ($key) {
-                            'dari_tanggal', 'sampai_tanggal' => 'scctbill.FTGLTagihan',
-                            'tanggal-transaksi' => 'scctbill.PAIDDT',
-                            'tahun_akademik' => 'scctbill.BTA',
-                            'post' => 'scctbill.BILLNM',
-                            'unit' => 'scctcust.CODE01',
-                            'kelas' => 'scctcust.DESC02',
-                            'siswa' => 'scctcust.nmcust',
-                            'custid' => 'scctbill.CUSTID',
-                            default => null
-                        };
+        if (!isset($request->filter['tanggal-transaksi']) ||
+            $request->filter['tanggal-transaksi'] == null
+            || !preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $request->filter['tanggal-transaksi'])
+        ) {
+            return response()->json(['message' => 'Tidak dapat mencetak rekap penerimaan!<br> <span class="text-danger">*</span>Tanggal transaksi pembayaran tidak boleh kosong'], 422);
+        } else if ((
+                !isset($request->filter['unit']) ||
+                $request->filter['unit'] == null ||
+                $request->filter['unit'] == 'all') &&
+            (!isset($request->filter['kelas']) ||
+                $request->filter['kelas'] == null ||
+                $request->filter['kelas'] == 'all')) {
+            return response()->json(['message' => 'Tidak dapat mencetak rekap penerimaan!<br> * Tingkat atau Kelas Harus Diisi, silahkan pilih salah satu tingkat atau kelas' . $request->filter['unit']], 422);
+        }
+
+        $filters = [];
+        $filterQuery = null;
+        $filter_scctbill = [];
+        $post = false;
+        $kelas = [];
+        $unit = false;
+        $tanggalMulai = null;
+        $tanggalSelesai = null;
+        $filter = $request->input('filter');
+        if ($filter) {
+            foreach ($filter as $key => $val) {
+                if (is_array($val) || strtolower($val) != 'all' && $val !== null && $val !== '') {
+                    $colName = match ($key) {
+                        'dari_tanggal', 'sampai_tanggal' => 'scctbill.FTGLTagihan',
+                        'tanggal-transaksi' => 'scctbill.PAIDDT',
+                        'tahun_akademik' => 'scctbill.BTA',
+                        'post' => 'scctbill.BILLNM',
+                        'unit' => 'scctcust.CODE01',
+                        'kelas' => 'scctcust.DESC02',
+                        'siswa' => 'scctcust.nmcust',
+                        'custid' => 'scctbill.CUSTID',
+                        default => null
+                    };
 
                         if ($key == 'tanggal-transaksi') {
                             if (preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $val)) {
