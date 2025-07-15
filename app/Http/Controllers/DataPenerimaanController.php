@@ -288,6 +288,7 @@ class DataPenerimaanController extends Controller
                             'tanggal-transaksi' => 'scctbill.PAIDDT',
                             'tahun_akademik' => 'scctbill.BTA',
                             'post' => 'scctbill.BILLNM',
+                            'unit' => 'scctcust.CODE01',
                             'kelas' => 'scctcust.DESC02',
                             'siswa' => 'scctcust.nmcust',
                             'custid' => 'scctbill.CUSTID',
