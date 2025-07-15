@@ -53,11 +53,10 @@
                 <td>{{$tagihan->nocust}}</td>
                 <td>{{$tagihan->nmcust}}</td>
                 @foreach($mstTagihan as $item)
-                    <td class="text-end">@rupiah($tagihan[$item->tagihan])</td>
                     @php
                         $totalPenerimaanSiswaIni += isset($tagihan[$item->tagihan]) ? $tagihan[$item->tagihan] : 0;
-                        $totalPenerimaanSiswa += $totalPenerimaanSiswaIni;
                     @endphp
+                    <td class="text-end">@rupiah($tagihan[$item->tagihan])</td>
                 @endforeach
                 <td>@rupiah($totalPenerimaanSiswaIni)</td>
             </tr>
@@ -67,7 +66,12 @@
         <tr>
             <td colspan="3">Total</td>
             @foreach($mstTagihan as $item)
-                <td class="text-end">@rupiah($tagihans->sum($item->tagihan))</td>
+                @php
+                    $currentTotalPeneriemaan = $tagihans->sum($item->tagihan);
+                    $totalPenerimaanSiswa += $currentTotalPeneriemaan;
+                @endphp
+
+                <td class="text-end">@rupiah($currentTotalPeneriemaan)</td>
             @endforeach
             <td class="text-end">@rupiah($totalPenerimaanSiswa)</td>
         </tr>
