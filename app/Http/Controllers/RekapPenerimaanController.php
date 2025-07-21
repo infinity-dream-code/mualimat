@@ -52,6 +52,8 @@ class RekapPenerimaanController extends Controller
             ['data' => 'nocust', 'name' => 'NIS', 'searchable' => true, 'orderable' => true],
             ['data' => 'nmcust', 'name' => 'NAMA', 'searchable' => true, 'orderable' => true],
             ['data' => 'CODE02', 'name' => 'Unit', 'searchable' => true, 'orderable' => true],
+            ['data' => 'DESC02', 'name' => 'Kelas', 'searchable' => true, 'orderable' => true],
+            ['data' => 'DESC03', 'name' => 'Jenjang', 'searchable' => true, 'orderable' => true],
             ['data' => 'transaksi', 'name' => 'Penerimaan CASH', 'searchable' => false, 'orderable' => false, 'columnType' => 'currency', 'className' => 'text-end'],
             ['data' => 'transaksi_va', 'name' => 'Penerimaan VA', 'searchable' => false, 'orderable' => false, 'columnType' => 'currency', 'className' => 'text-end'],
             ['data' => 'total_transaksi_siswa', 'name' => 'Total', 'searchable' => false, 'orderable' => false, 'columnType' => 'currency', 'className' => 'text-end'],
@@ -188,6 +190,7 @@ class RekapPenerimaanController extends Controller
             $select = array_unique(array_merge($whereAny, [
                 'scctcust.CODE02',
                 'scctcust.DESC02',
+                'scctcust.DESC03',
                 'scctcust.CUSTID',
             ]));
 
