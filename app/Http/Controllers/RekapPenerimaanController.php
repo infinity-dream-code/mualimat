@@ -54,8 +54,7 @@ class RekapPenerimaanController extends Controller
             ['data' => 'CODE02', 'name' => 'Unit', 'searchable' => true, 'orderable' => true],
             ['data' => 'transaksi', 'name' => 'Penerimaan CASH', 'searchable' => false, 'orderable' => false, 'columnType' => 'currency', 'className' => 'text-end'],
             ['data' => 'transaksi_va', 'name' => 'Penerimaan VA', 'searchable' => false, 'orderable' => false, 'columnType' => 'currency', 'className' => 'text-end'],
-
-
+            ['data' => 'total_transaksi_siswa', 'name' => 'Total', 'searchable' => false, 'orderable' => false, 'columnType' => 'currency', 'className' => 'text-end'],
         ];
     }
 
@@ -286,6 +285,7 @@ class RekapPenerimaanController extends Controller
             $query->select(array_merge($select, [
                 DB::raw('COALESCE(bill.transaksi, 0) AS transaksi'),
                 DB::raw('COALESCE(tran.transaksi_va, 0) AS transaksi_va'),
+                DB::raw('COALESCE(tran.transaksi_va, 0) + COALESCE(tran.transaksi_va, 0) AS total_transaksi_siswa'),
             ]))->leftJoinSub($billAgg, 'bill', function ($join) {
                 $join->on('bill.CUSTID', '=', 'scctcust.CUSTID');
             })->leftJoinSub($tranAgg, 'tran', function ($join) {
