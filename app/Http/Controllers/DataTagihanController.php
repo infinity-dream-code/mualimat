@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\mst_kelas;
+use App\Models\mst_sekolah;
 use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
 use App\Models\scctbill;
@@ -193,6 +194,7 @@ class DataTagihanController extends Controller
                             'dari_tanggal', 'sampai_tanggal' => 'scctbill.FTGLTagihan',
                             'tahun_akademik' => 'scctbill.BTA',
                             'post' => 'scctbill.BILLNM',
+                            'unit' => 'scctcust.CODE01',
                             'kelas' => 'scctcust.DESC02',
                             'siswa' => 'scctcust.nmcust',
                             'custid' => 'scctbill.CUSTID',
@@ -254,7 +256,15 @@ class DataTagihanController extends Controller
                             $query->whereIn('tagihan', $post);
                         }
                     })
-                    ->orderBy('urut', 'asc')
+//                    ->orderBy('urut', 'asc')
+                    ->orderByRaw("
+                        CASE
+                            WHEN kode BETWEEN '07' AND '12' THEN 0
+                            WHEN kode BETWEEN '01' AND '06' THEN 1
+                            ELSE 2
+                        END,
+                        kode ASC
+                    ")
                     ->get();
 
                 $records = scctcust::leftJoin('scctbill', function ($join) use ($filter_scctbill) {
