@@ -337,9 +337,9 @@ class RekapPenerimaanController extends Controller
             "recordsFiltered" => $totalRecordswithFilter ?? 0,
             "data" => $records ?? [],
             'totals' => [
-                'transaksi' => ['location' => 4, 'value' => $totalTransaksi ?? 0, 'columnType' => 'currency'],
-                'transaksi_va' => ['location' => 5, 'value' => $totalTransaksiVa ?? 0, 'columnType' => 'currency'],
-                'total_transaksi_siswa' => ['location' => 6, 'value' => ($totalTransaksiVa ?? 0) + ($totalTransaksi ?? 0), 'columnType' => 'currency'],
+                'transaksi' => ['location' => 6, 'value' => $totalTransaksi ?? 0, 'columnType' => 'currency'],
+                'transaksi_va' => ['location' => 7, 'value' => $totalTransaksiVa ?? 0, 'columnType' => 'currency'],
+                'total_transaksi_siswa' => ['location' => 8, 'value' => ($totalTransaksiVa ?? 0) + ($totalTransaksi ?? 0), 'columnType' => 'currency'],
             ]
         );
         return response()->json($response);
