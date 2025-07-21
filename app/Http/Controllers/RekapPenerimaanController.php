@@ -74,7 +74,7 @@ class RekapPenerimaanController extends Controller
             $search_arr = $request->get('search', []);
             $searchValue = $search_arr['value'] ?? '';
 
-            $columnName = 'BILLAC';
+            $columnName = 'scctcust.nmcust';
             $columnSortOrder = 'DESC';
 
             if (!empty($order_arr)) {
