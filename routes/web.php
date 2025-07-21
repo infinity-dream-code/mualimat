@@ -35,6 +35,15 @@ Route::prefix('admin')->name('admin.')->middleware('check.session')->group(funct
         });
     });
 
+    Route::prefix('rekap-penerimaan-harian')->name('rekap-penerimaan-harian.')->group(function () {
+        Route::controller(\App\Http\Controllers\RekapPenerimaanController::class)->group(function () {
+            Route::get('get-data', 'getData')->name('get-data');
+            Route::get('get-column', 'getColumn')->name('get-column');
+            Route::get('cetak-rekap-harian', 'cetakRekapPenerimaanHarian')->name('cetak-rekap-harian');
+            Route::resource('', \App\Http\Controllers\RekapPenerimaanController::class)->parameters(['' => 'id']);
+        });
+    });
+
     Route::prefix('data-tagihan')->name('data-tagihan.')->group(function () {
         Route::controller(\App\Http\Controllers\DataTagihanController::class)->group(function () {
             Route::get('get-data', 'getData')->name('get-data');
