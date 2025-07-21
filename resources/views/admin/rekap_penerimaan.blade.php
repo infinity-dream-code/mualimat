@@ -198,10 +198,10 @@
             <div class="row px-5 mb-2">
                 <ul class="list-group list-group-timeline">
                     <li class="list-group-item list-group-timeline-warning">
-                        Untuk mencetak kartu siswa, silahkan pilih siswa terlebih dahulu!
+                        Untuk mencetak kartu rekap, silahkan pilih tanggal transaksi dan unit/kelas terlebih dahulu!
                     </li>
                     <li class="list-group-item list-group-timeline-warning">
-                        Cetak kartu siswa, hanya bisa dilakukan per siswa!
+                        Pastikan browser anda tidak memblokir <i>POP-UP</i>!
                     </li>
                 </ul>
             </div>
