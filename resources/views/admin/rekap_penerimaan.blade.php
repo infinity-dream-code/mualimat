@@ -140,7 +140,8 @@
                                     @isset($unit)
                                         @foreach($unit as $item)
                                             <option
-                                                value="{{$item->CODE01}}" data-group="{{$item->DESC01}}">{{$item->DESC01}}</option>
+                                                value="{{$item->CODE01}}"
+                                                data-group="{{$item->DESC01}}">{{$item->DESC01}}</option>
                                         @endforeach
                                     @else
                                         <option>data kosong</option>
@@ -157,7 +158,8 @@
                                     @isset($kelas)
                                         @foreach($kelas as $item)
                                             <option
-                                                value="{{$item->unit}}~{{$item->jenjang}}~{{$item->kelas}}" data-group="{{$item->unit}}">
+                                                value="{{$item->unit}}~{{$item->jenjang}}~{{$item->kelas}}"
+                                                data-group="{{$item->unit}}">
                                                 {{$item->unit}} - {{$item->jenjang}} {{$item->kelas}}
                                             </option>
                                         @endforeach
