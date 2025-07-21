@@ -505,6 +505,41 @@ async function dataTableCreate(options) {
         createdRow: function (row, data, dataIndex) {
             row.setAttribute('id', `${options.tableId}-row-` + (dataIndex + 1));
         },
+        footerCallback: function (row, data, start, end, display) {
+            let api = this.api();
+            let json = this.api().ajax.json();
+            $(api.table().footer()).find('.total-row').remove();
+            if (json && json.totals) {
+                let totalRow = $('<tr class="total-row"></tr>');
+                totalRow.append('<th colspan="2" class="fw-bolder">TOTAL</th>');
+                api.columns().every(function (colIdx) {
+                    if (colIdx >= 2) {
+                        let cellVal = '';
+                        let value = Object.values(json.totals).find(v => (v.location ?? 1) == colIdx);
+                        if (value) {
+                            let colVal = value.value ?? 0;
+                            let columnType = value.columnType ?? null;
+                            if (columnType === 'currency') {
+                                colVal = new Intl.NumberFormat('id-ID', {
+                                    style: "currency",
+                                    currency: "IDR",
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0
+                                }).format(colVal);
+                            }
+                            cellVal = colVal;
+                        }
+                        totalRow.append(`<th class="text-end fw-bolder">${cellVal}</th>`);
+                    }
+                });
+                let footerTrs = $(api.table().footer()).find('tr');
+                if (footerTrs.length > 0) {
+                    footerTrs.eq(0).after(totalRow);
+                } else {
+                    $(api.table().footer()).append(totalRow);
+                }
+            }
+        },
         error: function (xhr, error, code) {
             errorAlert('Data tidak dapat dimuat')
         }
