@@ -427,6 +427,180 @@
                 format: "dd-mm-yyyy",
                 autoclose: true
             }).datepicker('setDate', new Date());
+
+            pdfMake.fonts = {
+                Times: {
+                    normal: 'https://cdn.jsdelivr.net/npm/@canvas-fonts/times-new-roman@1.0.4/Times New Roman.ttf',
+                    bold: 'https://cdn.jsdelivr.net/npm/@canvas-fonts/times-new-roman-bold@1.0.4/Times New Roman Bold.ttf',
+                    italics: 'https://cdn.jsdelivr.net/npm/@canvas-fonts/times-new-roman-italic@1.0.4/Times New Roman Italic.ttf',
+                    bolditalics: 'https://cdn.jsdelivr.net/npm/@canvas-fonts/times-new-roman-bold@1.0.4/Times New Roman Bold.ttf'
+                }, Roboto: {
+                    normal: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf',
+                    bold: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Medium.ttf',
+                    italics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Italic.ttf',
+                    bolditalics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-MediumItalic.ttf'
+                },
+            };
+
+            function generatePdfRekapTagihanPdfMake(data) {
+                const logo = headerLogo ? {image: 'data:image/png;base64,' + headerLogo, width: 60} : '';
+                const tanggalSekarang = new Date().toLocaleDateString('id-ID', {
+                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                });
+
+                const orientation = 'portrait';
+                const pageMargins = [20, 20, 20, 20];
+                const posts = data.data;
+                const selectedGroup = $("[name='filter[unit]']").find(':selected').data('group');
+
+                console.log(posts)
+                const headerTable = {
+                    table: {
+                        widths: ['15%', '85%'],
+                        body: [
+                            [
+                                logo,
+                                {
+                                    stack: [
+                                        instansi.nama_sub_1 ? {
+                                            text: instansi.nama_sub_1.toUpperCase(),
+                                            style: 'headerSmall'
+                                        } : '',
+                                        instansi.nama_sub_2 ? {
+                                            text: instansi.nama_sub_2.toUpperCase(),
+                                            style: 'headerSmall'
+                                        } : '',
+                                        {text: instansi.nama_instansi.toUpperCase(), style: 'headerBig'},
+                                        instansi.akreditasi ? {text: instansi.akreditasi, style: 'headerSmall'} : '',
+                                        instansi.alamat ? {text: instansi.alamat, style: 'headerSmall'} : '',
+                                        {
+                                            text: `Telp: ${instansi.kontak.telepon || '-'} | Email: ${instansi.kontak.email || '-'} | Web: ${instansi.kontak.website || '-'}`,
+                                            style: 'headerSmall'
+                                        }
+                                    ]
+                                }
+                            ]
+                        ]
+                    },
+                    layout: 'noBorders'
+                };
+
+                const content = [];
+
+                const availableWidth = getContentWidth('A4', orientation, pageMargins);
+
+                content.push(headerTable);
+                content.push({
+                    margin: [0, 5, 0, 5],
+                    canvas: [
+                        {type: 'line', x1: 0, y1: 0, x2: availableWidth, y2: 0, lineWidth: 2},
+                        {type: 'line', x1: 0, y1: 3, x2: availableWidth, y2: 3, lineWidth: 0.5, lineColor: '#888'}
+                    ]
+                });
+
+                content.push({text: 'REKAP DATA PENERIMAAN', style: 'title', margin: [0, 2, 0, 0]});
+                content.push({text: 'Unit: ' + selectedGroup, style: 'subTitle', margin: [0, 2, 0, 5]});
+
+                if (posts.length === 0) {
+                    content.push({text: 'Tidak ada data', alignment: 'center', margin: [0, 20, 0, 0]});
+                } else {
+                    const tableBody = [];
+                    tableBody.push([
+                        {text: 'NIS', style: 'tableHeader'},
+                        {text: 'Nama', style: 'tableHeader'},
+                        {text: 'Kelas', style: 'tableHeader'},
+                        {text: 'Cash', style: 'tableHeader'},
+                        {text: 'VA', style: 'tableHeader'},
+                        {text: 'Total', style: 'tableHeader'}
+                    ]);
+
+                    posts.forEach(item => {
+                        tableBody.push([
+                            {text: item.nocust, alignment: 'left'},
+                            {text: item.nmcust, alignment: 'left'},
+                            {text: item.DESC02 + '  ' + item.DESC03, alignment: 'left'},
+                            {text: formatRupiah(item.transaksi), alignment: 'right'},
+                            {text: formatRupiah(item.transaksi_va), alignment: 'right'},
+                            {text: formatRupiah(item.total_transaksi_siswa), alignment: 'right'}
+                        ]);
+                    });
+
+                    content.push({
+                        table: {
+                            widths: ['10%', '25%', '20%', '15%', '15%', '15%'],
+                            body: tableBody,
+                        },
+                        layout: {
+                            fillColor: (rowIndex) => rowIndex === 0 ? '#ededed' : null,
+                            hLineWidth: () => 0.5,
+                            vLineWidth: () => 0.5
+                        },
+                        margin: [0, 0, 0, 5],
+                        fontSize: 9
+                    });
+                }
+
+                const footer = {
+                    columns: [
+                        {text: '', width: '*'},
+                        {
+                            stack: [
+                                {text: `${domisili}, ${tanggalSekarang}`, margin: [0, 10, 0, 5], alignment: 'center'},
+                                {text: userName, alignment: 'center'}
+                            ],
+                            width: 'auto'
+                        }
+                    ]
+                };
+
+                content.push(footer);
+
+                const docDefinition = {
+                    pageSize: 'A4', // or 'LEGAL', 'LETTER'
+                    pageOrientation: orientation, // or 'landscape'
+                    pageMargins: pageMargins,
+                    content: content,
+                    styles: {
+                        headerBig: {fontSize: 16, bold: true, alignment: 'center'},
+                        headerSmall: {fontSize: 12, alignment: 'center'},
+                        title: {fontSize: 14, bold: true, alignment: 'center'},
+                        subTitle: {fontSize: 12, bold: true},
+                        tableHeader: {bold: true, fillColor: '#ededed', alignment: 'center'},
+                        small: {fontSize: 9, alignment: 'center'},
+                        tableFont: {fontSize: 5}
+                    }, defaultStyle: {
+                        font: 'Times'
+                    }
+                };
+
+                // pdfMake.createPdf(docDefinition).download('rekap-penerimaan.pdf');
+                pdfMake.createPdf(docDefinition).open();
+
+                successAlert('File rekap telah terbuka pada tab baru. <br>' +
+                    '<p><span class="badge badge-dot bg-danger me-1"></span>Pastikan browser anda tidak memblokir "Pop-Up"</p>' +
+                    '')
+
+                function getContentWidth(pageSize = 'A4', orientation = 'portrait', margins = [30, 30, 30, 30]) {
+                    const sizes = {
+                        A4: [595.28, 841.89],
+                        A3: [841.89, 1190.55],
+                        LETTER: [612, 792],
+                        LEGAL: [612, 1008]
+                    };
+                    const key = String(pageSize).toUpperCase();
+                    const size = sizes[key] || sizes.A4;
+
+                    // swap width/height for landscape
+                    const pageW = orientation === 'landscape' ? size[1] : size[0];
+                    const [ml, , mr] = margins;
+                    return pageW - ml - mr;
+                }
+
+                function formatRupiah(amount) {
+                    if (!amount) return 'Rp 0';
+                    return 'Rp. ' + amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                }
+            }
         });
 
     </script>
