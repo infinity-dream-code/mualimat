@@ -115,7 +115,7 @@ class RekapPenerimaanController extends Controller
                             }
                         } else if ($key == 'dari_tanggal') {
                             $val = preg_replace('/[-\/~]/', '-', $val);
-                            $startDate = Carbon::createFromFormat('d-m-Y', $val)->startOfDay();
+                            $startDate = Carbon::createFromFormat('d-m-Y', $val)->toDateString();
                             ($colName) && $filters[] = [$colName, 'date', $startDate];
                             ($colName) && $filters[] = ['sccttran.TRXDATE', 'date', $startDate];
                         } else if ($key == 'kelas') {
