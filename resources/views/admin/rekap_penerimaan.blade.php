@@ -253,6 +253,23 @@
             lengthMenu: [10, 25, 50, 75, 100],
         };
 
+        const instansi = {
+            nama_instansi: "{{ config('app.nama_instansi') ?? ''}}",
+            nama_sub_1: "{{ config('app.nama_sub_instansi_1') ?? ''}}",
+            nama_sub_2: "{{ config('app.nama_sub_instansi_2') ?? ''}}",
+            akreditasi: "{{ config('app.akreditasi') ?? ''}}",
+            alamat: "{{ config('app.alamat') ?? ''}}",
+            kontak: {
+                telepon: "{{ config('app.telepon') ?? ''}}",
+                email: "{{ config('app.email') ?? ''}}",
+                website: "{{ config('app.website') ?? ''}}"
+            }
+        };
+        const headerLogo = "{{ base64_encode(file_get_contents(public_path('logo.png'))) }}";
+        const userName = "KASIR";
+        const domisili = "{{ config('app.domisili') }}";
+        const tanggalSekarang = "{{ \Carbon\Carbon::now()->isoFormat('dddd, D MMMM YYYY') }}";
+
         const dariTanggal = $('#filter_dari_tanggal');
 
         document.addEventListener("DOMContentLoaded", function () {
