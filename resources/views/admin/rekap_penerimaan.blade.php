@@ -389,25 +389,17 @@
                     });
 
                 fetch(request)
-                    .then(async res => {
-                        if (!res.ok) {
-                            const errorBody = await res.json().catch(() => ({}));
-                            throw {
-                                status: res.status,
-                                message: errorBody.message || 'Terjadi kesalahan',
-                                error: errorBody.error,
-                                errors: errorBody.errors
-                            };
+                    .then(async response => {
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            throw {status: response.status, message: data.message || response.statusText};
                         }
-
-                        return res;
-                        // return res.blob();
+                        return data;
                     })
-                    .then(res => {
-                        console.log(res);
-                        // const url = URL.createObjectURL(blob);
-                        // window.open(url, '_blank');
-                        successAlert('Sukses, Rekap terbuka pada tab baru');
+                    .then(data => {
+                        // console.log(data);
+                        // successAlert('testing sukses');
+                        generatePdfRekapTagihanPdfMake(data)
                     })
                     .catch(error => {
                         if (error.status === 422) {
