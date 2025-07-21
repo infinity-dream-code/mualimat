@@ -307,12 +307,12 @@
                 });
             }
 
-            $("[name='filter[unit]']").on('change', function() {
+            $("[name='filter[unit]']").on('change', function () {
                 const selectedGroup = $(this).find(':selected').data('group');
                 const $kelasSelect = $("[name='filter[kelas]']");
 
-                $kelasSelect.find('option').each(function() {
-                    if($(this).val() === 'all') {
+                $kelasSelect.find('option').each(function () {
+                    if ($(this).val() === 'all') {
                         $(this).prop('disabled', false);
                         return;
                     }
@@ -324,7 +324,7 @@
             });
 
             const $postInput = $('#post');
-            $postInput.on('select2:select', function(e) {
+            $postInput.on('select2:select', function (e) {
                 if (e.params.data.id === 'all') {
                     $('#post option').prop('selected', true);
                     $postInput.trigger('change');
@@ -369,7 +369,7 @@
                 const kelasValue = params.get('filter[kelas]');
                 const invalidValues = [null, '', 'undefined', 'all'];
 
-                if (invalidValues.includes(unitValue) && invalidValues.includes(kelasValue)){
+                if (invalidValues.includes(unitValue) && invalidValues.includes(kelasValue)) {
                     warningAlert('Silahkan pilih salah satu Tingkat/Kelas terlebih dahulu!');
                     return;
                 }
