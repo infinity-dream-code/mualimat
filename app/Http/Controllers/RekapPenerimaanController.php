@@ -228,7 +228,7 @@ class RekapPenerimaanController extends Controller
                 ->where('scctbill.PAIDST', 1)
                 ->where('scctbill.FSTSBolehBayar', 1)
                 ->whereNotNull('scctbill.PAIDDT')
-                ->whereIn('scctbill.FIDBANK', ['1140000','1140001','1140003'])
+                ->whereIn('scctbill.FIDBANK', ['1140000', '1140001', '1140003'])
                 ->when(!empty($filter_scctbill), function ($q) use ($filter_scctbill) {
                     foreach ($filter_scctbill as $filter) {
                         switch (count($filter)) {
@@ -289,7 +289,7 @@ class RekapPenerimaanController extends Controller
             ]))->leftJoinSub($billAgg, 'bill', function ($join) {
                 $join->on('bill.CUSTID', '=', 'scctcust.CUSTID');
             })->leftJoinSub($tranAgg, 'tran', function ($join) {
-                    $join->on('tran.CUSTID', '=', 'scctcust.CUSTID');
+                $join->on('tran.CUSTID', '=', 'scctcust.CUSTID');
             })->where(function ($q) {
                 $q->where('bill.transaksi', '>', 0)
                     ->orWhere('tran.transaksi_va', '>', 0);
@@ -301,7 +301,7 @@ class RekapPenerimaanController extends Controller
                 ->selectRaw('SUM(transaksi) as total_transaksi, SUM(transaksi_va) as total_transaksi_va')
                 ->first();
 
-            $totalTransaksi   = $totals->total_transaksi;
+            $totalTransaksi = $totals->total_transaksi;
             $totalTransaksiVa = $totals->total_transaksi_va;
 
             $totalRecordswithFilter = (clone $query)
@@ -336,6 +336,7 @@ class RekapPenerimaanController extends Controller
             'totals' => [
                 'transaksi' => ['location' => 4, 'value' => $totalTransaksi ?? 0, 'columnType' => 'currency'],
                 'transaksi_va' => ['location' => 5, 'value' => $totalTransaksiVa ?? 0, 'columnType' => 'currency'],
+                'total_transaksi_siswa' => ['location' => 6, 'value' => ($totalTransaksiVa ?? 0) + ($totalTransaksi ?? 0), 'columnType' => 'currency'],
             ]
         );
         return response()->json($response);
