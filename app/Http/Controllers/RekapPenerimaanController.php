@@ -257,6 +257,7 @@ class RekapPenerimaanController extends Controller
 
             $tranAgg = DB::table('sccttran')
                 ->select('sccttran.CUSTID', DB::raw('SUM(sccttran.KREDIT) AS transaksi_va'))
+                ->whereNull('sccttran.FIDBANK')
                 ->when(!empty($filter_sccttran), function ($q) use ($filter_sccttran) {
                     foreach ($filter_sccttran as $filter) {
                         switch (count($filter)) {
@@ -294,6 +295,15 @@ class RekapPenerimaanController extends Controller
                     ->orWhere('tran.transaksi_va', '>', 0);
             });
 
+            $sub = $query;
+            $totals = DB::table(DB::raw("({$sub->toSql()}) as sub"))
+                ->mergeBindings($sub)
+                ->selectRaw('SUM(transaksi) as total_transaksi, SUM(transaksi_va) as total_transaksi_va')
+                ->first();
+
+            $totalTransaksi   = $totals->total_transaksi;
+            $totalTransaksiVa = $totals->total_transaksi_va;
+
             $totalRecordswithFilter = (clone $query)
                 ->select('count(*) as allcount')
                 ->whereAny($whereAny, 'like', '%' . $searchValue . '%')
@@ -323,6 +333,10 @@ class RekapPenerimaanController extends Controller
 //            "recordsFiltered" => $totalRecords ?? 0,
             "recordsFiltered" => $totalRecordswithFilter ?? 0,
             "data" => $records ?? [],
+            'totals' => [
+                'transaksi' => ['location' => 4, 'value' => $totalTransaksi ?? 0, 'columnType' => 'currency'],
+                'transaksi_va' => ['location' => 5, 'value' => $totalTransaksiVa ?? 0, 'columnType' => 'currency'],
+            ]
         );
         return response()->json($response);
     }
