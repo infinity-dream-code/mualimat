@@ -229,7 +229,7 @@ class RekapPenerimaanController extends Controller
                 ->where('scctbill.PAIDST', 1)
                 ->where('scctbill.FSTSBolehBayar', 1)
                 ->whereNotNull('scctbill.PAIDDT')
-                ->whereNotIn('scctbill.FIDBANK', ['1140002', null, 'SALDO'])
+                ->whereIn('scctbill.FIDBANK', ['1140000','1140001','1140003'])
                 ->when(!empty($filter_scctbill), function ($q) use ($filter_scctbill) {
                     foreach ($filter_scctbill as $filter) {
                         switch (count($filter)) {
