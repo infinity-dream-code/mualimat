@@ -288,7 +288,7 @@ class RekapPenerimaanController extends Controller
             $tranAgg = DB::table('sccttran')
                 ->select('sccttran.CUSTID', DB::raw('SUM(sccttran.KREDIT) AS transaksi_va'))
                 ->whereNull('sccttran.FIDBANK')
-                ->where('sccttran.REFFBANK', '=', '63')
+                ->whereIn('sccttran.REFFBANK', ['23','63'])
                 ->when(!empty($filter_sccttran), function ($q) use ($filter_sccttran) {
                     foreach ($filter_sccttran as $filter) {
                         switch (count($filter)) {
