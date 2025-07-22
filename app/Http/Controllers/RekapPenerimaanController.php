@@ -60,6 +60,34 @@ class RekapPenerimaanController extends Controller
         ];
     }
 
+    public function cetakRekapPenerimaanHarian(Request $request)
+    {
+        if (!isset($request->filter['dari_tanggal']) ||
+            $request->filter['dari_tanggal'] == null
+            || !preg_match('/^\d{2}-\d{2}-\d{4}$/', $request->filter['dari_tanggal'])
+        ) {
+            return response()->json(['message' => 'Tidak dapat mencetak rekap penerimaan!<br> <span class="text-danger">*</span>Tanggal transaksi pembayaran tidak boleh kosong'], 422);
+        } else if ((
+                !isset($request->filter['unit']) ||
+                $request->filter['unit'] == null ||
+                $request->filter['unit'] == 'all') &&
+            (!isset($request->filter['kelas']) ||
+                $request->filter['kelas'] == null ||
+                $request->filter['kelas'] == 'all')) {
+            return response()->json(['message' => 'Tidak dapat mencetak rekap penerimaan!<br> * Tingkat atau Kelas Harus Diisi, silahkan pilih salah satu tingkat atau kelas' . $request->filter['unit']], 422);
+        }
+
+        $request['draw'] = 2;
+        $request['start'] = 0;
+        $request['length'] = "poll";
+
+        $filter = $request;
+        $results = $this->getData($filter);
+        $results = json_decode(json_encode($results), true);
+
+        return response()->json($results['original'], 200);
+    }
+
     public function getData(Request $request)
     {
         $draw = $request->get('draw');
@@ -260,6 +288,7 @@ class RekapPenerimaanController extends Controller
             $tranAgg = DB::table('sccttran')
                 ->select('sccttran.CUSTID', DB::raw('SUM(sccttran.KREDIT) AS transaksi_va'))
                 ->whereNull('sccttran.FIDBANK')
+                ->where('sccttran.REFFBANK', '=', '63')
                 ->when(!empty($filter_sccttran), function ($q) use ($filter_sccttran) {
                     foreach ($filter_sccttran as $filter) {
                         switch (count($filter)) {
@@ -343,33 +372,5 @@ class RekapPenerimaanController extends Controller
             ]
         );
         return response()->json($response);
-    }
-
-    public function cetakRekapPenerimaanHarian(Request $request)
-    {
-        if (!isset($request->filter['dari_tanggal']) ||
-            $request->filter['dari_tanggal'] == null
-            || !preg_match('/^\d{2}-\d{2}-\d{4}$/', $request->filter['dari_tanggal'])
-        ) {
-            return response()->json(['message' => 'Tidak dapat mencetak rekap penerimaan!<br> <span class="text-danger">*</span>Tanggal transaksi pembayaran tidak boleh kosong'], 422);
-        } else if ((
-                !isset($request->filter['unit']) ||
-                $request->filter['unit'] == null ||
-                $request->filter['unit'] == 'all') &&
-            (!isset($request->filter['kelas']) ||
-                $request->filter['kelas'] == null ||
-                $request->filter['kelas'] == 'all')) {
-            return response()->json(['message' => 'Tidak dapat mencetak rekap penerimaan!<br> * Tingkat atau Kelas Harus Diisi, silahkan pilih salah satu tingkat atau kelas' . $request->filter['unit']], 422);
-        }
-
-        $request['draw'] = 2;
-        $request['start'] = 0;
-        $request['length'] = "poll";
-
-        $filter = $request;
-        $results = $this->getData($filter);
-        $results = json_decode(json_encode($results), true);
-
-        return response()->json($results['original'], 200);
     }
 }
