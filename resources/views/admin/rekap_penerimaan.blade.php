@@ -311,15 +311,16 @@
                 const selectedGroup = $(this).find(':selected').data('group');
                 const $kelasSelect = $("[name='filter[kelas]']");
 
-                $kelasSelect.find('option').each(function () {
-                    if ($(this).val() === 'all') {
+                if($(this).val() === 'all'){
+                    $kelasSelect.find('option').each(function () {
                         $(this).prop('disabled', false);
-                        return;
-                    }
-                    const group = $(this).data('group');
-                    $(this).prop('disabled', group !== selectedGroup);
-                });
-
+                    });
+                }else{
+                    $kelasSelect.find('option').each(function () {
+                        const group = $(this).data('group');
+                        $(this).prop('disabled', group !== selectedGroup);
+                    });
+                }
                 $kelasSelect.val('all').trigger('change.select2');
             });
 
