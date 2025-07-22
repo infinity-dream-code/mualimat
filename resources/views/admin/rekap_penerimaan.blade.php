@@ -452,9 +452,13 @@
                 const orientation = 'portrait';
                 const pageMargins = [20, 20, 20, 20];
                 const posts = data.data;
-                const selectedGroup = $("[name='filter[unit]']").find(':selected').data('group');
+                const unitSelect = document.querySelector("[name='filter[unit]']");
+                const selectedGroup = unitSelect.options[unitSelect.selectedIndex].dataset.group;
 
-                console.log(posts)
+                const kelasSelect = document.querySelector("[name='filter[kelas]']");
+                const selectedKelas = kelasSelect.value;
+                const unit = selectedKelas.split("~");
+
                 const headerTable = {
                     table: {
                         widths: ['15%', '85%'],
