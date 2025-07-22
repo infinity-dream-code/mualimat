@@ -504,7 +504,7 @@
                 });
 
                 content.push({text: 'REKAP DATA PENERIMAAN', style: 'title', margin: [0, 2, 0, 0]});
-                content.push({text: 'Unit: ' + selectedGroup, style: 'subTitle', margin: [0, 2, 0, 5]});
+                content.push({text: 'Unit: ' + (selectedGroup ?? unit[0] ?? ""), style: 'subTitle', margin: [0, 2, 0, 5]});
 
                 if (posts.length === 0) {
                     content.push({text: 'Tidak ada data', alignment: 'center', margin: [0, 20, 0, 0]});
