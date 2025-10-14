@@ -43,6 +43,9 @@
         @hasSection('datatable-responsive')
             <link rel="stylesheet" href="{{asset('main/libs/datatables-responsive-bs5/responsive.bootstrap5.css')}}">
         @endif
+        @hasSection('datatable-buttons')
+            <link rel="stylesheet" href="{{asset('main/libs/datatables-buttons-bs5/buttons.bootstrap5.css')}}">
+        @endif
     @endif
 
     @hasSection('bootstrap-datepicker')
@@ -392,53 +395,55 @@
 @endif
 
 @hasSection('datatable')
-    <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.11/js/jquery.dataTables.min.js"
-            integrity="sha256-ozFG+tjHIo3E3JAEPj5Q1Rzq2LImeurDKwqPO+ilK4Y=" crossorigin="anonymous" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.11/js/dataTables.bootstrap5.min.js"
-            integrity="sha256-3iXHrfSd4xzI1YyrooF0jG4OVwGiSAoU1+WdYwEwYZk=" crossorigin="anonymous" defer></script>
+{{--    <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.11/js/jquery.dataTables.min.js"--}}
+{{--            integrity="sha256-ozFG+tjHIo3E3JAEPj5Q1Rzq2LImeurDKwqPO+ilK4Y=" crossorigin="anonymous" defer></script>--}}
+{{--    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.11/js/dataTables.bootstrap5.min.js"--}}
+{{--            integrity="sha256-3iXHrfSd4xzI1YyrooF0jG4OVwGiSAoU1+WdYwEwYZk=" crossorigin="anonymous" defer></script>--}}
+    <script src="{{asset('main/libs/datatables-bs5/datatables-bootstrap5.js')}}"></script>
     <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}" defer></script>
 
-    @hasSection('datatable-responsive')
-        <script src="https://cdn.jsdelivr.net/npm/datatables.net-responsive@2.5.1/js/dataTables.responsive.min.js"
-                integrity="sha256-LLmmrr9hYXrjHj5w9Q2Asxvom2ErkK3bWcnZ3bdQ5lE=" crossorigin="anonymous" defer></script>
-        <script src="https://cdn.jsdelivr.net/npm/datatables.net-responsive-bs5@2.5.1/js/responsive.bootstrap5.min.js"
-                integrity="sha256-fxJmiDt8K09elieA/J28vsEvSsmFgGUvoLsEgH/uUx4=" crossorigin="anonymous" defer></script>
-    @endif
+{{--    @hasSection('datatable-responsive')--}}
+{{--        <script src="https://cdn.jsdelivr.net/npm/datatables.net-responsive@2.5.1/js/dataTables.responsive.min.js"--}}
+{{--                integrity="sha256-LLmmrr9hYXrjHj5w9Q2Asxvom2ErkK3bWcnZ3bdQ5lE=" crossorigin="anonymous" defer></script>--}}
+{{--        <script src="https://cdn.jsdelivr.net/npm/datatables.net-responsive-bs5@2.5.1/js/responsive.bootstrap5.min.js"--}}
+{{--                integrity="sha256-fxJmiDt8K09elieA/J28vsEvSsmFgGUvoLsEgH/uUx4=" crossorigin="anonymous" defer></script>--}}
+{{--    @endif--}}
 
-    @hasSection('datatable-select')
-        <script src="https://cdn.jsdelivr.net/npm/datatables.net-select@1.6.2/js/dataTables.select.min.js"
-                integrity="sha256-EahoU/AaV9Q11O9bRdXQ9r/qUi/I6UhMQte2hAVAPzg=" crossorigin="anonymous" defer></script>
-        <script src="https://cdn.jsdelivr.net/npm/datatables.net-select-bs5@1.6.2/js/select.bootstrap5.min.js"
-                integrity="sha256-Aha9/czvjvbiHnjkH+WVatxmHGPKsSffrkpk1f9Kw2A=" crossorigin="anonymous" defer></script>
-        <script src="https://cdn.jsdelivr.net/npm/jquery-datatables-checkboxes@1.2.14/js/dataTables.checkboxes.min.js"
-                integrity="sha256-0fpVa2zI7evUwBEHoZUbn4GsMQtXIvE4TXUMPz3hA50=" crossorigin="anonymous" defer></script>
-    @endif
+{{--    @hasSection('datatable-select')--}}
+{{--        <script src="https://cdn.jsdelivr.net/npm/datatables.net-select@1.6.2/js/dataTables.select.min.js"--}}
+{{--                integrity="sha256-EahoU/AaV9Q11O9bRdXQ9r/qUi/I6UhMQte2hAVAPzg=" crossorigin="anonymous" defer></script>--}}
+{{--        <script src="https://cdn.jsdelivr.net/npm/datatables.net-select-bs5@1.6.2/js/select.bootstrap5.min.js"--}}
+{{--                integrity="sha256-Aha9/czvjvbiHnjkH+WVatxmHGPKsSffrkpk1f9Kw2A=" crossorigin="anonymous" defer></script>--}}
+{{--        <script src="https://cdn.jsdelivr.net/npm/jquery-datatables-checkboxes@1.2.14/js/dataTables.checkboxes.min.js"--}}
+{{--                integrity="sha256-0fpVa2zI7evUwBEHoZUbn4GsMQtXIvE4TXUMPz3hA50=" crossorigin="anonymous" defer></script>--}}
+{{--    @endif--}}
 
-    @hasSection('datatable-buttons')
-        <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons@2.3.6/js/dataTables.buttons.min.js"
-                integrity="sha256-XOiR0CeeG5rD5uACHdDcx3mjlFKSo1brzobDCeAdv18=" crossorigin="anonymous" defer></script>
-        <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons-bs5@2.3.6/js/buttons.bootstrap5.min.js"
-                integrity="sha256-6gtqbO3KDs9qfc4P5XqrGZzqbTVfKZ9rZqug7qdM4vs=" crossorigin="anonymous" defer></script>
-        <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"
-                integrity="sha256-rMfkFFWoB2W1/Zx+4bgHim0WC7vKRVrq6FTeZclH1Z4=" crossorigin="anonymous" defer></script>
-        <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.20/build/pdfmake.min.js"
-                integrity="sha256-wv06XiTbCWyRObt9Jmdl3kM7C4ZtA7o1bC702a4aU7c=" crossorigin="anonymous" defer></script>
-    @endif
+{{--    @hasSection('datatable-buttons')--}}
+{{--        <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons@2.3.6/js/dataTables.buttons.min.js"--}}
+{{--                integrity="sha256-XOiR0CeeG5rD5uACHdDcx3mjlFKSo1brzobDCeAdv18=" crossorigin="anonymous" defer></script>--}}
+{{--        <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons-bs5@2.3.6/js/buttons.bootstrap5.min.js"--}}
+{{--                integrity="sha256-6gtqbO3KDs9qfc4P5XqrGZzqbTVfKZ9rZqug7qdM4vs=" crossorigin="anonymous" defer></script>--}}
+{{--        <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"--}}
+{{--                integrity="sha256-rMfkFFWoB2W1/Zx+4bgHim0WC7vKRVrq6FTeZclH1Z4=" crossorigin="anonymous" defer></script>--}}
+{{--        <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.20/build/pdfmake.min.js"--}}
+{{--                integrity="sha256-wv06XiTbCWyRObt9Jmdl3kM7C4ZtA7o1bC702a4aU7c=" crossorigin="anonymous" defer></script>--}}
+{{--        <link rel="stylesheet" href="{{asset('main/libs/datatables-buttons-bs5/buttons.bootstrap5.css')}}">--}}
+{{--    @endif--}}
 
-    @hasSection('datatable-row-group')
-        <script src="https://cdn.jsdelivr.net/npm/datatables.net-rowgroup@1.3.1/js/dataTables.rowGroup.min.js"
-                integrity="sha256-II17PfUGfmM5g4TNj100OnoDitu3mRE7dkNB9d5lNKg=" crossorigin="anonymous" defer></script>
-        <script src="https://cdn.jsdelivr.net/npm/datatables.net-rowgroup-bs5@1.3.1/js/rowGroup.bootstrap5.min.js"
-                integrity="sha256-tTIgAuWvIg+N7pTyrXIDHiLLYxkMyprz91c+IhFsc3Y=" crossorigin="anonymous" defer></script>
-    @endif
+{{--    @hasSection('datatable-row-group')--}}
+{{--        <script src="https://cdn.jsdelivr.net/npm/datatables.net-rowgroup@1.3.1/js/dataTables.rowGroup.min.js"--}}
+{{--                integrity="sha256-II17PfUGfmM5g4TNj100OnoDitu3mRE7dkNB9d5lNKg=" crossorigin="anonymous" defer></script>--}}
+{{--        <script src="https://cdn.jsdelivr.net/npm/datatables.net-rowgroup-bs5@1.3.1/js/rowGroup.bootstrap5.min.js"--}}
+{{--                integrity="sha256-tTIgAuWvIg+N7pTyrXIDHiLLYxkMyprz91c+IhFsc3Y=" crossorigin="anonymous" defer></script>--}}
+{{--    @endif--}}
 
-    @hasSection('datatable-fixed-columns')
-        <script src="https://cdn.jsdelivr.net/npm/datatables.net-fixedcolumns@4.3.1/js/dataTables.fixedColumns.min.js"
-                integrity="sha256-9g/RKjIQyATtXtSK/jdoSIsGcLE1vhZw/yRxVMrHvAI=" crossorigin="anonymous" defer></script>
-        <script
-            src="https://cdn.jsdelivr.net/npm/datatables.net-fixedcolumns-bs5@4.3.1/js/fixedColumns.bootstrap5.min.js"
-            integrity="sha256-wFjO7w88Qc9nHptwSqp504v5zmpgLa16oozFHM9/9R0=" crossorigin="anonymous" defer></script>
-    @endif
+{{--    @hasSection('datatable-fixed-columns')--}}
+{{--        <script src="https://cdn.jsdelivr.net/npm/datatables.net-fixedcolumns@4.3.1/js/dataTables.fixedColumns.min.js"--}}
+{{--                integrity="sha256-9g/RKjIQyATtXtSK/jdoSIsGcLE1vhZw/yRxVMrHvAI=" crossorigin="anonymous" defer></script>--}}
+{{--        <script--}}
+{{--            src="https://cdn.jsdelivr.net/npm/datatables.net-fixedcolumns-bs5@4.3.1/js/fixedColumns.bootstrap5.min.js"--}}
+{{--            integrity="sha256-wFjO7w88Qc9nHptwSqp504v5zmpgLa16oozFHM9/9R0=" crossorigin="anonymous" defer></script>--}}
+{{--    @endif--}}
 @endif
 
 @hasSection('filepond')
