@@ -76,36 +76,41 @@ function newexportaction(e, dt, button, config) {
     let self = this;
     let oldStart = dt.settings()[0]._iDisplayStart;
     let maxLength = dt.settings()[0]._iRecordsDisplay;
-    dt.one('preXhr', function (e, s, data) {
-        data.start = 0;
-        data.length = maxLength;
-        dt.one('preDraw', function (e, settings) {
-            if (button[0].className.indexOf('buttons-copy') >= 0) {
-                $.fn.dataTable.ext.buttons.copyHtml5.action.call(self, e, dt, button, config);
-            } else if (button[0].className.indexOf('buttons-excel') >= 0) {
-                $.fn.dataTable.ext.buttons.excelHtml5.available(dt, config) ?
-                    $.fn.dataTable.ext.buttons.excelHtml5.action.call(self, e, dt, button, config) :
-                    $.fn.dataTable.ext.buttons.excelFlash.action.call(self, e, dt, button, config);
-            } else if (button[0].className.indexOf('buttons-csv') >= 0) {
-                $.fn.dataTable.ext.buttons.csvHtml5.available(dt, config) ?
-                    $.fn.dataTable.ext.buttons.csvHtml5.action.call(self, e, dt, button, config) :
-                    $.fn.dataTable.ext.buttons.csvFlash.action.call(self, e, dt, button, config);
-            } else if (button[0].className.indexOf('buttons-pdf') >= 0) {
-                $.fn.dataTable.ext.buttons.pdfHtml5.available(dt, config) ?
-                    $.fn.dataTable.ext.buttons.pdfHtml5.action.call(self, e, dt, button, config) :
-                    $.fn.dataTable.ext.buttons.pdfFlash.action.call(self, e, dt, button, config);
-            } else if (button[0].className.indexOf('buttons-print') >= 0) {
-                $.fn.dataTable.ext.buttons.print.action(e, dt, button, config);
-            }
-            dt.one('preXhr', function (e, s, data) {
-                settings._iDisplayStart = oldStart;
-                data.start = oldStart;
+    if (maxLength > 2000) {
+        e.preventDefault();
+        warningAlert('Data terlalu banyak! <hr>pastikan data yang diexport kurang dari 2000 baris')
+    } else {
+        dt.one('preXhr', function (e, s, data) {
+            data.start = 0;
+            data.length = maxLength;
+            dt.one('preDraw', function (e, settings) {
+                if (button[0].className.indexOf('buttons-copy') >= 0) {
+                    $.fn.dataTable.ext.buttons.copyHtml5.action.call(self, e, dt, button, config);
+                } else if (button[0].className.indexOf('buttons-excel') >= 0) {
+                    $.fn.dataTable.ext.buttons.excelHtml5.available(dt, config) ?
+                        $.fn.dataTable.ext.buttons.excelHtml5.action.call(self, e, dt, button, config) :
+                        $.fn.dataTable.ext.buttons.excelFlash.action.call(self, e, dt, button, config);
+                } else if (button[0].className.indexOf('buttons-csv') >= 0) {
+                    $.fn.dataTable.ext.buttons.csvHtml5.available(dt, config) ?
+                        $.fn.dataTable.ext.buttons.csvHtml5.action.call(self, e, dt, button, config) :
+                        $.fn.dataTable.ext.buttons.csvFlash.action.call(self, e, dt, button, config);
+                } else if (button[0].className.indexOf('buttons-pdf') >= 0) {
+                    $.fn.dataTable.ext.buttons.pdfHtml5.available(dt, config) ?
+                        $.fn.dataTable.ext.buttons.pdfHtml5.action.call(self, e, dt, button, config) :
+                        $.fn.dataTable.ext.buttons.pdfFlash.action.call(self, e, dt, button, config);
+                } else if (button[0].className.indexOf('buttons-print') >= 0) {
+                    $.fn.dataTable.ext.buttons.print.action(e, dt, button, config);
+                }
+                dt.one('preXhr', function (e, s, data) {
+                    settings._iDisplayStart = oldStart;
+                    data.start = oldStart;
+                });
+                setTimeout(dt.ajax.reload, 0);
+                return false;
             });
-            setTimeout(dt.ajax.reload, 0);
-            return false;
         });
-    });
-    dt.ajax.reload();
+        dt.ajax.reload();
+    }
 }
 
 function dtButtons(options, buttons) {
@@ -218,15 +223,6 @@ function dtButtons(options, buttons) {
                                     year: 'numeric'
                                 };
                                 return date.toLocaleDateString('id-ID', options);
-                            case 'boolean':
-                                let columnData = columnInfo.data;
-                                columnData = columnData.toLowerCase();
-                                if (columnData === 'cicil') {
-                                    return data === 1 ? 'CICILAN' : 'BUKAN CICILAN';
-                                } else if (columnData === 'paidst') {
-                                    return data === 1 ? 'LUNAS' : 'BELUM LUNAS';
-                                }
-                                return data;
                             case 'currency':
                                 if (config.extend !== 'excel') {
                                     return new Intl.NumberFormat('id-ID', {
@@ -714,9 +710,17 @@ async function getDT(options) {
                                 break;
                             case 'boolean':
                                 renderFunc = function (data, type, row) {
-                                    if (type === 'display' || type === 'filter') {
+                                    if (type === 'display' || type === 'filter' || type === 'export') {
                                         let trueVal = column.trueVal ?? 'benar';
                                         let falseVal = column.falseVal ?? 'Salah';
+                                        if (type === 'export') {
+                                            console.log(data, trueVal, falseVal);
+                                            if (data === "1" || data === 1 || data === true) {
+                                                return trueVal;
+                                            } else {
+                                                return falseVal;
+                                            }
+                                        }
                                         if (column.booleanCheck) {
                                             trueVal = '<i class="ri-check-line"></i>';
                                             falseVal = '<i class="ri-close-line"></i>';
