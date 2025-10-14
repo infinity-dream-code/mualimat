@@ -30,17 +30,17 @@ class DataPenerimaanController extends Controller
     public function getColumn()
     {
         return [
-            ['data' => 'AA', 'name' => 'no', 'columnType' => 'row'],
+            ['data' => 'AA', 'name' => 'no', 'columnType' => 'row', 'exportable' => true],
 //            ['data' => 'item_id', 'name' => 'ITEM ID', 'visible' => false],
-            ['data' => 'nocust', 'name' => 'NIS', 'searchable' => true, 'orderable' => true],
-            ['data' => 'nmcust', 'name' => 'NAMA', 'searchable' => true, 'orderable' => true],
-            ['data' => 'CODE02', 'name' => 'Unit', 'searchable' => true, 'orderable' => true],
-            ['data' => 'DESC02', 'name' => 'Kelas', 'searchable' => true, 'orderable' => true],
-            ['data' => 'BILLNM', 'name' => 'Nama Tagihan', 'searchable' => true, 'orderable' => true],
-            ['data' => 'BILLAM', 'name' => 'Tagihan', 'searchable' => true, 'orderable' => true, 'columnType' => 'currency', 'className' => 'text-end'],
-            ['data' => 'FIDBANK', 'name' => 'Metode', 'columnType' => 'custom_code_tagihan', 'searchable' => true, 'orderable' => true],
-            ['data' => 'PAIDDT', 'name' => 'Tanggal Bayar', 'columnType' => 'timestamp', 'searchable' => true, 'orderable' => true],
-            ['data' => 'BTA', 'name' => 'Tahun AKA', 'searchable' => true, 'orderable' => true],
+            ['data' => 'nocust', 'name' => 'NIS', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'nmcust', 'name' => 'NAMA', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'CODE02', 'name' => 'Unit', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'DESC02', 'name' => 'Kelas', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'BILLNM', 'name' => 'Nama Tagihan', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'BILLAM', 'name' => 'Tagihan', 'searchable' => true, 'orderable' => true, 'columnType' => 'currency', 'className' => 'text-end', 'exportable' => true],
+            ['data' => 'FIDBANK', 'name' => 'Metode', 'columnType' => 'custom_code_tagihan', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'PAIDDT', 'name' => 'Tanggal Bayar', 'columnType' => 'timestamp', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'BTA', 'name' => 'Tahun AKA', 'searchable' => true, 'orderable' => true, 'exportable' => true],
         ];
     }
 
@@ -355,7 +355,7 @@ class DataPenerimaanController extends Controller
                             ($colName) && $filters[] = [$colName, 'in', $array];
                         }
                         $post = $array;
-                    }else if($key === 'unit'){
+                    } else if ($key === 'unit') {
                         $unit = mst_sekolah::where('CODE01', $val)->first();
                         ($colName) && $filters[] = [$colName, '=', $val];
                     } else if ($key == 'siswa') {
