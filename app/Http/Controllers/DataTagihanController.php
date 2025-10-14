@@ -28,15 +28,16 @@ class DataTagihanController extends Controller
     public function getColumn()
     {
         return [
-            ['data' => 'AA', 'name' => 'no', 'columnType' => 'row'],
-            ['data' => 'nocust', 'name' => 'NIS', 'searchable' => true, 'orderable' => true],
-            ['data' => 'nmcust', 'name' => 'NAMA', 'searchable' => true, 'orderable' => true],
-            ['data' => 'CODE02', 'name' => 'Unit', 'searchable' => true, 'orderable' => true],
-            ['data' => 'DESC02', 'name' => 'Kelas', 'searchable' => true, 'orderable' => true],
-            ['data' => 'DESC03', 'name' => 'Jenjang', 'searchable' => true, 'orderable' => true],
-            ['data' => 'BILLNM', 'name' => 'Nama Tagihan', 'searchable' => true, 'orderable' => true],
-            ['data' => 'BILLAM', 'name' => 'Tagihan', 'searchable' => true, 'orderable' => true, 'columnType' => 'currency', 'className' => 'text-end'],
-            ['data' => 'BTA', 'name' => 'Tahun AKA', 'searchable' => true, 'orderable' => true],
+            ['data' => 'AA', 'name' => 'no', 'columnType' => 'row', 'exportable' => true],
+            ['data' => 'nocust', 'name' => 'NIS', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'nmcust', 'name' => 'NAMA', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'CODE02', 'name' => 'Unit', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'DESC02', 'name' => 'Kelas', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'DESC03', 'name' => 'Jenjang', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'BILLNM', 'name' => 'Nama Tagihan', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'BILLAM', 'name' => 'Tagihan', 'searchable' => true, 'orderable' => true, 'columnType' => 'currency', 'className' => 'text-end', 'exportable' => true],
+            ['data' => 'PAIDST', 'name' => 'Status', 'orderable' => true, 'columnType' => 'boolean', 'trueVal' => 'Lunas', 'falseVal' => 'Belum Lunas', 'exportable' => true],
+            ['data' => 'BTA', 'name' => 'Tahun AKA', 'searchable' => true, 'orderable' => true, 'exportable' => true],
         ];
     }
 
@@ -425,11 +426,12 @@ class DataTagihanController extends Controller
                 if (is_array($val) || strtolower($val) != 'all' && $val !== null && $val !== '') {
                     $colName = match ($key) {
                         'tanggal-pembuatan' => 'scctbill.FTGLTagihan',
-                        'tahun_pelajaran' => 'scctbill.BTA',
+                        'tahun_akademik' => 'scctbill.BTA',
                         'post' => 'scctbill.BILLNM',
                         'kelas' => 'scctcust.DESC02',
                         'siswa' => 'scctcust.nmcust',
                         'custid' => 'scctbill.CUSTID',
+                        'status_bayar' => 'scctbill.PAIDST',
                         default => null
                     };
                     if ($key == 'tanggal-pembuatan') {
@@ -510,7 +512,6 @@ class DataTagihanController extends Controller
         ]));
 
         $query = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
-            ->where('scctbill.PAIDST', 0)
             ->where('scctbill.FSTSBolehBayar', 1)
             ->where('scctcust.STCUST', 1)
             ->whereAny($whereAny, 'like', '%' . $searchValue . '%')
