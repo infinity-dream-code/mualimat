@@ -68,6 +68,19 @@
                                 </select>
                             </div>
                             <div class="col mb-5">
+                                <label class="form-label" for="status_bayar">
+                                    Status bayar
+                                </label>
+                                <select class="form-select" id="status_bayar"
+                                        name="filter[status_bayar]"
+                                        data-control="select2"
+                                        data-placeholder="Pilih Status Bayar">
+                                    <option value="all">Semua</option>
+                                    <option value="0" selected>Belum Lunas</option>
+                                    <option value="1">Lunas</option>
+                                </select>
+                            </div>
+                            <div class="col mb-5">
                                 <label class="form-label" for="post">
                                     Nama Tagihan
                                 </label>
@@ -184,6 +197,7 @@
 @section('momentjs',true)
 @section('bootstrap-daterangepicker',true)
 @section('datatable',true)
+@section('datatable-buttons',true)
 @section('datatable-select',true)
 @section('datatable-row-grup',true)
 @section('datatable-fixed-columns',true)
@@ -206,7 +220,8 @@
             fixedHeader: false,
             pageLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
-            select: true
+            select: true,
+            buttons: ['copy', 'excel', 'pdf'],
         };
 
         document.addEventListener("DOMContentLoaded", function () {
