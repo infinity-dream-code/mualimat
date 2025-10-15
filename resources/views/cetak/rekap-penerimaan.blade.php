@@ -18,7 +18,7 @@
                 : <strong>{{$tanggalMulai}} - {{$tanggalSelesai}}</strong>
             </td>
         </tr>
-        @isset($unit)
+        @if(isset($unit) && $unit)
             <tr>
                 <td style="width: auto"
                     class="border-right-0">Unit
@@ -27,8 +27,8 @@
                     : <strong>{{$unit->DESC01}}</strong>
                 </td>
             </tr>
-        @endisset
-        @isset($kelas)
+        @endif
+        @if(isset($kelas) && $kelas)
             <tr>
                 <td style="width: auto"
                     class="border-right-0">Kelas
@@ -37,7 +37,7 @@
                     : <strong>{{$kelas[1]?? ''}} - {{$kelas[2]?? ''}}</strong>
                 </td>
             </tr>
-        @endisset
+        @endif
     </table>
     <table width="100%" class="table-border main-table">
         <thead style="background-color: #e5e6e8;">
