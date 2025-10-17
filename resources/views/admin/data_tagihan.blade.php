@@ -248,7 +248,7 @@
                 }
             }
 
-            $(document).on('click', '.btn-print-rekap', function (e) {
+            $(document).on('click', '.btn-print-rekap', async function (e) {
                 loadingAlert(`Membuat Rekap ... <br> Proses ini membutuhkan waktu beberapa saat<br><hr>
                     <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
                 `);
@@ -262,59 +262,65 @@
                 }
 
                 if (isValidInput(data)) {
-                    const csrfToken = $('meta[name="csrf-token"]').attr('content')
-                    let ajaxOptions = {
-                        url: '{{route('admin.data-tagihan.cetak-rekap-tagihan')}}',
-                        type: 'get',
-                        data: data,
-                        datatype: 'json',
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken,
-                        },
-                        contentType: false,
-                        processData: true,
-                        cache: false,
-                        xhrFields: {
-                            responseType: 'blob'
-                        },
-                        timeout: 50000
+                    let url = '{{route('admin.data-tagihan.cetak-rekap-tagihan')}}';
+                    const form = new FormData(document.getElementById('filterForm'));
+                    const params = new URLSearchParams();
+                    for (const [key, value] of form.entries()) {
+                        params.append(key, value);
                     }
-                    $.ajax(ajaxOptions).done(function (response, status, xhr) {
-                        try {
-                            let blob = new Blob([response], {type: 'application/pdf'});
-                            if (typeof window.navigator.msSaveBlob !== 'undefined') {
-                                window.navigator.msSaveBlob(blob, filename);
+                    const fullUrl = `${url}?${params.toString()}`;
+                    const request = new Request(
+                        fullUrl, {
+                            method: "GET",
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/pdf'
+                            }
+                        });
+
+                    try {
+                        const response = await fetch(request);
+
+                        if (!response.ok) {
+                            const status = response.status;
+                            const contentType = response.headers.get('content-type');
+                            let message = `Request failed with status ${status}`;
+                            if (contentType && contentType.includes('application/json')) {
+                                const errorData = await response.json();
+                                message = errorData.message || message;
                             } else {
-                                let URL = window.URL || window.webkitURL;
-                                let previewUrl = URL.createObjectURL(blob);
-                                window.open(previewUrl, '_blank');
+                                const errorText = await response.text();
+                                message = errorText || message;
                             }
 
-                        } catch (ex) {
-                            console.log(ex);
+                            const error = new Error(message);
+                            error.status = status;
+                            throw error;
                         }
-                        successAlert('File tagihan terbuka pada tab baru');
-                    }).fail(function (xhr) {
-                        if (xhr.status === 422) {
-                            const errMessage = response.message || xhr.responseJSON.message;
-                            errorAlert(errMessage)
+
+                        const blob = await response.blob();
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                        successAlert('Sukses, Kartu tagihan terbuka pada tab baru');
+                    } catch (error) {
+                        if (error.status === 422) {
+                            const errors = error.error || error.errors;
+                            errorAlert(error.message);
+                            if (errors) {
+                                processErrors(errors)
+                            }
                         } else {
-                            const errMessages = {
-                                401: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
+                            const errorMessages = {
+                                401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
                                 403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
                                 404: 'Halaman yang dituju tidak ditemukan 🧐',
                                 405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
-                                419: 'token anda sudah tidak valid 🙏 <br>Silahkan muat ulang halaman untuk mendapat token baru!',
+                                419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
                                 429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
-                                '5xx': 'Terjadi kesalahan saat memproses permintaan 😵‍💫. <br> silahkan muat ulang halaman'
                             };
-                            const errMessage =
-                                errMessages[xhr.status] ||
-                                (xhr.status >= 500 && xhr.status <= 504 ? errMessages['5xx'] :
-                                    'Tidak dapat terhubung ke server <br> Silahkan coba muat ulang halaman atau periksa koneksi internet anda.');
-                            errorAlert(errMessage);
+                            errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
                         }
-                    })
+                    }
                 } else {
                     warningAlert('Silahkan pilih salah satu kelas terlebih dahulu!')
                 }
