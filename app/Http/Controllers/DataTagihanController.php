@@ -321,14 +321,31 @@ class DataTagihanController extends Controller
                     ->first();
                 if (!$records || !$mstTagihan) throw new \Exception('Gagal mengambil data tagihan');
 
+                $zeroColumns = [];
+                $filtered = $records->map(function ($item) use ($records, &$zeroColumns) {
+                    $zeroColumns = collect($item)
+                        ->keys()
+                        ->filter(function ($key) use ($records) {
+                            return $records->pluck($key)->every(fn($value) => $value == 0);
+                        });
+
+                    return collect($item)->except($zeroColumns);
+                });
+
+                $mstTagihan = $mstTagihan->pluck('tagihan');
+                $zeroColumns = $zeroColumns->toArray();
+                $filteredMstTagihan = $mstTagihan->reject(function ($value) use ($zeroColumns) {
+                    return in_array($value, $zeroColumns, true);
+                });
+
 //                $customPaper = [0, 0, 1684, 842];
                 $customPaper = [0, 0, 935.43, 595.28];
 
 
                 $pdf = Pdf::loadView('cetak.rekap-tagihan',
                     [
-                        'tagihans' => $records,
-                        'mstTagihan' => $mstTagihan,
+                        'tagihans' => $filtered,
+                        'mstTagihan' => $filteredMstTagihan,
                         'kelas' => $kelas,
                         'tanggalMulai' => $tanggalMulai,
                         'tanggalSelesai' => $tanggalSelesai,
