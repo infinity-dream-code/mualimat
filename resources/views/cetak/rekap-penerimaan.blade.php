@@ -46,7 +46,7 @@
             <th>Nis</th>
             <th>Nama</th>
             @foreach($mstTagihan as $item)
-                <th>{{$item->tagihan}}</th>
+                <th>{{$item}}</th>
             @endforeach
             <th>Total</th>
         </tr>
@@ -59,7 +59,7 @@
                 $row = '';
 
                 foreach($mstTagihan as $item){
-                    $value = $siswa->{$item->tagihan} ?? 0;
+                    $value = $siswa[$item] ?? 0;
                     $row .= "<td class='text-end'>Rp. " . number_format($value, 0, ',', '.') . "</td>";
                     $totalPenerimaanSiswaIni += $value;
                 }
@@ -67,42 +67,20 @@
             @if($totalPenerimaanSiswaIni > 0)
                 <tr>
                     <td>{{$loop->index + 1}}</td>
-                    <td>{{$siswa->nocust}}</td>
-                    <td>{{$siswa->nmcust}}</td>
+                    <td>{{$siswa['nocust']}}</td>
+                    <td>{{$siswa['nmcust']}}</td>
                     {!! $row !!}
                     <td class="text-end">@rupiah($totalPenerimaanSiswaIni)</td>
                 </tr>
             @endif
         @endforeach
-        {{--        @foreach($tagihans as $tagihan)--}}
-        {{--            @php--}}
-        {{--                $totalTagihanSiswaIni = 0;--}}
-        {{--                $row = '';--}}
-
-        {{--                foreach ($mstTagihan as $item) {--}}
-        {{--                    $value = $siswa->{$item->tagihan} ?? 0;--}}
-        {{--                    $row .= "<td class='text-end'>Rp. " . number_format($value, 0, ',', '.') . "</td>";--}}
-        {{--                    $totalTagihanSiswaIni += $value;--}}
-        {{--                }--}}
-        {{--            @endphp--}}
-
-        {{--            @if($totalTagihanSiswaIni > 0)--}}
-        {{--                <tr>--}}
-        {{--                    <td>{{ $loop->index + 1 }}</td>--}}
-        {{--                    <td>{{ $tagihan->nocust }}</td>--}}
-        {{--                    <td>{{ $tagihan->nmcust }}</td>--}}
-        {{--                    {!! $row !!}--}}
-        {{--                    <td>@rupiah($totalTagihanSiswaIni)</td>--}}
-        {{--                </tr>--}}
-        {{--            @endif--}}
-        {{--        @endforeach--}}
         </tbody>
         <tfoot style="background-color: #e5e6e8;">
         <tr>
             <td colspan="3">Total</td>
             @foreach($mstTagihan as $item)
                 @php
-                    $currentTotalPeneriemaan = $tagihans->sum($item->tagihan);
+                    $currentTotalPeneriemaan = $tagihans->sum($item);
                     $totalPenerimaanSiswa += $currentTotalPeneriemaan;
                 @endphp
 

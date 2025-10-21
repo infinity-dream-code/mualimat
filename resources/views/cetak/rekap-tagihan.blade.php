@@ -34,7 +34,7 @@
             <th>Nis</th>
             <th>Nama</th>
             @foreach($mstTagihan as $item)
-                <th>{{$item->tagihan}}</th>
+                <th>{{$item}}</th>
             @endforeach
             <th>Total</th>
         </tr>
@@ -47,7 +47,7 @@
                 $row = '';
 
                 foreach ($mstTagihan as $item) {
-                    $value = $tagihan[$item->tagihan] ?? 0;
+                    $value = $tagihan[$item] ?? 0;
                     $row .= "<td class='text-end'>Rp. " . number_format($value, 0, ',', '.') . "</td>";
                     $totalTagihanSiswaIni += $value;
                 }
@@ -56,8 +56,8 @@
             @if($totalTagihanSiswaIni > 0)
                 <tr>
                     <td>{{ $loop->index + 1 }}</td>
-                    <td>{{ $tagihan->nocust }}</td>
-                    <td>{{ $tagihan->nmcust }}</td>
+                    <td>{{ $tagihan['nocust'] }}</td>
+                    <td>{{ $tagihan['nmcust'] }}</td>
                     {!! $row !!}
                     <td>@rupiah($totalTagihanSiswaIni)</td>
                 </tr>
@@ -68,8 +68,8 @@
         <tr>
             <td colspan="3">Total</td>
             @foreach($mstTagihan as $item)
-                <td class="text-end">@rupiah($tagihans->sum($item->tagihan))</td>
-                @php $totalTagihanSiswa += $tagihans->sum($item->tagihan); @endphp
+                <td class="text-end">@rupiah($tagihans->sum($item))</td>
+                @php $totalTagihanSiswa += $tagihans->sum($item); @endphp
             @endforeach
             <td class="text-end">@rupiah($totalTagihanSiswa)</td>
         </tr>
