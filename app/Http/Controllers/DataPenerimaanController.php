@@ -468,14 +468,29 @@ class DataPenerimaanController extends Controller
 
             if (!$records || !$mstTagihan) throw new \Exception('Gagal mengambil data tagihan');
 
+            $zeroColumns = [];
+            $filtered = $records->map(function ($item) use ($records, &$zeroColumns) {
+                $zeroColumns = collect($item)
+                    ->keys()
+                    ->filter(function ($key) use ($records) {
+                        return $records->pluck($key)->every(fn($value) => $value == 0);
+                    });
 
-//                $customPaper = [0, 0, 1684, 842];
+                return collect($item)->except($zeroColumns);
+            });
+
+            $mstTagihan = $mstTagihan->pluck('tagihan');
+            $zeroColumns = $zeroColumns->toArray();
+            $filteredMstTagihan = $mstTagihan->reject(function ($value) use ($zeroColumns) {
+                return in_array($value, $zeroColumns, true);
+            });
+
             $customPaper = [0, 0, 935.43, 595.28];
 
             $pdf = Pdf::loadView('cetak.rekap-penerimaan',
                 [
-                    'tagihans' => $records,
-                    'mstTagihan' => $mstTagihan,
+                    'tagihans' => $filtered,
+                    'mstTagihan' => $filteredMstTagihan,
                     'kelas' => $kelas,
                     'unit' => $unit,
                     'tanggalMulai' => $tanggalMulai,
@@ -491,7 +506,7 @@ class DataPenerimaanController extends Controller
 
             return $pdf->download('rekap-penerimaan.pdf');
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Tidak dapat mencetak rekap penerimaan!<br> *Silahkan hubungi administrator', 'error' => $e], 422);
+            return response()->json(['message' => 'Tidak dapat mencetak rekap penerimaan!<br> *Silahkan hubungi administrator', 'error' => $e->getMessage()], 422);
         }
 //        $sqlWithPlaceholders = $records->toSql();
 //
