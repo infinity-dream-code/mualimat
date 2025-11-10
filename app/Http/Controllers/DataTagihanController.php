@@ -305,6 +305,7 @@ class DataTagihanController extends Controller
                         }
                     }
                 })->where('scctcust.STCUST', 1)
+                ->orderBy("scctcust.nmcust", "asc")
                     ->select($select)
                     ->groupBy('scctcust.CUSTID');
 
