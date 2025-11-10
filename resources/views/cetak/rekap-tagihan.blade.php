@@ -40,7 +40,10 @@
         </tr>
         </thead>
         <tbody>
-        @php $totalTagihanSiswa = 0; @endphp
+        @php 
+            $totalTagihanSiswa = 0;
+            $rowNumb = 1;
+        @endphp
         @foreach($tagihans as $tagihan)
             @php
                 $totalTagihanSiswaIni = 0;
@@ -55,12 +58,15 @@
 
             @if($totalTagihanSiswaIni > 0)
                 <tr>
-                    <td>{{ $loop->index + 1 }}</td>
+                    <td>{{ $rowNumb}}</td>
                     <td>{{ $tagihan['nocust'] }}</td>
                     <td>{{ $tagihan['nmcust'] }}</td>
                     {!! $row !!}
                     <td>@rupiah($totalTagihanSiswaIni)</td>
                 </tr>
+                @php
+                $rowNumb++;
+                @endphp
             @endif
         @endforeach
         </tbody>
