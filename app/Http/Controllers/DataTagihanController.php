@@ -199,6 +199,7 @@ class DataTagihanController extends Controller
                             'kelas' => 'scctcust.DESC02',
                             'siswa' => 'scctcust.nmcust',
                             'custid' => 'scctbill.CUSTID',
+                            'status_bayar' => 'scctbill.PAIDST',
                             default => null
                         };
 
@@ -270,7 +271,6 @@ class DataTagihanController extends Controller
 
                 $records = scctcust::leftJoin('scctbill', function ($join) use ($filter_scctbill) {
                     $join->on('scctbill.CUSTID', '=', 'scctcust.CUSTID')
-                        ->where('scctbill.PAIDST', 0)
                         ->where('scctbill.FSTSBolehBayar', 1)
                         ->where(function ($query) use ($filter_scctbill) {
                             foreach ($filter_scctbill as $filter) {
