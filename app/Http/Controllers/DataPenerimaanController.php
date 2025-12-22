@@ -170,10 +170,17 @@ class DataPenerimaanController extends Controller
                     422,
                 );
             }
-            //            dd($tagihans, $siswa);
+
+            $nova = match (strtolower($siswa->CODE02)) {
+                "mts" => scctcust::showVAMTS($siswa->NOCUST),
+                "ma" => scctcust::showVAMA($siswa->NOCUST),
+                default => "",
+            };
+
             $pdf = Pdf::loadView("cetak.kartu-siswa", [
                 "tagihans" => $tagihans,
                 "siswa" => $siswa,
+                "nova" => $nova,
             ]);
             return $pdf->download("kartu-siswa.pdf");
         } catch (\Throwable $e) {
@@ -401,13 +408,20 @@ class DataPenerimaanController extends Controller
                 ->take($rowperpage)
                 ->get();
 
-            if ($request->get("length") != "poll") {
-                $records = $records->map(function ($item, $index) {
+            $records = $records->map(function ($item, $index) use ($request) {
+                $item->NOVA = match (strtolower($item->CODE02)) {
+                    "mts" => scctcust::showVAMTS($item->nocust),
+                    "ma" => scctcust::showVAMA($item->nocust),
+                    default => "",
+                };
+
+                if ($request->get("length") != "poll") {
                     $item->item_id = Crypt::encrypt($item["AA"]);
                     $item->CUSTID = Crypt::encrypt($item["CUSTID"]);
-                    return $item;
-                });
-            }
+                }
+
+                return $item;
+            });
 
             $records->toArray();
         }
