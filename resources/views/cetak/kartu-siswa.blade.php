@@ -27,7 +27,7 @@
                 class="border-right-0">NOVA
             </td>
             <td class="border-left-0">
-                :<strong> {{$nis ? config('app.nova').str_pad($siswa->NOCUST, 10, '0', STR_PAD_LEFT) : ''}}</strong>
+                :<strong> {{$nova ?? ''}}</strong>
             </td>
             <td style="width: auto" class="border-right-0">Unit</td>
             <td class="border-left-0">:<strong> {{$siswa->CODE02??''}}</strong></td>
