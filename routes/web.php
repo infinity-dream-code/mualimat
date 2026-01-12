@@ -31,6 +31,7 @@ Route::prefix('admin')->name('admin.')->middleware('check.session')->group(funct
             Route::get('cetak-rekap', 'cetakRekapPenerimaan')->name('cetak-rekap');
             Route::get('cetak-tagihan-dibayar', 'cetakPembayaran')->name('cetak-tagihan-dibayar');
             Route::get('cetak-kartu-siswa', 'cetakKartuSiswa')->name('cetak-kartu-siswa');
+            Route::get('get-data-rekap', 'getRekapDataPenerimaan')->name('get-data-rekap');
             Route::resource('', \App\Http\Controllers\DataPenerimaanController::class)->parameters(['' => 'id']);
         });
     });
