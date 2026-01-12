@@ -227,6 +227,8 @@
     <script src="{{asset('main/libs/moment/moment.js')}}"></script>
     <script src="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.js')}}"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+
     <script type="text/javascript" defer>
         const select2 = $(`[data-control='select2']`);
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
