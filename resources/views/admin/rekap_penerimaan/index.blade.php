@@ -177,9 +177,6 @@
                         <div class="d-flex justify-content-center flex-column flex-md-row justify-content-md-end gap-4">
                             <button type="button" class="btn btn-facebook btn-print-rekap" id="btn-print-rekap">
                                 <span class="ri-file-text-line me-2"></span>
-                                Cetak Rekap NEW
-                            <button type="button" class="btn btn-facebook btn-print-rekap" id="cetak-rekap">
-                                <span class="ri-file-text-line me-2"></span>
                                 Cetak Rekap
                             </button>
                             <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">
@@ -428,79 +425,6 @@
                     });
             })
 
-            document.getElementById('cetak-rekap').addEventListener('click', function (e) {
-                e.preventDefault();
-                const form = new FormData(document.getElementById('rekapForm'));
-
-                const params = new URLSearchParams();
-                for (const [key, value] of form.entries()) {
-                    params.append(key, value);
-                }
-
-                const unitValue = params.get('filter[unit]');
-                const kelasValue = params.get('filter[kelas]');
-                const invalidValues = [null, '', 'undefined', 'all'];
-
-                if (invalidValues.includes(unitValue) && invalidValues.includes(kelasValue)){
-                    warningAlert('Silahkan pilih salah satu Tingkat/Kelas terlebih dahulu!');
-                    return;
-                }
-
-                loadingAlert(`Membuat Rekap ... <br> Proses ini membutuhkan waktu beberapa saat<br><hr>
-                    <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
-                `);
-                let url = '{{route('admin.data-penerimaan.cetak-rekap')}}';
-                const fullUrl = `${url}?${params.toString()}`;
-                const request = new Request(
-                    fullUrl, {
-                        method: "GET",
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/pdf'
-                        }
-                    });
-
-                fetch(request)
-                    .then(async res => {
-                        if (!res.ok) {
-                            const errorBody = await res.json().catch(() => ({}));
-                            throw {
-                                status: res.status,
-                                message: errorBody.message || 'Terjadi kesalahan',
-                                error: errorBody.error,
-                                errors: errorBody.errors
-                            };
-                        }
-
-                        return res.blob();
-                    })
-                    .then(blob => {
-                        const url = URL.createObjectURL(blob);
-                        window.open(url, '_blank');
-                        successAlert('Sukses, Rekap terbuka pada tab baru');
-                    })
-                    .catch(error => {
-                        if (error.status === 422) {
-                            const errors = error.error || error.errors;
-                            errorAlert(error.message);
-                            if (errors) {
-                                processErrors(errors)
-                            }
-                        } else {
-                            const errorMessages = {
-                                401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
-                                403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
-                                404: 'Halaman yang dituju tidak ditemukan 🧐',
-                                405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
-                                419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
-                                429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
-                            };
-                            errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
-                        }
-                    });
-
-            });
-
             function generateTableRow(data, kelas) {
                 return data.map(s => {
                     let row = {
@@ -519,12 +443,12 @@
             }
             
             function parseDDMMYYYY(str) {
-              if (!str) return null;
-            
-              const [dd, mm, yyyy] = str.split("-").map(Number);
-              if (!dd || !mm || !yyyy) return null;
-            
-              return new Date(yyyy, mm - 1, dd);
+                if (!str) return null;
+                
+                const [dd, mm, yyyy] = str.split("-").map(Number);
+                if (!dd || !mm || !yyyy) return null;
+                
+                return new Date(yyyy, mm, dd);
             }
 
             async function exportExcel(groupedData, params, kelas = []) {
@@ -547,10 +471,10 @@
                   thnAkaVal = 'Semua';
                 }
 
-                let periodeMulaiVal = params.get('filter[periode_mulai]') ?? null;
-                let periodeSelesai = params.get('filter[periode_selesai]') ?? null;
+                let tanggalTransaksi = params.get('filter[tanggal-transaksi]') ?? null;
+                tanggalTransaksi = tanggalTransaksi.split(" - ")
 
-                const wbTitle = "REKAP SPP"
+                const wbTitle = "REKAP PENERIMAAN"
                 const wb = new ExcelJS.Workbook();
                 const ws = wb.addWorksheet(wbTitle);
 
@@ -560,8 +484,14 @@
                 ws.insertRow(2, ["Unit, Kelas", kelasVal.replace(/~/g, " - ")]);
                 ws.insertRow(3, ["Status Bayar", !statusBayarVal ? "Semua" : statusBayarVal === 1 ? "Lunas" : "Belum Lunas"]);
                 ws.insertRow(4, ["Tahun Akademik", thnAkaVal]);
-                ws.insertRow(5, ["Periode Mulai", periodeMulaiVal]);
-                ws.insertRow(6, ["Periode Selesai", periodeSelesai]);
+                ws.insertRow(5, ["Dari", parseDDMMYYYY(tanggalTransaksi[0])]);
+                ws.insertRow(6, ["Hingga", parseDDMMYYYY(tanggalTransaksi[1])]);
+                
+                [5, 6].forEach(rowNumber => {
+                    const cell = ws.getRow(rowNumber).getCell(2);
+                    
+                    cell.numFmt = "dddd, dd mmmm yyyy";
+                });
 
                 const boldRows = [1, 2, 3, 4, 5, 6];
 
@@ -601,7 +531,7 @@
 
                     row.eachCell({ includeEmpty: true }, cell => {
                         if (cell.value instanceof Date) {
-                            cell.numFmt = "dddd dd mmmm yyyy";
+                            cell.numFmt = "dddd, dd mmmm yyyy";
                         }
 
                         if (typeof cell.value === "number") {
