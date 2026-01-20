@@ -519,12 +519,12 @@
             }
             
             function parseDDMMYYYY(str) {
-              if (!str) return null;
-            
-              const [dd, mm, yyyy] = str.split("-").map(Number);
-              if (!dd || !mm || !yyyy) return null;
-            
-              return new Date(yyyy, mm - 1, dd);
+                if (!str) return null;
+                
+                const [dd, mm, yyyy] = str.split("-").map(Number);
+                if (!dd || !mm || !yyyy) return null;
+                
+                return new Date(yyyy, mm, dd);
             }
 
             async function exportExcel(groupedData, params, kelas = []) {
@@ -547,10 +547,10 @@
                   thnAkaVal = 'Semua';
                 }
 
-                let periodeMulaiVal = params.get('filter[periode_mulai]') ?? null;
-                let periodeSelesai = params.get('filter[periode_selesai]') ?? null;
+                let tanggalTransaksi = params.get('filter[tanggal-transaksi]') ?? null;
+                tanggalTransaksi = tanggalTransaksi.split(" - ")
 
-                const wbTitle = "REKAP SPP"
+                const wbTitle = "REKAP PENERIMAAN"
                 const wb = new ExcelJS.Workbook();
                 const ws = wb.addWorksheet(wbTitle);
 
@@ -560,8 +560,14 @@
                 ws.insertRow(2, ["Unit, Kelas", kelasVal.replace(/~/g, " - ")]);
                 ws.insertRow(3, ["Status Bayar", !statusBayarVal ? "Semua" : statusBayarVal === 1 ? "Lunas" : "Belum Lunas"]);
                 ws.insertRow(4, ["Tahun Akademik", thnAkaVal]);
-                ws.insertRow(5, ["Periode Mulai", periodeMulaiVal]);
-                ws.insertRow(6, ["Periode Selesai", periodeSelesai]);
+                ws.insertRow(5, ["Dari", parseDDMMYYYY(tanggalTransaksi[0])]);
+                ws.insertRow(6, ["Hingga", parseDDMMYYYY(tanggalTransaksi[1])]);
+                
+                [5, 6].forEach(rowNumber => {
+                    const cell = ws.getRow(rowNumber).getCell(2);
+                    
+                    cell.numFmt = "dddd, dd mmmm yyyy";
+                });
 
                 const boldRows = [1, 2, 3, 4, 5, 6];
 
@@ -601,7 +607,7 @@
 
                     row.eachCell({ includeEmpty: true }, cell => {
                         if (cell.value instanceof Date) {
-                            cell.numFmt = "dddd dd mmmm yyyy";
+                            cell.numFmt = "dddd, dd mmmm yyyy";
                         }
 
                         if (typeof cell.value === "number") {
