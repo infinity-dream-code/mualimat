@@ -184,16 +184,6 @@
                     </div>
                 </fieldset>
             </form>
-            <div class="row px-5 mb-2">
-                <ul class="list-group list-group-timeline">
-                    <li class="list-group-item list-group-timeline-warning">
-                        Untuk mencetak kartu siswa, silahkan pilih siswa terlebih dahulu!
-                    </li>
-                    <li class="list-group-item list-group-timeline-warning">
-                        Cetak kartu siswa, hanya bisa dilakukan per siswa!
-                    </li>
-                </ul>
-            </div>
         </div>
         <div class="card-datatable table-responsive text-nowrap">
             <table class="table table-sm table-bordered table-hover"
@@ -335,13 +325,13 @@
                     return row;
                 });
             }
-            
+
             function parseDDMMYYYY(str) {
                 if (!str) return null;
-                
+
                 const [dd, mm, yyyy] = str.split("-").map(Number);
                 if (!dd || !mm || !yyyy) return null;
-                
+
                 return new Date(yyyy, mm, dd);
             }
 
@@ -350,11 +340,6 @@
                 if (!rows.length) return;
 
                 const invalidValues = [null, '', 'undefined', 'all'];
-                let statusBayarVal = params.get('filter[status_bayar]') ?? null;
-                if (invalidValues.includes(statusBayarVal)) {
-                  statusBayarVal = false;
-                }
-                console.log(statusBayarVal);
                 let kelasVal = params.get('filter[kelas]') ?? null;
                 if (invalidValues.includes(kelasVal)) {
                   kelasVal = 'Semua';
@@ -365,10 +350,7 @@
                   thnAkaVal = 'Semua';
                 }
 
-                let tanggalTransaksi = params.get('filter[tanggal-transaksi]') ?? null;
-                tanggalTransaksi = tanggalTransaksi.split(" - ")
-
-                const wbTitle = "REKAP PENERIMAAN"
+                const wbTitle = "REKAP TAGIHAN"
                 const wb = new ExcelJS.Workbook();
                 const ws = wb.addWorksheet(wbTitle);
 
@@ -376,18 +358,9 @@
 
                 ws.insertRow(1, [wbTitle]);
                 ws.insertRow(2, ["Unit, Kelas", kelasVal.replace(/~/g, " - ")]);
-                ws.insertRow(3, ["Status Bayar", !statusBayarVal ? "Semua" : statusBayarVal === 1 ? "Lunas" : "Belum Lunas"]);
-                ws.insertRow(4, ["Tahun Akademik", thnAkaVal]);
-                ws.insertRow(5, ["Dari", parseDDMMYYYY(tanggalTransaksi[0])]);
-                ws.insertRow(6, ["Hingga", parseDDMMYYYY(tanggalTransaksi[1])]);
-                
-                [5, 6].forEach(rowNumber => {
-                    const cell = ws.getRow(rowNumber).getCell(2);
-                    
-                    cell.numFmt = "dddd, dd mmmm yyyy";
-                });
+                ws.insertRow(3, ["Tahun Akademik", thnAkaVal]);
 
-                const boldRows = [1, 2, 3, 4, 5, 6];
+                const boldRows = [1, 2, 3];
 
                 boldRows.forEach(rowNumber => {
                     const row = ws.getRow(rowNumber);
@@ -399,6 +372,9 @@
                     row.commit();
                 });
 
+                ws.insertRow(4, []);
+                ws.insertRow(5, []);
+                ws.insertRow(6, []);
                 ws.insertRow(7, []);
 
                 const headerRowNumber = 8;
@@ -494,7 +470,7 @@
                 params = new URLSearchParams(data);
 
                 if (params) {
-                    let url = '{{route('admin.rekap-penerimaan.get-data-rekap')}}';
+                    let url = '{{route('admin.rekap-tagihan.get-data-rekap')}}';
                     const form = new FormData(document.getElementById('rekapForm'));
                     const params = new URLSearchParams();
                     for (const [key, value] of form.entries()) {
@@ -515,44 +491,67 @@
 
                         if (!response.ok) {
                             const status = response.status;
-                            const contentType = response.headers.get('content-type');
                             let message = `Request failed with status ${status}`;
-                            if (contentType && contentType.includes('application/json')) {
-                                const errorData = await response.json();
-                                message = errorData.message || message;
-                            } else {
-                                const errorText = await response.text();
-                                message = errorText || message;
+                            let errors = null;
+
+                            try {
+                                const contentType = response.headers.get('content-type') || '';
+                                if (contentType.includes('application/json')) {
+                                    const errorData = await response.json();
+                                    message = errorData.message || message;
+                                    errors = errorData.errors || errorData.error || null;
+                                } else {
+                                    const text = await response.text();
+                                    message = text || message;
+                                }
+                            } catch (_) {
                             }
 
                             const error = new Error(message);
                             error.status = status;
+                            error.errors = errors;
                             throw error;
                         }
 
-                        const result = await response.json();
-                        let tableRow = generateTableRow(result.data, result.kelas)
-                        await exportExcel(tableRow, params, result.kelas)
+                        let result;
+                        try {
+                            result = await response.json();
+                        } catch {
+                            throw new Error('Response JSON tidak valid');
+                        }
 
+                        if (!result?.data || !result?.kelas) {
+                            throw new Error('Data respon tidak lengkap');
+                        }
+
+                        const tableRow = generateTableRow(result.data, result.kelas);
+                        await exportExcel(tableRow, params, result.kelas);
                         successAlert('Sukses, Rekap telah dicetak');
                     } catch (error) {
+                        console.error(error);
+
                         if (error.status === 422) {
-                            const errors = error.error || error.errors;
                             errorAlert(error.message);
-                            if (errors) {
-                                processErrors(errors)
+                            if (error.errors) {
+                                processErrors(error.errors);
                             }
-                        } else {
-                            const errorMessages = {
-                                401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
-                                403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
-                                404: 'Halaman yang dituju tidak ditemukan 🧐',
-                                405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
-                                419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
-                                429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
-                            };
-                            errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
+                            return;
                         }
+
+                        const errorMessages = {
+                            401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br>Jika masalah masih terjadi silahkan login kembali!',
+                            403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
+                            404: 'Halaman yang dituju tidak ditemukan 🧐',
+                            405: 'Metode tidak valid 🧐 <br>Silahkan muat ulang halaman dan coba lagi!',
+                            419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan!',
+                            429: 'Terlalu banyak permintaan akses <br>Silahkan tunggu beberapa saat 🙏',
+                        };
+
+                        errorAlert(
+                            errorMessages[error.status] ||
+                            error.message ||
+                            'Terjadi kesalahan, silahkan coba memuat ulang halaman'
+                        );
                     }
                 } else {
                     warningAlert('Silahkan pilih salah satu kelas terlebih dahulu!')
