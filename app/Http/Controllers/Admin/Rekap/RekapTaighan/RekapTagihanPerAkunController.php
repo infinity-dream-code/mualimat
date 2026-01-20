@@ -107,185 +107,140 @@ class RekapTagihanPerAkunController extends Controller
     public function getData(Request $request)
     {
         $draw = $request->get("draw");
-        if (
-            $request->filter["tanggal-transaksi"] != null &&
-            preg_match(
-                '/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/',
-                $request->filter["tanggal-transaksi"],
-            )
-        ) {
-            $start = $request->get("start");
-            $rowperpage = $request->get("length");
+        $start = $request->get("start");
+        $rowperpage = $request->get("length");
 
-            $columnIndex_arr = $request->get("order", []);
-            $columnName_arr = $request->get("columns", []);
-            $order_arr = $request->get("order", []);
-            $search_arr = $request->get("search", []);
-            $searchValue = $search_arr["value"] ?? "";
+        $columnIndex_arr = $request->get("order", []);
+        $columnName_arr = $request->get("columns", []);
+        $order_arr = $request->get("order", []);
+        $search_arr = $request->get("search", []);
+        $searchValue = $search_arr["value"] ?? "";
 
-            $columnName = "BILLAC";
-            $columnSortOrder = "DESC";
+        $columnName = "BILLAC";
+        $columnSortOrder = "DESC";
 
-            if (!empty($order_arr)) {
-                $columnIndex = $columnIndex_arr[0]["column"] ?? null;
+        if (!empty($order_arr)) {
+            $columnIndex = $columnIndex_arr[0]["column"] ?? null;
+            if (
+                $columnIndex !== null &&
+                !empty($columnName_arr[$columnIndex]["data"]) &&
+                $columnName_arr[$columnIndex]["data"] !== "no"
+            ) {
+                $columnName = $columnName_arr[$columnIndex]["data"];
+                $columnSortOrder = $order_arr[0]["dir"] ?? "desc";
+            }
+        }
+
+        $filters = [];
+        $filterQuery = null;
+
+        $filter = $request->input("filter");
+        if ($filter) {
+            foreach ($filter as $key => $val) {
                 if (
-                    $columnIndex !== null &&
-                    !empty($columnName_arr[$columnIndex]["data"]) &&
-                    $columnName_arr[$columnIndex]["data"] !== "no"
+                    is_array($val) ||
+                    (strtolower($val) != "all" && $val !== null && $val !== "")
                 ) {
-                    $columnName = $columnName_arr[$columnIndex]["data"];
-                    $columnSortOrder = $order_arr[0]["dir"] ?? "desc";
-                }
-            }
-
-            $filters = [];
-            $filterQuery = null;
-
-            $filter = $request->input("filter");
-            if ($filter) {
-                foreach ($filter as $key => $val) {
-                    if (
-                        is_array($val) ||
-                        (strtolower($val) != "all" &&
-                            $val !== null &&
-                            $val !== "")
-                    ) {
-                        $colName = match ($key) {
-                            "dari_tanggal",
-                            "sampai_tanggal"
-                                => "scctbill.FTGLTagihan",
-                            "tanggal-transaksi" => "scctbill.PAIDDT",
-                            "tahun_akademik" => "scctbill.BTA",
-                            "post" => "scctbill.BILLNM",
-                            "unit" => "scctcust.CODE01",
-                            "kelas" => "scctcust.DESC02",
-                            "siswa" => "scctcust.nmcust",
-                            "custid" => "scctbill.CUSTID",
-                            default => null,
-                        };
-                        if ($key == "tanggal-transaksi") {
-                            if (
-                                preg_match(
-                                    '/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/',
-                                    $val,
-                                )
-                            ) {
-                                $val = preg_replace("/[-\/~]/", "-", $val);
-
-                                [$startDate, $endDate] = explode(" - ", $val);
-                                $startDate = Carbon::createFromFormat(
-                                    "d-m-Y",
-                                    $startDate,
-                                )->startOfDay();
-                                $endDate = Carbon::createFromFormat(
-                                    "d-m-Y",
-                                    $endDate,
-                                )->endOfDay();
-                                if ($startDate && $endDate) {
-                                    $colName &&
-                                        ($filters[] = [
-                                            $colName,
-                                            $startDate,
-                                            $endDate,
-                                            "whereBetween",
-                                        ]);
-                                }
-                            }
-                        } elseif ($key == "kelas") {
-                            $val = explode("~", $val);
-                            if (count($val) == 3) {
-                                $filters[] = ["scctcust.CODE02", "=", $val[0]];
-                                $filters[] = ["scctcust.DESC02", "=", $val[1]];
-                                $filters[] = ["scctcust.DESC03", "=", $val[2]];
-                            }
-                        } elseif ($key == "post") {
-                            $array = array_filter($val, function ($value) {
-                                return $value !== "all";
-                            });
-                            if (count($array) > 0) {
-                                $colName &&
-                                    ($filters[] = [$colName, "in", $array]);
-                            }
-                        } elseif ($key == "siswa") {
-                            $val = is_numeric($val) ? $val : "%" . $val . "%";
-                            $colName = is_numeric($val)
-                                ? "scctcust.nocust"
-                                : $colName;
-                            $colName && ($filters[] = [$colName, "like", $val]);
-                        } else {
-                            $colName && ($filters[] = [$colName, "=", $val]);
-                        }
-                    }
-                }
-
-                if (!empty($filters)) {
-                    $filterQuery = function ($query) use ($filters) {
-                        foreach ($filters as $filter) {
-                            switch (count($filter)) {
-                                case 3:
-                                    $filter[1] === "in"
-                                        ? $query->whereIn(
-                                            $filter[0],
-                                            $filter[2],
-                                        )
-                                        : $query->where(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
-                                    break;
-
-                                case 4:
-                                    $filter[3] === "whereBetween"
-                                        ? $query->whereBetween($filter[0], [
-                                            $filter[1],
-                                            $filter[2],
-                                        ])
-                                        : $query->{$filter[3]}(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
-                                    break;
-                            }
-                        }
+                    $colName = match ($key) {
+                        "tahun_akademik" => "scctbill.BTA",
+                        "post" => "scctbill.BILLNM",
+                        "unit" => "scctcust.CODE01",
+                        "kelas" => "scctcust.DESC02",
+                        "siswa" => "scctcust.nmcust",
+                        "custid" => "scctbill.CUSTID",
+                        default => null,
                     };
+                    if ($key == "kelas") {
+                        $val = explode("~", $val);
+                        if (count($val) == 3) {
+                            $filters[] = ["scctcust.CODE02", "=", $val[0]];
+                            $filters[] = ["scctcust.DESC02", "=", $val[1]];
+                            $filters[] = ["scctcust.DESC03", "=", $val[2]];
+                        }
+                    } elseif ($key == "post") {
+                        $array = array_filter($val, function ($value) {
+                            return $value !== "all";
+                        });
+                        if (count($array) > 0) {
+                            $colName && ($filters[] = [$colName, "in", $array]);
+                        }
+                    } elseif ($key == "siswa") {
+                        $val = is_numeric($val) ? $val : "%" . $val . "%";
+                        $colName = is_numeric($val)
+                            ? "scctcust.nocust"
+                            : $colName;
+                        $colName && ($filters[] = [$colName, "like", $val]);
+                    } else {
+                        $colName && ($filters[] = [$colName, "=", $val]);
+                    }
                 }
             }
 
-            $whereAny = ["scctcust.nmcust", "scctcust.nocust"];
+            if (!empty($filters)) {
+                $filterQuery = function ($query) use ($filters) {
+                    foreach ($filters as $filter) {
+                        switch (count($filter)) {
+                            case 3:
+                                $filter[1] === "in"
+                                    ? $query->whereIn($filter[0], $filter[2])
+                                    : $query->where(
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
+                                break;
 
-            $select = array_unique(
-                array_merge($whereAny, [
-                    "scctbill.AA",
-                    "scctbill.BILLNM",
-                    "scctbill.BILLAM",
-                    "scctbill.PAIDST",
-                    "scctbill.PAIDDT",
-                    "scctbill.BTA",
-                    "scctbill.CUSTID",
-                    "scctbill.FIDBANK",
-                    "scctbill.FUrutan",
-                    "scctcust.CODE02",
-                    "scctcust.DESC02",
-                ]),
-            );
-
-            $query = scctbill::leftJoin(
-                "scctcust",
-                "scctcust.CUSTID",
-                "scctbill.CUSTID",
-            )
-                ->where("scctbill.PAIDST", 0)
-                // ->where("scctbill.FSTSBolehBayar", 1)
-                ->where("scctcust.STCUST", 1)
-                // ->where("scctbill.PAIDDT", "!=", null)
-                ->whereAny($whereAny, "like", "%" . $searchValue . "%")
-                ->where(function ($query) use ($filterQuery) {
-                    if ($filterQuery) {
-                        $filterQuery($query);
+                            case 4:
+                                $filter[3] === "whereBetween"
+                                    ? $query->whereBetween($filter[0], [
+                                        $filter[1],
+                                        $filter[2],
+                                    ])
+                                    : $query->{$filter[3]}(
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
+                                break;
+                        }
                     }
-                })->orderByRaw("
+                };
+            }
+        }
+
+        $whereAny = ["scctcust.nmcust", "scctcust.nocust"];
+
+        $select = array_unique(
+            array_merge($whereAny, [
+                "scctbill.AA",
+                "scctbill.BILLNM",
+                "scctbill.BILLAM",
+                "scctbill.PAIDST",
+                "scctbill.PAIDDT",
+                "scctbill.BTA",
+                "scctbill.CUSTID",
+                "scctbill.FIDBANK",
+                "scctbill.FUrutan",
+                "scctcust.CODE02",
+                "scctcust.DESC02",
+            ]),
+        );
+
+        $query = scctbill::leftJoin(
+            "scctcust",
+            "scctcust.CUSTID",
+            "scctbill.CUSTID",
+        )
+            ->where("scctbill.PAIDST", 0)
+            // ->where("scctbill.FSTSBolehBayar", 1)
+            ->where("scctcust.STCUST", 1)
+            // ->where("scctbill.PAIDDT", "!=", null)
+            ->whereAny($whereAny, "like", "%" . $searchValue . "%")
+            ->where(function ($query) use ($filterQuery) {
+                if ($filterQuery) {
+                    $filterQuery($query);
+                }
+            })->orderByRaw("
                 CASE
                     WHEN scctbill.BILLNM LIKE '%JULI%' THEN 1
                     WHEN scctbill.BILLNM LIKE '%AGUSTUS%' THEN 2
@@ -303,38 +258,37 @@ class RekapTagihanPerAkunController extends Controller
                 END
             ");
 
-            // Total records
-            $totalRecords = scctbill::select("count(*) as allcount")
-                ->where("PAIDST", 1)
-                ->where("scctbill.FSTSBolehBayar", 1)
-                ->where("PAIDDT", "!=", null)
-                ->count();
+        // Total records
+        $totalRecords = scctbill::select("count(*) as allcount")
+            ->where("PAIDST", 1)
+            ->where("scctbill.FSTSBolehBayar", 1)
+            ->where("PAIDDT", "!=", null)
+            ->count();
 
-            $totalRecordswithFilter = (clone $query)->count();
+        $totalRecordswithFilter = (clone $query)->count();
 
-            $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
-            $records = (clone $query)
-                ->orderBy($columnName, $columnSortOrder)
-                ->select($select)
-                ->whereAny($whereAny, "like", "%" . $searchValue . "%")
-                ->skip($start)
-                ->take($rowperpage)
-                ->get();
+        $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
+        $records = (clone $query)
+            ->orderBy($columnName, $columnSortOrder)
+            ->select($select)
+            ->whereAny($whereAny, "like", "%" . $searchValue . "%")
+            ->skip($start)
+            ->take($rowperpage)
+            ->get();
 
-            $records = $records->map(function ($item, $index) use ($request) {
-                $item->NOVA = match (strtolower($item->CODE02)) {
-                    "mts" => scctcust::showVAMTS($item->nocust),
-                    "ma" => scctcust::showVAMA($item->nocust),
-                    default => "",
-                };
+        $records = $records->map(function ($item, $index) use ($request) {
+            $item->NOVA = match (strtolower($item->CODE02)) {
+                "mts" => scctcust::showVAMTS($item->nocust),
+                "ma" => scctcust::showVAMA($item->nocust),
+                default => "",
+            };
 
-                $item->item_id = $item["AA"];
+            $item->item_id = $item["AA"];
 
-                return $item;
-            });
+            return $item;
+        });
 
-            $records->toArray();
-        }
+        $records->toArray();
 
         $response = [
             "draw" => intval($draw),
