@@ -179,10 +179,6 @@
                                 <span class="ri-file-text-line me-2"></span>
                                 Cetak Rekap
                             </button>
-                            <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">
-                                <span class="ri-profile-line me-2"></span>
-                                Cetak Kartu Siswa
-                            </button>
                             <button type="reset" class="btn btn-secondary" disabled>
                                 <span class="ri-reset-left-line me-2"></span>
                                 Reset
@@ -325,7 +321,6 @@
                 let selected = $postInput.val();
                 if (!selected || selected.length === 0) {
                     let fallbackOption = $('#post option:not([value="all"])').first().val();
-                    console.log(fallbackOption)
                     if (fallbackOption) {
                         $postInput.val([fallbackOption]).trigger('change');
                     }
@@ -368,62 +363,6 @@
                     $(this).val(picker.startDate.format('DD-MM-YYYY') + ' ~ ' + picker.endDate.format('DD-MM-YYYY'));
                 }
             });
-
-            document.getElementById('cetak-kartu-siswa').addEventListener('click', function (e) {
-                e.preventDefault();
-                loadingAlert(`Membuat Kartu Siswa ... <br> Proses ini membutuhkan waktu beberapa saat<br><hr>
-                    <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
-                `);
-                let url = '{{route('admin.data-penerimaan.cetak-kartu-siswa')}}';
-                const form = new FormData(document.getElementById('rekapForm'));
-                const params = new URLSearchParams();
-                for (const [key, value] of form.entries()) {
-                    params.append(key, value);
-                }
-                let data = DT[`${dtOptions.tableId}`].rows({selected: true}).data();
-
-                if (!data[0]) {
-                    warningAlert('silahkan pilih siswa!')
-                    return;
-                }
-                params.append('custid', data[0].CUSTID)
-                const fullUrl = `${url}?${params.toString()}`;
-                const request = new Request(
-                    fullUrl, {
-                        method: "GET",
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/pdf'
-                        }
-                    });
-
-                fetch(request)
-                    .then(res => res.blob())
-                    .then(blob => {
-                        const url = URL.createObjectURL(blob);
-                        window.open(url, '_blank');
-                        successAlert('Sukses, Rekap terbuka pada tab baru');
-                    })
-                    .catch(error => {
-                        if (error.status === 422) {
-                            const errors = error.error || error.errors;
-                            errorAlert(error.message);
-                            if (errors) {
-                                processErrors(errors)
-                            }
-                        } else {
-                            const errorMessages = {
-                                401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
-                                403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
-                                404: 'Halaman yang dituju tidak ditemukan 🧐',
-                                405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
-                                419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
-                                429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
-                            };
-                            errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
-                        }
-                    });
-            })
 
             function generateTableRow(data, kelas) {
                 return data.map(s => {
@@ -482,18 +421,17 @@
 
                 ws.insertRow(1, [wbTitle]);
                 ws.insertRow(2, ["Unit, Kelas", kelasVal.replace(/~/g, " - ")]);
-                ws.insertRow(3, ["Status Bayar", !statusBayarVal ? "Semua" : statusBayarVal === 1 ? "Lunas" : "Belum Lunas"]);
-                ws.insertRow(4, ["Tahun Akademik", thnAkaVal]);
-                ws.insertRow(5, ["Dari", parseDDMMYYYY(tanggalTransaksi[0])]);
-                ws.insertRow(6, ["Hingga", parseDDMMYYYY(tanggalTransaksi[1])]);
+                ws.insertRow(3, ["Tahun Akademik", thnAkaVal]);
+                ws.insertRow(4, ["Dari", parseDDMMYYYY(tanggalTransaksi[0])]);
+                ws.insertRow(5, ["Hingga", parseDDMMYYYY(tanggalTransaksi[1])]);
                 
-                [5, 6].forEach(rowNumber => {
+                [4, 5].forEach(rowNumber => {
                     const cell = ws.getRow(rowNumber).getCell(2);
                     
                     cell.numFmt = "dddd, dd mmmm yyyy";
                 });
 
-                const boldRows = [1, 2, 3, 4, 5, 6];
+                const boldRows = [1, 2, 3, 4, 5];
 
                 boldRows.forEach(rowNumber => {
                     const row = ws.getRow(rowNumber);
@@ -596,20 +534,11 @@
                     <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
                 `);
                 let data = $(`#${dtOptions.formId}`).serialize();
-                // let kelasValue;
                 let params;
                 params = new URLSearchParams(data);
-                // function isValidInput(data) {
-                //     params = new URLSearchParams(data);
-                //     kelasValue = params.get('filter[kelas]');
-                //     const invalidValues = [null, '', 'undefined', 'all'];
-                //     return !invalidValues.includes(kelasValue);
-                // }
-
-                console.log(params);
 
                 if (params) {
-                    let url = '{{route('admin.data-penerimaan.get-data-rekap')}}';
+                    let url = '{{route('admin.rekap-penerimaan.get-data-rekap')}}';
                     const form = new FormData(document.getElementById('rekapForm'));
                     const params = new URLSearchParams();
                     for (const [key, value] of form.entries()) {
@@ -646,8 +575,6 @@
                         }
 
                         const result = await response.json();
-
-                        console.log(result);
                         let tableRow = generateTableRow(result.data, result.kelas)
                         await exportExcel(tableRow, params, result.kelas)
 
