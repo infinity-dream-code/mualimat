@@ -200,7 +200,7 @@
                                             </div>
                                             <div class="flex-grow-1">
                                                 <span class="fw-medium d-block small">{{config('app.name')}}</span>
-                                                <small class="text-muted"> {{Auth::user()->name??'admin'}}</small>
+                                                <small class="text-muted">admin</small>
                                             </div>
                                         </div>
                                     </a>
