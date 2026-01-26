@@ -93,28 +93,43 @@ function infoAlert(Message = null) {
 }
 
 function loadingAlert(Message = null) {
-    // const htmlClass = document.documentElement.classList.contains('dark-style') ? 'dark' : 'light';
-    // const fillColor = htmlClass === 'dark' ? '#fff' : '#000';
-    const fillColor = '#fff';
+    const fillColor = "#fff";
     const svgIcon = `
-        <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><style>.spinner_OSmW{fill: ${fillColor}; transform-origin:center;animation:spinner_T6mA .75s step-end infinite}@keyframes spinner_T6mA{8.3%{transform:rotate(30deg)}16.6%{transform:rotate(60deg)}25%{transform:rotate(90deg)}33.3%{transform:rotate(120deg)}41.6%{transform:rotate(150deg)}50%{transform:rotate(180deg)}58.3%{transform:rotate(210deg)}66.6%{transform:rotate(240deg)}75%{transform:rotate(270deg)}83.3%{transform:rotate(300deg)}91.6%{transform:rotate(330deg)}100%{transform:rotate(360deg)}}</style><g class="spinner_OSmW"><rect x="11" y="1" width="2" height="5" opacity=".14"/><rect x="11" y="1" width="2" height="5" transform="rotate(30 12 12)" opacity=".29"/><rect x="11" y="1" width="2" height="5" transform="rotate(60 12 12)" opacity=".43"/><rect x="11" y="1" width="2" height="5" transform="rotate(90 12 12)" opacity=".57"/><rect x="11" y="1" width="2" height="5" transform="rotate(120 12 12)" opacity=".71"/><rect x="11" y="1" width="2" height="5" transform="rotate(150 12 12)" opacity=".86"/><rect x="11" y="1" width="2" height="5" transform="rotate(180 12 12)"/></g></svg>
-    `;
+            <svg width="100" height="100" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <style>
+                    .spinner_OSmW {
+                        fill: ${fillColor};
+                        transform-origin: center;
+                        animation: spinner_T6mA .75s linear infinite;
+                    }
+                    @keyframes spinner_T6mA {
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+                <g class="spinner_OSmW">
+                    ${Array.from({ length: 12 }).map((_, i) => {
+        const opacity = (i + 1) / 12;
+        return `<rect x="11" y="1" width="2" height="5" transform="rotate(${i * 30} 12 12)" opacity="${opacity}" />`
+    }).join("")}
+                </g>
+            </svg>
+        `;
 
     let options = {
-        imageUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgIcon),
-        imageWidth: 100,
-        imageHeight: 100,
-        // height: 100,
-        // width: 400,
-        imageAlt: 'Custom SVG Icon',
+        html: `
+                <div style="display:flex;flex-direction:column;align-items:center;">
+                    ${svgIcon}
+                    ${Message ? `<span style="color:#fff;margin-top:10px;">${Message}</span>` : ""}
+                </div>
+            `,
         showConfirmButton: false,
         allowOutsideClick: false,
         customClass: {
-            container: 'transparent-swal2'
+            container: "transparent-swal2",
         },
+        background: "transparent",
     };
 
-    Message ? options['html'] = '<span style="color: #fff;">'+Message+'</span>' : '';
     Swal.fire(options);
 }
 
