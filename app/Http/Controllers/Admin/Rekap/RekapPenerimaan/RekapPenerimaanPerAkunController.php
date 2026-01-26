@@ -37,6 +37,7 @@ class RekapPenerimaanPerAkunController extends Controller
         $data["post"] = mst_tagihan::select(["tagihan"])->get();
         $data["thn_aka"] = mst_thn_aka::select(["thn_aka"])
             ->where("thn_aka", "!=", null)
+            ->orderBy("thn_aka", "desc")
             ->get();
         $data["kelas"] = mst_kelas::get();
 
