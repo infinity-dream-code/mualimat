@@ -456,7 +456,7 @@ class RekapTagihanPerAkunController extends Controller
                     $join
                         ->on("scctbill_detail.CUSTID", "=", "scctbill.CUSTID")
                         ->on("scctbill_detail.BILLCD", "=", "scctbill.BILLCD")
-                        ->where("scctbill.PAIDST", 1)
+                        ->where("scctbill.PAIDST", 0)
                         ->where("scctbill.FSTSBolehBayar", 1)
                         ->whereNotNull("scctbill.PAIDDT")
                         ->where(function ($query) use ($filter_scctbill) {
