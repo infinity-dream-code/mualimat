@@ -64,7 +64,7 @@ class DataTagihanController extends Controller
             ],
             [
                 "data" => "DESC03",
-                "name" => "Jenjang",
+                "name" => "Kelompok",
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
