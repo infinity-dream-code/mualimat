@@ -175,9 +175,6 @@
                     </div>
                     <div class="row">
                         <div class="d-flex justify-content-center flex-column flex-md-row justify-content-md-end gap-4">
-                            <button type="button" class="btn btn-facebook btn-print-rekap" id="btn-print-rekap">
-                                <span class="ri-file-text-line me-2"></span>
-                                Cetak Rekap NEW
                             <button type="button" class="btn btn-facebook btn-print-rekap" id="cetak-rekap">
                                 <span class="ri-file-text-line me-2"></span>
                                 Cetak Rekap
@@ -517,13 +514,13 @@
                     return row;
                 });
             }
-            
+
             function parseDDMMYYYY(str) {
                 if (!str) return null;
-                
+
                 const [dd, mm, yyyy] = str.split("-").map(Number);
                 if (!dd || !mm || !yyyy) return null;
-                
+
                 return new Date(yyyy, mm, dd);
             }
 
@@ -562,10 +559,10 @@
                 ws.insertRow(4, ["Tahun Akademik", thnAkaVal]);
                 ws.insertRow(5, ["Dari", parseDDMMYYYY(tanggalTransaksi[0])]);
                 ws.insertRow(6, ["Hingga", parseDDMMYYYY(tanggalTransaksi[1])]);
-                
+
                 [5, 6].forEach(rowNumber => {
                     const cell = ws.getRow(rowNumber).getCell(2);
-                    
+
                     cell.numFmt = "dddd, dd mmmm yyyy";
                 });
 
