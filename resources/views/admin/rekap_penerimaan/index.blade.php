@@ -191,16 +191,6 @@
                     </div>
                 </fieldset>
             </form>
-            <div class="row px-5 mb-2">
-                <ul class="list-group list-group-timeline">
-                    <li class="list-group-item list-group-timeline-warning">
-                        Untuk mencetak kartu siswa, silahkan pilih siswa terlebih dahulu!
-                    </li>
-                    <li class="list-group-item list-group-timeline-warning">
-                        Cetak kartu siswa, hanya bisa dilakukan per siswa!
-                    </li>
-                </ul>
-            </div>
         </div>
         <div class="card-datatable table-responsive text-nowrap">
             <table class="table table-sm table-bordered table-hover"
@@ -380,13 +370,13 @@
                     return row;
                 });
             }
-            
+
             function parseDDMMYYYY(str) {
                 if (!str) return null;
-                
+
                 const [dd, mm, yyyy] = str.split("-").map(Number);
                 if (!dd || !mm || !yyyy) return null;
-                
+
                 return new Date(yyyy, mm, dd);
             }
 
@@ -424,10 +414,10 @@
                 ws.insertRow(3, ["Tahun Akademik", thnAkaVal]);
                 ws.insertRow(4, ["Dari", parseDDMMYYYY(tanggalTransaksi[0])]);
                 ws.insertRow(5, ["Hingga", parseDDMMYYYY(tanggalTransaksi[1])]);
-                
+
                 [4, 5].forEach(rowNumber => {
                     const cell = ws.getRow(rowNumber).getCell(2);
-                    
+
                     cell.numFmt = "dddd, dd mmmm yyyy";
                 });
 
