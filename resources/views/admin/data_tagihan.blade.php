@@ -141,10 +141,10 @@
                                 <span class="ri-file-text-line me-2"></span>
                                 Cetak Rekap
                             </button>
-                            <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">
-                                <span class="ri-profile-line me-2"></span>
-                                Cetak Kartu Siswa
-                            </button>
+{{--                            <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">--}}
+{{--                                <span class="ri-profile-line me-2"></span>--}}
+{{--                                Cetak Kartu Siswa--}}
+{{--                            </button>--}}
                             <button type="reset" class="btn btn-secondary" disabled>
                                 <span class="ri-reset-left-line me-2"></span>
                                 Reset
@@ -207,7 +207,7 @@
             fixedHeader: false,
             pageLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
-            select: true,
+            // select: true,
             buttons: ['copy', 'excel', 'pdf'],
         };
 
