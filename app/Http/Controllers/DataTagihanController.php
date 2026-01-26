@@ -323,7 +323,6 @@ class DataTagihanController extends Controller
                             "kelas" => "scctcust.DESC02",
                             "siswa" => "scctcust.nmcust",
                             "custid" => "scctbill.CUSTID",
-                            "status_bayar" => "scctbill.PAIDST",
                             default => null,
                         };
 
