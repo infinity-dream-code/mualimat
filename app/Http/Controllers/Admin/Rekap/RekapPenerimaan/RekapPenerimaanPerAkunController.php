@@ -345,7 +345,7 @@ class RekapPenerimaanPerAkunController extends Controller
         ];
         return response()->json($response);
     }
-    
+
     public function getRekapDataPenerimaan(Request $request)
     {
         if (
