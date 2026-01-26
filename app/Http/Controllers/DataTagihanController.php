@@ -779,6 +779,7 @@ class DataTagihanController extends Controller
             "scctcust.CUSTID",
             "scctbill.CUSTID",
         )
+            ->where("scctbill.PAIDST", 0)
             ->where("scctbill.FSTSBolehBayar", 1)
             ->where("scctcust.STCUST", 1)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
