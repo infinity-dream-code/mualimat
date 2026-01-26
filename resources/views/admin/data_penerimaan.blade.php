@@ -179,10 +179,6 @@
                                 <span class="ri-file-text-line me-2"></span>
                                 Cetak Rekap
                             </button>
-                            <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">
-                                <span class="ri-profile-line me-2"></span>
-                                Cetak Kartu Siswa
-                            </button>
                             <button type="reset" class="btn btn-secondary" disabled>
                                 <span class="ri-reset-left-line me-2"></span>
                                 Reset
@@ -195,16 +191,6 @@
                     </div>
                 </fieldset>
             </form>
-            <div class="row px-5 mb-2">
-                <ul class="list-group list-group-timeline">
-                    <li class="list-group-item list-group-timeline-warning">
-                        Untuk mencetak kartu siswa, silahkan pilih siswa terlebih dahulu!
-                    </li>
-                    <li class="list-group-item list-group-timeline-warning">
-                        Cetak kartu siswa, hanya bisa dilakukan per siswa!
-                    </li>
-                </ul>
-            </div>
         </div>
         <div class="card-datatable table-responsive text-nowrap">
             <table class="table table-sm table-bordered table-hover"
@@ -244,7 +230,7 @@
             paging: true,
             searching: true,
             fixedHeader: false,
-            select: true,
+            // select: true,
             cache: true,
             pageLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
