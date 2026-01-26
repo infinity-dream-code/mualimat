@@ -123,6 +123,7 @@ class DataTagihanController extends Controller
             ->get();
         $data["thn_aka"] = mst_thn_aka::select(["thn_aka"])
             ->where("thn_aka", "!=", null)
+            ->orderBy("thn_aka", "desc")
             ->get();
         $data["kelas"] = mst_kelas::get();
         $data["unit"] = mst_sekolah::get();
