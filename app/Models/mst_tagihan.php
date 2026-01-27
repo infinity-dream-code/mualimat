@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class mst_tagihan extends Model
 {
-    protected $table = 'mst_tagihan';
+    protected $connection = "DATA_MYSQL";
 
-    protected $primaryKey = 'urut';
+    protected $table = "mst_tagihan";
+
+    protected $primaryKey = "urut";
 
     public $timestamps = false;
 

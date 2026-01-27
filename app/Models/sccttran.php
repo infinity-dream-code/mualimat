@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class mst_sekolah extends Model
+class sccttran extends Model
 {
     protected $connection = "DATA_MYSQL";
 
-    protected $table = "mst_sekolah";
+    protected $table = 'sccttran';
 
-    protected $primaryKey = "urut";
+    protected $primaryKey = 'AA';
 
     public $timestamps = false;
 
