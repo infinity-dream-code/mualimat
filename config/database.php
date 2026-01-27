@@ -62,6 +62,27 @@ return [
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
+
+        "DATA_MYSQL" => [
+            "driver" => "mysql",
+            "url" => env("DATABASE_URL"),
+            "host" => env("DB_HOST_DATA_MYSQL", "127.0.0.1"),
+            "port" => env("DB_PORT_DATA_MYSQL", "3306"),
+            "database" => env("DB_DATABASE_DATA_MYSQL", "forge"),
+            "username" => env("DB_USERNAME_DATA_MYSQL", "forge"),
+            "password" => env("DB_PASSWORD_DATA_MYSQL", ""),
+            "charset" => "utf8mb4",
+            "collation" => "utf8mb4_unicode_ci",
+            "prefix" => "",
+            "prefix_indexes" => true,
+            "strict" => false,
+            "engine" => null,
+            "options" => extension_loaded("pdo_mysql")
+                ? array_filter([
+                    PDO::MYSQL_ATTR_SSL_CA => env("MYSQL_ATTR_SSL_CA"),
+                ])
+                : [],
+        ],
     ],
 
     /*
