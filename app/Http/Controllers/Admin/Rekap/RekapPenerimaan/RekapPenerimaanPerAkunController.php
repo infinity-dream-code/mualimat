@@ -55,19 +55,13 @@ class RekapPenerimaanPerAkunController extends Controller
                 "orderable" => true,
             ],
             [
-                "data" => "NOCUST",
+                "data" => "nocust",
                 "name" => "NIS",
                 "searchable" => true,
                 "orderable" => true,
             ],
             [
-                "data" => "NUM2ND",
-                "name" => "No Pendaftaran",
-                "searchable" => true,
-                "orderable" => true,
-            ],
-            [
-                "data" => "NMCUST",
+                "data" => "nmcust",
                 "name" => "NAMA",
                 "searchable" => true,
                 "orderable" => true,
