@@ -18,17 +18,19 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Auth::routes([
+    "register" => false,
+]);
 Route::get("/", [AuthController::class, "index"])->name("index");
-Route::get("/login", [AuthController::class, "index"])->name("login");
-Route::post("/login", [AuthController::class, "login"])->name("login");
-Route::get("/logout", [AuthController::class, "logout"])->name("logout");
+
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 Route::get("/reload-captcha", [AuthController::class, "reloadCaptcha"])->name(
     "reload-captcha",
 );
 
 Route::prefix("admin")
     ->name("admin.")
-    ->middleware("check.session")
+    ->middleware(["auth","check.roles:admin"])
     ->group(function () {
         Route::get("/", [AdminController::class, "index"])->name("index");
 
