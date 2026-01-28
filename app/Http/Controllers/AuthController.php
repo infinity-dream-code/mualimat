@@ -12,7 +12,7 @@ class AuthController extends Controller
         if (session()->has('user')) {
             return redirect()->route('admin.index');
         }else{
-            return view('login');
+            return redirect('login');
         }
     }
 
