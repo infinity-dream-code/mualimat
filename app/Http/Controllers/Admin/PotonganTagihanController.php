@@ -23,6 +23,31 @@ class PotonganTagihanController extends Controller
 
     public  function  store(Request $request)
     {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                "item_id" => ["required", "array"],
+                "potongan" => ["required", "array"],
+                "potongan.*" => ["required", "array", 'regex:/^[0-9]+(\.[0-9]{3})*$/'],
+                "deskripsi_potongan" => ["array", "string"],
+            ],
+            ValidationMessage::messages(),
+            ValidationMessage::attributes(),
+        );
+
+        if ($validator->fails()) {
+            $message = $validator->errors()->first();
+            if ($validator->errors()->count() > 1) {
+                $message = "{$message} Dan beberapa masalah validasi lainnya, silahkan periksa form anda!";
+            }
+            return response()->json(
+                [
+                    "message" => $message,
+                    "errors" => $validator->errors(),
+                ],
+                422,
+            );
+        }
 
     }
 }
