@@ -49,11 +49,11 @@ class ValidationMessage extends Model
         return [
             "array" => ":attribute harus diisi",
             "email" => ":attribute harus berupa email",
-            "different" => ":attribute dan :attribute harus berbeda.",
+            "different" => ":attribute dan :other harus berbeda.",
             "required" => ":attribute harus diisi",
             "required_if" => "Pilih :attribute",
             "integer" => ":attribute harus berisi angka",
-            "string" => ":attribute harus berisi huruf &/ angka",
+            "string" => ":attribute harus berisi teks",
             "regex" => "Format :attribute salah",
             "unique" => ":attribute sudah digunakan",
             "mimes" => ":attribute harus bertipe: :values",
@@ -64,9 +64,15 @@ class ValidationMessage extends Model
             "max" => [
                 "numeric" =>
                     ":attribute terlalu besar (maksimal :max karakter)",
+                "string" => ":attribute terlalu besar (maksimal :max karakter)",
+                "file" => ":attribute terlalu besar (maksimal :max kilobytes)",
+                "array" => ":attribute terlalu besar (maksimal :max item)",
             ],
             "min" => [
                 "numeric" => ":attribute terlalu kecil (minimal :min karakter)",
+                "string" => ":attribute terlalu kecil (minimal :min karakter)",
+                "file" => ":attribute terlalu kecil (minimal :min kilobytes)",
+                "array" => ":attribute terlalu kecil (minimal :min item)",
             ],
             "in" => ":attribute tidak valid",
             "not_in" => ":attribute tidak valid",
