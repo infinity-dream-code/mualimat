@@ -444,7 +444,7 @@ class RekapTagihanPerAkunController extends Controller
 
             $kelas = mst_kelas::get();
 
-            $records = DB::table("u_akun")
+            $records = DB::connection('DATA_MYSQL')->table("u_akun")
                 ->join("scctbill_detail", function ($join) {
                     $join->on(
                         "u_akun.KodeAkun",
@@ -539,7 +539,7 @@ class RekapTagihanPerAkunController extends Controller
             }
 
             //            $records = $records->get();
-            $records = DB::table(DB::raw("({$records->toSql()}) as sub"))
+            $records = DB::connection('DATA_MYSQL')->table(DB::raw("({$records->toSql()}) as sub"))
                 ->mergeBindings($records)
                 ->where(function ($q) use ($kelas) {
                     foreach ($kelas as $val) {
