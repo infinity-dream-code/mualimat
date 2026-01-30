@@ -711,7 +711,7 @@ html:not([dir=rtl]) div.card-datatable table.dataTable tbody td:first-child {
 }
 
 .light-style table.table-bordered.dataTable th, .light-style table.table-bordered.dataTable td {
-    border-color: #e5e6e8 !important
+    border-color: #e5e6e8
 }
 
 .light-style table.dataTable thead th.sorting:before, .light-style table.dataTable thead th.sorting:after {
@@ -731,7 +731,7 @@ html:not([dir=rtl]) div.card-datatable table.dataTable tbody td:first-child {
 }
 
 .dark-style table.table-bordered.dataTable th, .dark-style table.table-bordered.dataTable td {
-    border-color: #464963 !important
+    border-color: #464963
 }
 
 .dark-style table.dataTable thead th.sorting:before, .dark-style table.dataTable thead th.sorting:after {
@@ -741,3 +741,12 @@ html:not([dir=rtl]) div.card-datatable table.dataTable tbody td:first-child {
 div.dataTables_wrapper div.dataTables_paginate ul.pagination .page-item.disabled .page-link {
     background-color: #3f425c
 }
+
+td.dt-duplicate-top {
+    border-bottom-color: transparent !important;
+}
+
+td.dt-duplicate-hidden {
+    border-top-color: transparent !important;
+}
+
