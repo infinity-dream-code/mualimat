@@ -8,11 +8,12 @@ use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
 use App\Models\scctbill;
 use App\Models\scctcust;
+use App\Models\sccttran;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use function App\Http\Controllers\Admin\Rekap\RekapPenerimaan\;
+use Illuminate\Support\Facades\DB;
 
-class SaldoPerPeriodeController extends Controller
+class RekapSaldoController extends Controller
 {
     private string $title;
     private string $datasUrl;
@@ -23,8 +24,8 @@ class SaldoPerPeriodeController extends Controller
     {
         $this->title = "Saldo Per Periode";
         $this->mainTitle = "Saldo Per Periode";
-        $this->datasUrl = route("admin.rekap-penerimaan.get-data");
-        $this->columnsUrl = route("admin.rekap-penerimaan.get-column");
+        $this->datasUrl = route("admin.rekap-saldo.get-data");
+        $this->columnsUrl = route("admin.rekap-saldo.get-column");
     }
 
     public function index()
@@ -33,21 +34,73 @@ class SaldoPerPeriodeController extends Controller
         $data["mainTitle"] = $this->mainTitle;
         $data["columnsUrl"] = $this->columnsUrl;
         $data["datasUrl"] = $this->datasUrl;
-        $data["post"] = mst_tagihan::select(["tagihan"])->get();
         $data["thn_aka"] = mst_thn_aka::select(["thn_aka"])
             ->where("thn_aka", "!=", null)
             ->orderBy("thn_aka", "desc")
             ->get();
         $data["kelas"] = mst_kelas::get();
 
-        return view("admin.rekap_penerimaan.index", $data);
+        return view("admin.rekap_saldo.index", $data);
     }
 
-    public  function getColumn(){
-
+    public function getColumn()
+    {
+        return [
+            [
+                "data" => "nocust",
+                "name" => "NIS",
+                "searchable" => true,
+                "orderable" => true,
+                "exportable" => true,
+                "duplicate" => false
+            ],
+            [
+                "data" => "nmcust",
+                "name" => "NAMA",
+                "searchable" => true,
+                "orderable" => true,
+                "exportable" => true,
+                "duplicate" => false
+            ],
+            [
+                "data" => "CODE02",
+                "name" => "Unit",
+                "searchable" => true,
+                "orderable" => true,
+                "exportable" => true,
+                "duplicate" => false
+            ],
+            [
+                "data" => "DESC02",
+                "name" => "Kelas",
+                "searchable" => true,
+                "orderable" => true,
+                "exportable" => true,
+                "duplicate" => false
+            ],
+            [
+                "data" => "opening_balance",
+                "name" => "Saldo Awal",
+                "exportable" => true,
+                "columnType" => "currency",
+            ],
+            [
+                "data" => "current_net",
+                "name" => "Saldo Periode Dipilih",
+                "exportable" => true,
+                "columnType" => "currency",
+            ],
+            [
+                "data" => "closing_balance",
+                "name" => "Saldo AKhir",
+                "exportable" => true,
+                "columnType" => "currency",
+            ],
+        ];
     }
 
-    public  function getData(Request $request){
+    public function getData(Request $request)
+    {
         $draw = $request->get("draw");
         if (
             $request->filter["periode"] != null &&
@@ -93,49 +146,19 @@ class SaldoPerPeriodeController extends Controller
                             $val !== "")
                     ) {
                         $colName = match ($key) {
-                            "tahun_akademik" => "scctbill.BTA",
                             "unit" => "scctcust.CODE01",
                             "kelas" => "scctcust.DESC02",
                             "siswa" => "scctcust.nmcust",
-                            "custid" => "scctbill.CUSTID",
                             default => null,
                         };
-                        if ($key == "tanggal-transaksi") {
-                            if (
-                                preg_match(
-                                    '/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/',
-                                    $val,
-                                )
-                            ) {
-                                $val = preg_replace("/[-\/~]/", "-", $val);
-
-                                [$startDate, $endDate] = explode(" - ", $val);
-                                $startDate = Carbon::createFromFormat(
-                                    "d-m-Y",
-                                    $startDate,
-                                )->startOfDay();
-                                $endDate = Carbon::createFromFormat(
-                                    "d-m-Y",
-                                    $endDate,
-                                )->endOfDay();
-                                if ($startDate && $endDate) {
-                                    $colName &&
-                                    ($filters[] = [
-                                        $colName,
-                                        $startDate,
-                                        $endDate,
-                                        "whereBetween",
-                                    ]);
-                                }
-                            }
-                        } elseif ($key == "kelas") {
+                        if ($key == "kelas") {
                             $val = explode("~", $val);
                             if (count($val) == 3) {
                                 $filters[] = ["scctcust.CODE02", "=", $val[0]];
                                 $filters[] = ["scctcust.DESC02", "=", $val[1]];
                                 $filters[] = ["scctcust.DESC03", "=", $val[2]];
                             }
-                        }  elseif ($key == "siswa") {
+                        } elseif ($key == "siswa") {
                             $val = is_numeric($val) ? $val : "%" . $val . "%";
                             $colName = is_numeric($val)
                                 ? "scctcust.nocust"
@@ -186,78 +209,65 @@ class SaldoPerPeriodeController extends Controller
 
             $select = array_unique(
                 array_merge($whereAny, [
-                    "scctbill.AA",
-                    "scctbill.BILLNM",
-                    "scctbill.BILLAM",
-                    "scctbill.PAIDST",
-                    "scctbill.PAIDDT",
-                    "scctbill.BTA",
-                    "scctbill.CUSTID",
-                    "scctbill.FIDBANK",
-                    "scctbill.FUrutan",
                     "scctcust.CODE02",
                     "scctcust.DESC02",
+                    "scctcust.CUSTID",
                 ]),
             );
 
-            $query = scctcust::leftJoin(
-                "sccttran",
-                "scctcust.CUSTID",
-                "sccttran.CUSTID",
-            )
-                ->where("scctbill.PAIDST", 1)
-                ->where("scctbill.FSTSBolehBayar", 1)
-                ->where("scctcust.STCUST", 1)
-                ->where("scctbill.PAIDDT", "!=", null)
-                ->whereAny($whereAny, "like", "%" . $searchValue . "%")
-                ->where(function ($query) use ($filterQuery) {
-                    if ($filterQuery) {
-                        $filterQuery($query);
-                    }
-                })->orderByRaw("
-                    CASE
-                        WHEN scctbill.BILLNM LIKE '%JULI%' THEN 1
-                        WHEN scctbill.BILLNM LIKE '%AGUSTUS%' THEN 2
-                        WHEN scctbill.BILLNM LIKE '%SEPTEMBER%' THEN 3
-                        WHEN scctbill.BILLNM LIKE '%OKTOBER%' THEN 4
-                        WHEN scctbill.BILLNM LIKE '%NOVEMBER%' THEN 5
-                        WHEN scctbill.BILLNM LIKE '%DESEMBER%' THEN 6
-                        WHEN scctbill.BILLNM LIKE '%JANUARI%' THEN 7
-                        WHEN scctbill.BILLNM LIKE '%FEBRUARI%' THEN 8
-                        WHEN scctbill.BILLNM LIKE '%MARET%' THEN 9
-                        WHEN scctbill.BILLNM LIKE '%APRIL%' THEN 10
-                        WHEN scctbill.BILLNM LIKE '%MEI%' THEN 11
-                        WHEN scctbill.BILLNM LIKE '%JUNI%' THEN 12
-                        ELSE 999
-                    END
-                ");
+            $periode = $request->filter["periode"];
+            $monthStart = Carbon::createFromFormat('Ym', $periode)->startOfMonth();
+            $monthEnd = Carbon::createFromFormat('Ym', $periode)->endOfMonth();
+
+            $query = scctcust::where("scctcust.STCUST", 1
+            ) ->where(function ($query) use ($filterQuery) {
+                if ($filterQuery) {
+                    $filterQuery($query);
+                }
+            });
 
             // Total records
-            $totalRecords = scctbill::select("count(*) as allcount")
-                ->where("PAIDST", 1)
-                ->where("scctbill.FSTSBolehBayar", 1)
-                ->where("PAIDDT", "!=", null)
+            $totalRecords = scctcust::select("count(*) as allcount")
+                ->where("scctcust.STCUST", 1)
                 ->count();
 
-            $totalRecordswithFilter = (clone $query)->count();
+            $totalRecordswithFilter = (clone $query)->select("count(*) as allcount")->count();
 
             $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
             $records = (clone $query)
                 ->orderBy($columnName, $columnSortOrder)
                 ->select($select)
+                ->addSelect([
+                    'OPENING_KREDIT' => sccttran::whereColumn('sccttran.CUSTID', 'scctcust.CUSTID')
+                        ->where('sccttran.TRXDATE', '<', $monthStart)
+                        ->selectRaw('COALESCE(SUM(sccttran.KREDIT), 0) as OPENING_KREDIT'),
+                    'OPENING_DEBET' => sccttran::whereColumn('sccttran.CUSTID', 'scctcust.CUSTID')
+                        ->where('sccttran.TRXDATE', '<', $monthStart)
+                        ->selectRaw('COALESCE(SUM(sccttran.DEBET), 0) as OPENING_DEBET'),
+                    'KREDIT_BULAN' => sccttran::whereColumn('sccttran.CUSTID', 'scctcust.CUSTID')
+                        ->whereBetween('TRXDATE', [$monthStart, $monthEnd])
+                        ->selectRaw('COALESCE(SUM(sccttran.KREDIT), 0) as KREDIT_BULAN'),
+                    'DEBET_BULAN' => sccttran::whereColumn('sccttran.CUSTID', 'scctcust.CUSTID')
+                        ->whereBetween('TRXDATE', [$monthStart, $monthEnd])
+                        ->selectRaw('COALESCE(SUM(sccttran.DEBET), 0) as DEBET_BULAN')
+                ])
                 ->whereAny($whereAny, "like", "%" . $searchValue . "%")
                 ->skip($start)
                 ->take($rowperpage)
                 ->get();
 
-            $records = $records->map(function ($item, $index) use ($request) {
+            $records = $records->map(function ($item, $index) use ($request, $monthStart, $monthEnd) {
                 $item->NOVA = match (strtolower($item->CODE02)) {
                     "mts" => scctcust::showVAMTS($item->nocust),
                     "ma" => scctcust::showVAMA($item->nocust),
                     default => "",
                 };
 
-                $item->item_id = $item["AA"];
+                $item['opening_balance'] = $item['OPENING_KREDIT'] - $item['OPENING_DEBET'];
+                $item['current_net'] = $item['KREDIT_BULAN'] - $item['DEBET_BULAN'];
+                $item['closing_balance'] = $item['opening_balance'] + $item['current_net'];
+
+                $item->item_id = $item["CUSTID"];
 
                 return $item;
             });
@@ -265,11 +275,16 @@ class SaldoPerPeriodeController extends Controller
             $records->toArray();
         }
 
+//        $tran = sccttran::where('TRXDATE', '>=', $monthStart)->where('TRXDATE', '<=', $monthEnd)->limit(10)->get();
+
         $response = [
             "draw" => intval($draw),
             "recordsTotal" => $totalRecords ?? 0,
             "recordsFiltered" => $totalRecordswithFilter ?? 0,
             "data" => $records ?? [],
+            "monthStart" => $monthStart ?? null,
+            "monthEnd" => $monthEnd ?? null,
+            "tran" => $tran ?? [],
         ];
         return response()->json($response);
     }
