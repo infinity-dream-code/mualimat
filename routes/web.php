@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\Rekap\RekapPenerimaan\RekapPenerimaanPerAkunController;
 use App\Http\Controllers\Admin\Rekap\RekapTaighan\RekapTagihanPerAkunController;
+use App\Http\Controllers\Admin\RekapSaldoController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RekapPenerimaanController;
@@ -168,5 +169,42 @@ Route::prefix("admin")
                     "",
                     \App\Http\Controllers\CekPelunasanController::class,
                 )->parameters(["" => "id"]);
+            });
+
+        Route::prefix("potongan-tagihan")
+            ->name("potongan-tagihan.")
+            ->controller(\App\Http\Controllers\Admin\PotonganTagihanController::class)
+            ->group(function () {
+                Route::get("get-data", "getData")->name("get-data");
+                Route::get("get-column", "getColumn")->name("get-column");
+                Route::resource(
+                    "",
+                    \App\Http\Controllers\Admin\PotonganTagihanController::class,
+                )->parameters(["" => "id"]);
+            });
+
+        Route::prefix("rekap-saldo")
+            ->name("rekap-saldo.")
+            ->group(function () {
+                Route::controller(
+                    RekapSaldoController::class,
+                )->group(function () {
+                    Route::get("get-data", "getData")->name("get-data");
+                    Route::get("get-column", "getColumn")->name("get-column");
+//                    Route::get("cetak-rekap", "cetakRekapPenerimaan")->name(
+//                        "cetak-rekap",
+//                    );
+//                    Route::get("cetak-kartu-siswa", "cetakKartuSiswa")->name(
+//                        "cetak-kartu-siswa",
+//                    );
+//                    Route::get(
+//                        "get-data-rekap",
+//                        "getRekapDataPenerimaan",
+//                    )->name("get-data-rekap");
+                    Route::resource(
+                        "",
+                        RekapSaldoController::class,
+                    )->parameters(["" => "id"]);
+                });
             });
     });
