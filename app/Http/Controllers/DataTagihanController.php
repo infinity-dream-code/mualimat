@@ -40,6 +40,7 @@ class DataTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
+                "duplicate" => false
             ],
             [
                 "data" => "nmcust",
@@ -47,6 +48,7 @@ class DataTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
+                "duplicate" => false
             ],
             [
                 "data" => "CODE02",
@@ -54,6 +56,7 @@ class DataTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
+                "duplicate" => false
             ],
             [
                 "data" => "DESC02",
@@ -61,6 +64,7 @@ class DataTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
+                "duplicate" => false
             ],
             [
                 "data" => "DESC03",
@@ -68,6 +72,7 @@ class DataTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
+                "duplicate" => false
             ],
             [
                 "data" => "BILLNM",
