@@ -45,6 +45,7 @@ class DataPenerimaanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
+                "duplicate" => false,
             ],
             [
                 "data" => "nmcust",
@@ -52,6 +53,7 @@ class DataPenerimaanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
+                "duplicate" => false,
             ],
             [
                 "data" => "CODE02",
