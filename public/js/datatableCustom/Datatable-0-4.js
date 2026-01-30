@@ -434,6 +434,44 @@ async function dataTableCreate(options) {
             });
         },
         drawCallback: function (settings) {
+            let api = this.api();
+            let rows = api.rows({page: 'current'}).nodes();
+
+            const duplicateColumns = api.settings()[0].aoColumns
+                .map((col, idx) => ({
+                    idx,
+                    duplicate: !col.duplicate === true
+                }))
+                .filter(c => c.duplicate);
+
+            duplicateColumns.forEach(col => {
+                let lastValue = null;
+                let lastCell = null;
+
+                api.column(col.idx, {page: 'current'}).data().each((value, rowIndex) => {
+                    const cell = $('td', rows[rowIndex]).eq(col.idx);
+
+                    cell.removeClass(
+                        'dt-duplicate-hidden dt-duplicate-top dt-duplicate-restore'
+                    );
+                    if (rowIndex === 0 || value !== lastValue) {
+                        if (rowIndex !== 0 && lastCell) {
+                            cell.addClass('dt-duplicate-restore');
+                        }
+                        lastValue = value;
+                        lastCell = cell;
+                        return;
+                    }
+
+                    cell
+                        .html('')
+                        .addClass('dt-duplicate-hidden');
+
+                    lastCell.addClass('dt-duplicate-top');
+                    lastCell = cell;
+                });
+            });
+
             let labelNo = $(idTable.DataTable().table().header()).find('th').eq(0);
             labelNo && labelNo.removeClass('sorting_asc');
 
@@ -601,10 +639,18 @@ async function getDT(options) {
                             case 'currency':
                                 renderFunc = function (data, type, row) {
                                     if (type === 'display' || type === 'filter') {
-                                        if (data === null || data === 0) {
+                                        const value = Number(data);
+
+                                        if (!Number.isFinite(value)) {
                                             return 'Rp. 0';
                                         }
-                                        return $.fn.dataTable.render.number('.', ',', 0, 'Rp. ').display(data);
+
+                                        const formatted = $.fn.dataTable
+                                            .render
+                                            .number('.', ',', 0, 'Rp. ')
+                                            .display(Math.abs(value));
+
+                                        return value < 0 ? `Rp. -${formatted.replace('Rp. ', '')}` : formatted;
                                     }
                                     return data;
                                 };
@@ -835,6 +881,7 @@ async function getDT(options) {
                     options.dataColumns.push({
                         data: column.data,
                         name: column.name,
+                        duplicate: column.duplicate ?? true,
                         searchable: column.searchable ?? false,
                         orderable: column.orderable ?? false,
                         render: renderFunc ?? false,
