@@ -124,6 +124,25 @@
                                         <option value="1">Lunas</option>
                                     </select>
                                 </div>
+                                <div class="mb-5">
+                                    <label class="form-label" for="metode_bayar">
+                                        Metode Pembayaran
+                                    </label>
+                                    <select class="form-select" id="metode_bayar"
+                                            name="filter[metode_bayar]"
+                                            data-control="select2"
+                                            data-placeholder="Pilih Tagihan">
+                                        @isset($metode_bayar)
+                                            <option value="all">Semua</option>
+                                            @foreach($metode_bayar as $key => $item)
+                                                <option
+                                                    value="{{$key}}">{{$item}}</option>
+                                            @endforeach
+                                        @else
+                                            <option>data kosong</option>
+                                        @endisset
+                                    </select>
+                                </div>
                             </div>
                             <div class="col">
                                 <div class="col mb-5">
