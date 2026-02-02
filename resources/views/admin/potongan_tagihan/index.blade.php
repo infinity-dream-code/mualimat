@@ -179,7 +179,7 @@
                 <div class="col">
                     <fieldset class="form-fieldset">
                         <label class="form-label">List Potongan Tagihan</label>
-                        <table id="includes-table" class="table table-bordered w-100">
+                        <table id="potongan-table" class="table table-bordered w-100">
                             <thead>
                             <tr>
                                 <th>Detail</th>
@@ -187,14 +187,17 @@
                             </tr>
                             </thead>
                             <tbody>
-                            <tr class="includes-row">
+                            <tr class="potongan-row">
                                 <td>
-                                    <input type="text" name="potongan[]" placeholder="Potongan Tagihan"
-                                           class="includes-input form-control formattedNumber"/>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text">Rp. </span>
+                                        <input type="text" name="potongan[]" placeholder="Potongan Tagihan"
+                                               class="potongan-input form-control formattedNumber"/>
+                                    </div>
                                 </td>
                                 <td>
-                                    <input type="text" name="deskripsi[]" placeholder="Termasuk"
-                                           class="includes-input form-control"/>
+                                    <textarea type="text" name="deskripsi[]" placeholder="Deskripsi"
+                                           class="potongan-input form-control"></textarea>
                                 </td>
                             </tr>
                             </tbody>
@@ -235,6 +238,43 @@
             select: true,
         };
 
+        function handleAutoAppend(e, tableId, inputClass) {
+            const table = document.getElementById(tableId);
+            const rows = table.querySelectorAll("tbody tr");
+            const lastRow = rows[rows.length - 1];
+            const input = lastRow.querySelector(`.${inputClass}`);
+
+            if (e.target === input && input.value.trim() !== "") {
+                const newRow = lastRow.cloneNode(true);
+                newRow.querySelectorAll("input").forEach(i => i.value = "");
+                // const newIndex = rows.length + 1;
+                // newRow.querySelector(".row-number").textContent = newIndex;
+                table.querySelector("tbody").appendChild(newRow);
+                // $(newRow).find('.timepicker').timepicker({
+                //     timeFormat: 'H:i',
+                //     step: 15
+                // });
+            }
+        }
+
+        function handleAutoRemove(e, tableId, inputClass) {
+            if (!e) return ;
+            if (!e.target.classList.contains(inputClass)) return;
+
+            const table = document.getElementById(tableId);
+            const row = e.target.closest("tr");
+            const inputVal = e.target.value.trim();
+            const rows = table.querySelectorAll("tbody tr");
+            let emptyRows = Array.from(rows).filter(r => {
+                const input = r.querySelector(`.${inputClass}`);
+                return input && input.value.trim() === "";
+            });
+            if (inputVal === "" && rows.length > 1 && emptyRows.length > 1) {
+                row.remove();
+                // updateRowNumbers(tableId);
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", function () {
             if (dtOptions.dataUrl && dtOptions.columnUrl) {
                 getDT(dtOptions);
@@ -269,6 +309,18 @@
                     });
                 });
             }
+
+            const inputTables = [
+                {id: 'potongan-table', inputClass: 'potongan-input'},
+            ];
+
+            document.addEventListener("input", function (e) {
+                inputTables.forEach(({id, inputClass}) => handleAutoAppend(e, id, inputClass));
+            });
+
+            document.addEventListener("blur", function (e) {
+                inputTables.forEach(({id, inputClass}) => handleAutoRemove(e, id, inputClass));
+            }, true);
         });
 
 
