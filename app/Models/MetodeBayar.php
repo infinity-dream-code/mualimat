@@ -24,8 +24,8 @@ class MetodeBayar extends Model
             '4' => 'H2H VA BMI - EDC',
             '5' => 'H2H VA BMI - MOBILE',
             '6' => 'ALL BMI',
-            "NULL" => 'Nomor VA', //NULL not working on default filter logic
-            'empty' => 'Nomor VA' //'' not working on default filter logic
+//            "NULL" => 'Nomor VA', //NULL not working on default filter logic
+//            'empty' => 'Nomor VA' //'' not working on default filter logic
         ];
     }
 }
