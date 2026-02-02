@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\MetodeBayar;
 use App\Models\mst_kelas;
 use App\Models\mst_sekolah;
 use App\Models\mst_tagihan;
@@ -135,6 +136,7 @@ class DataPenerimaanController extends Controller
             ->get();
         $data["kelas"] = mst_kelas::get();
         $data["unit"] = mst_sekolah::get();
+        $data["metode_bayar"] = MetodeBayar::attributes();
 
         return view("admin.data_penerimaan", $data);
     }
@@ -246,7 +248,7 @@ class DataPenerimaanController extends Controller
                         $colName = match ($key) {
                             "dari_tanggal",
                             "sampai_tanggal"
-                                => "scctbill.FTGLTagihan",
+                            => "scctbill.FTGLTagihan",
                             "tanggal-transaksi" => "scctbill.PAIDDT",
                             "tahun_akademik" => "scctbill.BTA",
                             "post" => "scctbill.BILLNM",
@@ -254,59 +256,75 @@ class DataPenerimaanController extends Controller
                             "kelas" => "scctcust.DESC02",
                             "siswa" => "scctcust.nmcust",
                             "custid" => "scctbill.CUSTID",
+                            "metode_bayar" => "scctbill.FIDBANK",
                             default => null,
                         };
-                        if ($key == "tanggal-transaksi") {
-                            if (
-                                preg_match(
-                                    '/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/',
-                                    $val,
-                                )
-                            ) {
-                                $val = preg_replace("/[-\/~]/", "-", $val);
+                        switch ($key) {
+                            case "tanggal-transaksi":
+                                if (
+                                    preg_match(
+                                        '/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/',
+                                        $val,
+                                    )
+                                ) {
+                                    $val = preg_replace("/[-\/~]/", "-", $val);
 
-                                [$startDate, $endDate] = explode(" - ", $val);
-                                $startDate = Carbon::createFromFormat(
-                                    "d-m-Y",
-                                    $startDate,
-                                )->startOfDay();
-                                $endDate = Carbon::createFromFormat(
-                                    "d-m-Y",
-                                    $endDate,
-                                )->endOfDay();
-                                if ($startDate && $endDate) {
-                                    $colName &&
+                                    [$startDate, $endDate] = explode(" - ", $val);
+                                    $startDate = Carbon::createFromFormat(
+                                        "d-m-Y",
+                                        $startDate,
+                                    )->startOfDay();
+                                    $endDate = Carbon::createFromFormat(
+                                        "d-m-Y",
+                                        $endDate,
+                                    )->endOfDay();
+                                    if ($startDate && $endDate) {
+                                        $colName &&
                                         ($filters[] = [
                                             $colName,
                                             $startDate,
                                             $endDate,
                                             "whereBetween",
                                         ]);
+                                    }
                                 }
-                            }
-                        } elseif ($key == "kelas") {
-                            $val = explode("~", $val);
-                            if (count($val) == 3) {
-                                $filters[] = ["scctcust.CODE02", "=", $val[0]];
-                                $filters[] = ["scctcust.DESC02", "=", $val[1]];
-                                $filters[] = ["scctcust.DESC03", "=", $val[2]];
-                            }
-                        } elseif ($key == "post") {
-                            $array = array_filter($val, function ($value) {
-                                return $value !== "all";
-                            });
-                            if (count($array) > 0) {
-                                $colName &&
+                                break;
+                            case "metode_bayar":
+                                if ($val === "NULL") {
+                                    $colName && ($filters[] = [$colName, "=", null]);
+                                } else if ($val === "empty") {
+                                    $colName && ($filters[] = [$colName, "=", '']);
+                                } else {
+                                    $colName && ($filters[] = [$colName, "like", "$val"]);
+                                }
+                                break;
+                            case "kelas":
+                                $val = explode("~", $val);
+                                if (count($val) == 3) {
+                                    $filters[] = ["scctcust.CODE02", "=", $val[0]];
+                                    $filters[] = ["scctcust.DESC02", "=", $val[1]];
+                                    $filters[] = ["scctcust.DESC03", "=", $val[2]];
+                                }
+                                break;
+                            case "post":
+                                $array = array_filter($val, function ($value) {
+                                    return $value !== "all";
+                                });
+                                if (count($array) > 0) {
+                                    $colName &&
                                     ($filters[] = [$colName, "in", $array]);
-                            }
-                        } elseif ($key == "siswa") {
-                            $val = is_numeric($val) ? $val : "%" . $val . "%";
-                            $colName = is_numeric($val)
-                                ? "scctcust.nocust"
-                                : $colName;
-                            $colName && ($filters[] = [$colName, "like", $val]);
-                        } else {
-                            $colName && ($filters[] = [$colName, "=", $val]);
+                                }
+                                break;
+                            case 'siswa':
+                                $val = is_numeric($val) ? $val : "%" . $val . "%";
+                                $colName = is_numeric($val)
+                                    ? "scctcust.nocust"
+                                    : $colName;
+                                $colName && ($filters[] = [$colName, "like", $val]);
+                                break;
+                            default:
+                                $colName && ($filters[] = [$colName, "=", $val]);
+                                break;
                         }
                     }
                 }
@@ -318,27 +336,27 @@ class DataPenerimaanController extends Controller
                                 case 3:
                                     $filter[1] === "in"
                                         ? $query->whereIn(
-                                            $filter[0],
-                                            $filter[2],
-                                        )
+                                        $filter[0],
+                                        $filter[2],
+                                    )
                                         : $query->where(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                     break;
 
                                 case 4:
                                     $filter[3] === "whereBetween"
                                         ? $query->whereBetween($filter[0], [
-                                            $filter[1],
-                                            $filter[2],
-                                        ])
+                                        $filter[1],
+                                        $filter[2],
+                                    ])
                                         : $query->{$filter[3]}(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                     break;
                             }
                         }
@@ -421,11 +439,6 @@ class DataPenerimaanController extends Controller
                     default => "",
                 };
 
-                if ($request->get("length") != "poll") {
-                    $item->item_id = Crypt::encrypt($item["AA"]);
-                    $item->CUSTID = Crypt::encrypt($item["CUSTID"]);
-                }
-
                 return $item;
             });
 
@@ -494,7 +507,7 @@ class DataPenerimaanController extends Controller
                     $colName = match ($key) {
                         "dari_tanggal",
                         "sampai_tanggal"
-                            => "scctbill.FTGLTagihan",
+                        => "scctbill.FTGLTagihan",
                         "tanggal-transaksi" => "scctbill.PAIDDT",
                         "tahun_akademik" => "scctbill.BTA",
                         "post" => "scctbill.BILLNM",
@@ -502,70 +515,75 @@ class DataPenerimaanController extends Controller
                         "kelas" => "scctcust.DESC02",
                         "siswa" => "scctcust.nmcust",
                         "custid" => "scctbill.CUSTID",
+                        "metode_bayar" => "scctbill.FIDBANK",
                         default => null,
                     };
+                    switch ($key) {
+                        case "tanggal-transaksi":
+                            if (
+                                preg_match(
+                                    '/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/',
+                                    $val,
+                                )
+                            ) {
+                                $val = preg_replace("/[-\/~]/", "-", $val);
 
-                    if ($key == "tanggal-transaksi") {
-                        if (
-                            preg_match(
-                                '/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/',
-                                $val,
-                            )
-                        ) {
-                            $val = preg_replace("/[-\/~]/", "-", $val);
-                            [$startDate, $endDate] = explode(" - ", $val);
-                            $startDate = Carbon::createFromFormat(
-                                "d-m-Y",
-                                $startDate,
-                            )->startOfDay();
-                            $endDate = Carbon::createFromFormat(
-                                "d-m-Y",
-                                $endDate,
-                            )->endOfDay();
-                            //                                $tanggalMulai = $startDate->format('l, t F Y');
-                            $tanggalMulai = $startDate->isoFormat(
-                                "dddd, D MMMM YYYY",
-                            );
-                            $tanggalSelesai = $endDate->isoFormat(
-                                "dddd, D MMMM YYYY",
-                            );
-                            if ($startDate && $endDate) {
-                                $colName &&
+                                [$startDate, $endDate] = explode(" - ", $val);
+                                $startDate = Carbon::createFromFormat(
+                                    "d-m-Y",
+                                    $startDate,
+                                )->startOfDay();
+                                $endDate = Carbon::createFromFormat(
+                                    "d-m-Y",
+                                    $endDate,
+                                )->endOfDay();
+                                if ($startDate && $endDate) {
+                                    $colName &&
                                     ($filters[] = [
                                         $colName,
                                         $startDate,
                                         $endDate,
                                         "whereBetween",
                                     ]);
+                                }
                             }
-                        }
-                    } elseif ($key == "kelas") {
-                        $val = explode("~", $val);
-                        $kelas = $val;
-                        if (count($val) == 3) {
-                            $filters[] = ["scctcust.CODE02", "=", $val[0]];
-                            $filters[] = ["scctcust.DESC02", "=", $val[1]];
-                            $filters[] = ["scctcust.DESC03", "=", $val[2]];
-                        }
-                    } elseif ($key == "post") {
-                        $array = array_filter($val, function ($value) {
-                            return $value !== "all";
-                        });
-                        if (count($array) > 0) {
-                            $colName && ($filters[] = [$colName, "in", $array]);
-                        }
-                        $post = $array;
-                    } elseif ($key === "unit") {
-                        $unit = mst_sekolah::where("CODE01", $val)->first();
-                        $colName && ($filters[] = [$colName, "=", $val]);
-                    } elseif ($key == "siswa") {
-                        $val = is_numeric($val) ? $val : "%" . $val . "%";
-                        $colName = is_numeric($val)
-                            ? "scctcust.nocust"
-                            : $colName;
-                        $colName && ($filters[] = [$colName, "like", $val]);
-                    } else {
-                        $colName && ($filters[] = [$colName, "=", $val]);
+                            break;
+                        case "metode_bayar":
+                            if ($val === "NULL") {
+                                $colName && ($filters[] = [$colName, "=", null]);
+                            } else if ($val === "empty") {
+                                $colName && ($filters[] = [$colName, "=", '']);
+                            } else {
+                                $colName && ($filters[] = [$colName, "like", "$val"]);
+                            }
+                            break;
+                        case "kelas":
+                            $val = explode("~", $val);
+                            if (count($val) == 3) {
+                                $filters[] = ["scctcust.CODE02", "=", $val[0]];
+                                $filters[] = ["scctcust.DESC02", "=", $val[1]];
+                                $filters[] = ["scctcust.DESC03", "=", $val[2]];
+                            }
+                            break;
+                        case "post":
+                            $array = array_filter($val, function ($value) {
+                                return $value !== "all";
+                            });
+                            if (count($array) > 0) {
+                                $colName &&
+                                ($filters[] = [$colName, "in", $array]);
+                            }
+                            break;
+                        case 'siswa':
+                            $val = is_numeric($val) ? $val : "%" . $val . "%";
+                            $colName = is_numeric($val)
+                                ? "scctcust.nocust"
+                                : $colName;
+                            $colName && ($filters[] = [$colName, "like", $val]);
+                            break;
+                        default:
+                            $colName && ($filters[] = [$colName, "=", $val]);
+                            break;
                     }
                 }
             }
@@ -626,26 +644,26 @@ class DataPenerimaanController extends Controller
                                     case 3:
                                         $filter[1] === "in"
                                             ? $query->whereIn(
-                                                $filter[0],
-                                                $filter[2],
-                                            )
+                                            $filter[0],
+                                            $filter[2],
+                                        )
                                             : $query->where(
-                                                $filter[0],
-                                                $filter[1],
-                                                $filter[2],
-                                            );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                         break;
                                     case 4:
                                         $filter[3] === "whereBetween"
                                             ? $query->whereBetween($filter[0], [
-                                                $filter[1],
-                                                $filter[2],
-                                            ])
+                                            $filter[1],
+                                            $filter[2],
+                                        ])
                                             : $query->{$filter[3]}(
-                                                $filter[0],
-                                                $filter[1],
-                                                $filter[2],
-                                            );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                         break;
                                 }
                             }
@@ -658,23 +676,23 @@ class DataPenerimaanController extends Controller
                                 $filter[1] === "in"
                                     ? $query->whereIn($filter[0], $filter[2])
                                     : $query->where(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
+                                    $filter[0],
+                                    $filter[1],
+                                    $filter[2],
+                                );
                                 break;
 
                             case 4:
                                 $filter[3] === "whereBetween"
                                     ? $query->whereBetween($filter[0], [
-                                        $filter[1],
-                                        $filter[2],
-                                    ])
+                                    $filter[1],
+                                    $filter[2],
+                                ])
                                     : $query->{$filter[3]}(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
+                                    $filter[0],
+                                    $filter[1],
+                                    $filter[2],
+                                );
                                 break;
                         }
                     }
