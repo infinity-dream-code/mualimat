@@ -44,7 +44,7 @@ class CekPelunasanController extends Controller
         $data["metode_bayar"] = MetodeBayar::attributes();
         $data['kelas'] = mst_kelas::get();
 
-        return view('admin.cek_pelunasan.index_new', $data);
+        return view('admin.cek_pelunasan.index', $data);
     }
 
     public function getColumn()
@@ -228,7 +228,23 @@ class CekPelunasanController extends Controller
                 if ($filterQuery) {
                     $filterQuery($query);
                 }
-            });
+            })->orderByRaw("
+                CASE
+                    WHEN scctbill.BILLNM LIKE '%JULI%' THEN 1
+                    WHEN scctbill.BILLNM LIKE '%AGUSTUS%' THEN 2
+                    WHEN scctbill.BILLNM LIKE '%SEPTEMBER%' THEN 3
+                    WHEN scctbill.BILLNM LIKE '%OKTOBER%' THEN 4
+                    WHEN scctbill.BILLNM LIKE '%NOVEMBER%' THEN 5
+                    WHEN scctbill.BILLNM LIKE '%DESEMBER%' THEN 6
+                    WHEN scctbill.BILLNM LIKE '%JANUARI%' THEN 7
+                    WHEN scctbill.BILLNM LIKE '%FEBRUARI%' THEN 8
+                    WHEN scctbill.BILLNM LIKE '%MARET%' THEN 9
+                    WHEN scctbill.BILLNM LIKE '%APRIL%' THEN 10
+                    WHEN scctbill.BILLNM LIKE '%MEI%' THEN 11
+                    WHEN scctbill.BILLNM LIKE '%JUNI%' THEN 12
+                    ELSE 999
+                END
+            ");
 
         $totalRecords = Cache::remember('total_penerimaan_count', 600, function () {
             return scctbill::select('count(*) as allcount')
