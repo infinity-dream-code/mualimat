@@ -50,6 +50,7 @@ class RekapCekPelunasanController extends Controller
     public function getColumn()
     {
         return [
+            ['data' => 'CUSTID', 'name' => 'no', 'columnType' => 'row'],
             [
                 "data" => "nocust",
                 "name" => "NIS",
@@ -130,7 +131,9 @@ class RekapCekPelunasanController extends Controller
         }
 
         $filters = [];
-        $filterQuery = null;
+        $filterQuery = [];
+        $filtersiswa = [];
+        $filtersiswaQuery = [];
 
         $filter = $request->input("filter");
         if ($filter) {
@@ -257,6 +260,31 @@ class RekapCekPelunasanController extends Controller
                         }
                     }
                 };
+
+                $filtersiswa = array_values(array_filter($filters, function ($item) {
+                    return isset($item[0]) && is_string($item[0]) && str_contains($item[0], 'scctcust.');
+                }));
+
+                $filtersiswaQuery = null;
+                if (!empty($filtersiswa)) {
+                    $filtersiswaQuery = function ($query) use ($filtersiswa) {
+                        foreach ($filtersiswa as $filter) {
+                            switch (count($filter)) {
+                                case 3:
+                                    $filter[1] === "in"
+                                        ? $query->whereIn($filter[0], $filter[2])
+                                        : $query->where($filter[0], $filter[1], $filter[2]);
+                                    break;
+
+                                case 4:
+                                    $filter[3] === "whereBetween"
+                                        ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
+                                        : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
+                                    break;
+                            }
+                        }
+                    };
+                }
             }
         }
 
@@ -264,6 +292,7 @@ class RekapCekPelunasanController extends Controller
 
         $select = array_unique(
             array_merge($whereAny, [
+                "scctcust.CUSTID",
                 "scctcust.CODE02",
                 "scctcust.DESC02",
                 "scctcust.DESC03",
@@ -277,27 +306,32 @@ class RekapCekPelunasanController extends Controller
         )
             ->where("scctbill.FSTSBolehBayar", 1)
             ->where("scctcust.STCUST", 1)
-            ->whereAny($whereAny, "like", "%" . $searchValue . "%")
-            ->where(function ($query) use ($filterQuery) {
-                if ($filterQuery) {
-                    $filterQuery($query);
-                }
-            })
-            ->groupBy("scctcust.CUSTID");
+            ->whereAny($whereAny, "like", "%" . $searchValue . "%");
 
         $totalRecords = scctcust::select("count(*) as allcount")
             ->where("scctcust.STCUST", 1)
             ->count();
 
-        $totalRecordswithFilter = (clone $query)
+        $totalRecordswithFilter = scctcust::where("scctcust.STCUST", 1)
+            ->where(function ($query) use ($filtersiswaQuery) {
+                if ($filtersiswaQuery){
+                    $filtersiswaQuery($query);
+                }
+            })
             ->count();
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
         $records = (clone $query)
+            ->where(function ($query) use ($filterQuery) {
+                if ($filterQuery) {
+                    $filterQuery($query);
+                }
+            })
             ->orderBy($columnName, $columnSortOrder)
             ->select($select)
             ->addSelect(DB::raw('COALESCE(MAX(scctbill.PAIDST), 0) as status_kelunasan'))
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
+            ->groupBy("scctcust.CUSTID")
             ->skip($start)
             ->take($rowperpage)
             ->get();
