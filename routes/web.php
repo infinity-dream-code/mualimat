@@ -171,6 +171,18 @@ Route::prefix("admin")
                 )->parameters(["" => "id"]);
             });
 
+        Route::prefix("rekap-cek-pelunasan")
+            ->name("rekap-cek-pelunasan.")
+            ->controller(\App\Http\Controllers\Admin\CekPelunasan\RekapCekPelunasanController::class)
+            ->group(function () {
+                Route::get("get-data", "getData")->name("get-data");
+                Route::get("get-column", "getColumn")->name("get-column");
+                Route::resource(
+                    "",
+                    \App\Http\Controllers\Admin\CekPelunasan\RekapCekPelunasanController::class,
+                )->parameters(["" => "id"]);
+            });
+
         Route::prefix("potongan-tagihan")
             ->name("potongan-tagihan.")
             ->controller(\App\Http\Controllers\Admin\PotonganTagihanController::class)
