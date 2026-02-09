@@ -97,8 +97,14 @@ class RekapCekPelunasanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                'columnType' => 'boolean', 'trueVal' => 'LUNAS',
+                'columnType' => 'boolean',
+                'trueVal' => 'LUNAS',
                 'falseVal' => 'BELUM LUNAS'
+            ],
+            [
+                "data" => "BILL_TOTAL",
+                "name" => "SISA TAGIHAN",
+                'columnType' => 'currency'
             ],
         ];
     }
@@ -299,15 +305,6 @@ class RekapCekPelunasanController extends Controller
             ]),
         );
 
-        $query = scctcust::leftJoin(
-            "scctbill",
-            "scctcust.CUSTID",
-            "scctbill.CUSTID",
-        )
-            ->where("scctbill.FSTSBolehBayar", 1)
-            ->where("scctcust.STCUST", 1)
-            ->whereAny($whereAny, "like", "%" . $searchValue . "%");
-
         $totalRecords = scctcust::select("count(*) as allcount")
             ->where("scctcust.STCUST", 1)
             ->count();
@@ -321,7 +318,14 @@ class RekapCekPelunasanController extends Controller
             ->count();
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
-        $records = (clone $query)
+        $records = scctcust::leftJoin(
+            "scctbill",
+            "scctcust.CUSTID",
+            "scctbill.CUSTID",
+        )
+            ->where("scctbill.FSTSBolehBayar", 1)
+            ->where("scctcust.STCUST", 1)
+            ->whereAny($whereAny, "like", "%" . $searchValue . "%")
             ->where(function ($query) use ($filterQuery) {
                 if ($filterQuery) {
                     $filterQuery($query);
@@ -329,8 +333,12 @@ class RekapCekPelunasanController extends Controller
             })
             ->orderBy($columnName, $columnSortOrder)
             ->select($select)
-            ->addSelect(DB::raw('COALESCE(MAX(scctbill.PAIDST), 0) as status_kelunasan'))
-            ->whereAny($whereAny, "like", "%" . $searchValue . "%")
+            ->addSelect(DB::raw('COALESCE(MIN(scctbill.PAIDST), 0) as status_kelunasan'))
+            ->addSelect(
+                DB::raw(
+                    "SUM(CASE WHEN scctbill.PAIDST = 0 THEN scctbill.BILLAM ELSE 0 END) AS 'BILL_TOTAL'",
+                ),
+            )
             ->groupBy("scctcust.CUSTID")
             ->skip($start)
             ->take($rowperpage)
