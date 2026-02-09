@@ -10,12 +10,8 @@ use App\Models\mst_thn_aka;
 use App\Models\scctbill;
 use App\Models\scctcust;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Exception;
-use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Crypt;
 
 class CekPelunasanController extends Controller
 {
@@ -68,11 +64,7 @@ class CekPelunasanController extends Controller
         $request['draw'] = 2;
         $request['start'] = 0;
         $request['length'] = "poll";
-        try {
-            $val = Crypt::decrypt($request['custid']);
-        } catch (DecryptException $e) {
-            return response()->json(['error' => 'siswa tidak ditemukan']);
-        }
+        $val = $request['custid'];
 
         $siswa = scctcust::where('custid', $val)->first();
         if (!$siswa) return response()->json(['error' => 'siswa tidak ditemukan']);
@@ -129,7 +121,9 @@ class CekPelunasanController extends Controller
             foreach ($filter as $key => $val) {
                 if (is_array($val) || strtolower($val) != 'all' && $val !== null && $val !== '') {
                     $colName = match ($key) {
+                        "tahun_akademik" => "scctbill.BTA",
                         'post' => 'scctbill.BILLNM',
+                        "unit" => "scctcust.CODE01",
                         'kelas' => 'scctcust.DESC02',
                         'siswa' => 'scctcust.nmcust',
                         'custid' => 'scctbill.CUSTID',
@@ -264,8 +258,8 @@ class CekPelunasanController extends Controller
 
         if ($request->get("length") != "poll") {
             $records = $records->map(function ($item, $index) {
-                $item->item_id = Crypt::encrypt($item['AA']);
-                $item->CUSTID = Crypt::encrypt($item['CUSTID']);
+                $item->item_id = $item['AA'];
+                $item->CUSTID = $item['CUSTID'];
                 return $item;
             });
         }
