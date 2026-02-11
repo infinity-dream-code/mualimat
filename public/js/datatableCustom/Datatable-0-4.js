@@ -28,6 +28,76 @@ function reformatNumber(data, row, column, node) {
 //     $( celXfsElement ).attr("count", "69");
 // }
 
+function ensureNumFmts(stylesXml) {
+    let numFmts = stylesXml.getElementsByTagName('numFmts')[0];
+    if (numFmts) return numFmts;
+
+    numFmts = stylesXml.createElement('numFmts');
+    numFmts.setAttribute('count', '0');
+
+    const styleSheet = stylesXml.getElementsByTagName('styleSheet')[0];
+    const fonts = stylesXml.getElementsByTagName('fonts')[0];
+    styleSheet.insertBefore(numFmts, fonts);
+
+    return numFmts;
+}
+
+function addRupiahStyleOnce(xlsx) {
+    const stylesXml = xlsx.xl['styles.xml'];
+    const numFmts = ensureNumFmts(stylesXml);
+
+    const numFmtId = '176';
+
+    const formatCode = '"Rp."\\ #,##0;[Red]"Rp."\\ -#,##0';
+
+    const existing = Array.from(stylesXml.getElementsByTagName('numFmt'))
+        .find(n => n.getAttribute('numFmtId') === numFmtId);
+
+    if (!existing) {
+        const numFmt = stylesXml.createElement('numFmt');
+        numFmt.setAttribute('numFmtId', numFmtId);
+        numFmt.setAttribute('formatCode', formatCode);
+        numFmts.appendChild(numFmt);
+
+        numFmts.setAttribute(
+            'count',
+            String(parseInt(numFmts.getAttribute('count') || '0', 10) + 1)
+        );
+    }
+
+    // Append xf and return its index
+    const cellXfs = stylesXml.getElementsByTagName('cellXfs')[0];
+    const xf = stylesXml.createElement('xf');
+    xf.setAttribute('numFmtId', numFmtId);
+    xf.setAttribute('fontId', '0');
+    xf.setAttribute('fillId', '0');
+    xf.setAttribute('borderId', '0');
+    xf.setAttribute('xfId', '0');
+    xf.setAttribute('applyNumberFormat', '1');
+
+    cellXfs.appendChild(xf);
+
+    const xfCount = cellXfs.getElementsByTagName('xf').length;
+    cellXfs.setAttribute('count', String(xfCount));
+
+    return xfCount - 1;
+}
+
+function applyStyleToColumns(sheetXml, styleIndex, targetColumnIndexes) {
+    $('row c[r]', sheetXml).each(function () {
+        const cell = $(this);
+        const ref = cell.attr('r');         // e.g. "C5"
+        const colLetters = ref.replace(/[0-9]/g, ''); // "C"
+
+        const colIndex = colLetters.charCodeAt(0) - 65;
+
+        if (targetColumnIndexes.includes(colIndex)) {
+            cell.attr('s', String(styleIndex));
+            cell.removeAttr('t');
+        }
+    });
+}
+
 function addCustomNumberFormat(xlsx, numberFormat) {
 
     //kodingan seko stackoverflow ramudeng njir
@@ -76,9 +146,9 @@ function newexportaction(e, dt, button, config) {
     let self = this;
     let oldStart = dt.settings()[0]._iDisplayStart;
     let maxLength = dt.settings()[0]._iRecordsDisplay;
-    if (maxLength > 2000) {
+    if (maxLength > 1500) {
         e.preventDefault();
-        warningAlert('Data terlalu banyak! <hr>pastikan data yang diexport kurang dari 2000 baris')
+        warningAlert('Data terlalu banyak! <hr>pastikan data yang diexport kurang dari 1500 baris')
     } else {
         dt.one('preXhr', function (e, s, data) {
             data.start = 0;
@@ -128,6 +198,8 @@ function dtButtons(options, buttons) {
             customize: function (xlsx) {
                 const sheet = xlsx.xl.worksheets['sheet1.xml'];
 
+                const rupiahStyleIndex = addRupiahStyleOnce(xlsx);
+
                 const currencyColumns = [];
                 DT[`${options.tableId}`].settings().init().columns.forEach((col, index) => {
                     if (col.columnType === 'currency' || col.columnType === 'money' || col.columnType === 'rupiah') {
@@ -135,26 +207,29 @@ function dtButtons(options, buttons) {
                     }
                 });
 
-                $('row c[r]', sheet).each(function () {
-                    const cell = $(this);
-                    const cellRef = cell.attr('r');
-                    const columnIndex = cellRef.replace(/[0-9]/g, '').charCodeAt(0) - 65; // Get column index
+                applyStyleToColumns(sheet, rupiahStyleIndex, currencyColumns);
 
-                    if (currencyColumns.includes(columnIndex)) {
-                        // console.log(columnIndex, cellRef)
-                        addCustomNumberFormat(xlsx, '#,##0.##');
-                        formatTargetColumn(xlsx, cellRef);
-                        // // Apply a custom number format for currency: $#,##0.00
-                        // const numFmtId = '164';  // Custom format ID for currency ($#,##0.00)
-                        // cell.attr('s', '56'); // Apply a predefined style ID for currency (if necessary)
-                        // cell.attr('t', 'n'); // Set the type to number for correct formatting
-                    }
-                });
-
-                $('row:first c', sheet).attr('s', '22');
-                const styles = xlsx.xl['styles.xml'];
-                $(styles).find('cellXfs xf').eq(21).attr('fillId', '3');
-                $(styles).find('fills fill').eq(3).html('<patternFill patternType="solid"><fgColor rgb="FFFFF00"/></patternFill>');
+                // $('row c[r]', sheet).each(function () {
+                //     const cell = $(this);
+                //     const cellRef = cell.attr('r');
+                //     const columnIndex = cellRef.replace(/[0-9]/g, '').charCodeAt(0) - 65; // Get column index
+                //
+                //     console.log(columnIndex, cellRef)
+                //     if (currencyColumns.includes(columnIndex)) {
+                //         console.log(columnIndex, cellRef)
+                //         addCustomNumberFormat(xlsx, '!R!p!. #,##0.00;[Red]!R!p!. - #,##0.00');
+                //         formatTargetColumn(xlsx, cellRef);
+                //         // // Apply a custom number format for currency: $#,##0.00
+                //         // const numFmtId = '164';  // Custom format ID for currency ($#,##0.00)
+                //         // cell.attr('s', '56'); // Apply a predefined style ID for currency (if necessary)
+                //         // cell.attr('t', 'n'); // Set the type to number for correct formatting
+                //     }
+                // });
+                //
+                // $('row:first c', sheet).attr('s', '22');
+                // const styles = xlsx.xl['styles.xml'];
+                // $(styles).find('cellXfs xf').eq(21).attr('fillId', '3');
+                // $(styles).find('fills fill').eq(3).html('<patternFill patternType="solid"><fgColor rgb="FFFFF00"/></patternFill>');
             },
         },
         pdf: {
