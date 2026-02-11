@@ -50,6 +50,9 @@ Route::prefix("admin")
                     Route::get("cetak-kartu-siswa", "cetakKartuSiswa")->name(
                         "cetak-kartu-siswa",
                     );
+                    Route::get("get-data-rekap", "getDataRekap")->name(
+                        "get-data-rekap",
+                    );
                     Route::resource(
                         "",
                         \App\Http\Controllers\Admin\DataTagihanController::class,
