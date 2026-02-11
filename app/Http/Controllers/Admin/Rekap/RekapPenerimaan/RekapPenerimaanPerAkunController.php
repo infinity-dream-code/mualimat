@@ -55,24 +55,28 @@ class RekapPenerimaanPerAkunController extends Controller
                 "name" => "Tahun Pelajaran",
                 "searchable" => true,
                 "orderable" => true,
+                "exportable" => true,
             ],
             [
                 "data" => "nocust",
                 "name" => "NIS",
                 "searchable" => true,
                 "orderable" => true,
+                "exportable" => true,
             ],
             [
                 "data" => "nmcust",
                 "name" => "NAMA",
                 "searchable" => true,
                 "orderable" => true,
+                "exportable" => true,
             ],
             [
                 "data" => "BILLNM",
                 "name" => "Nama Tagihan",
                 "searchable" => true,
                 "orderable" => true,
+                "exportable" => true,
             ],
             [
                 "data" => "BILLAM",
@@ -81,6 +85,7 @@ class RekapPenerimaanPerAkunController extends Controller
                 "orderable" => true,
                 "columnType" => "currency",
                 "classname" => "text-end",
+                "exportable" => true,
             ],
             [
                 "data" => "FIDBANK",
