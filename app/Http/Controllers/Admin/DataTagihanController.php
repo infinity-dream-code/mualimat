@@ -101,6 +101,12 @@ class DataTagihanController extends Controller
                 "exportable" => true,
             ],
             [
+                "data" => "FUrutan",
+                "name" => "urutan",
+                "orderable" => true,
+                "exportable" => true,
+            ],
+            [
                 "data" => "BTA",
                 "name" => "Tahun AKA",
                 "searchable" => true,
@@ -183,12 +189,12 @@ class DataTagihanController extends Controller
                                 )->endOfDay();
                                 if ($startDate && $endDate) {
                                     $colName &&
-                                        ($filters[] = [
-                                            $colName,
-                                            $startDate,
-                                            $endDate,
-                                            "whereBetween",
-                                        ]);
+                                    ($filters[] = [
+                                        $colName,
+                                        $startDate,
+                                        $endDate,
+                                        "whereBetween",
+                                    ]);
                                 }
                             }
                         } elseif ($key == "siswa") {
@@ -322,7 +328,7 @@ class DataTagihanController extends Controller
                         $colName = match ($key) {
                             "dari_tanggal",
                             "sampai_tanggal"
-                                => "scctbill.FTGLTagihan",
+                            => "scctbill.FTGLTagihan",
                             "tahun_akademik" => "scctbill.BTA",
                             "post" => "scctbill.BILLNM",
                             "unit" => "scctcust.CODE01",
@@ -346,7 +352,7 @@ class DataTagihanController extends Controller
                             });
                             if (count($array) > 0) {
                                 $colName &&
-                                    ($filters[] = [$colName, "in", $array]);
+                                ($filters[] = [$colName, "in", $array]);
                             }
                             $post = $array;
                         } elseif ($key == "siswa") {
@@ -415,26 +421,26 @@ class DataTagihanController extends Controller
                                     case 3:
                                         $filter[1] === "in"
                                             ? $query->whereIn(
-                                                $filter[0],
-                                                $filter[2],
-                                            )
+                                            $filter[0],
+                                            $filter[2],
+                                        )
                                             : $query->where(
-                                                $filter[0],
-                                                $filter[1],
-                                                $filter[2],
-                                            );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                         break;
                                     case 4:
                                         $filter[3] === "whereBetween"
                                             ? $query->whereBetween($filter[0], [
-                                                $filter[1],
-                                                $filter[2],
-                                            ])
+                                            $filter[1],
+                                            $filter[2],
+                                        ])
                                             : $query->{$filter[3]}(
-                                                $filter[0],
-                                                $filter[1],
-                                                $filter[2],
-                                            );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                         break;
                                 }
                             }
@@ -446,27 +452,27 @@ class DataTagihanController extends Controller
                                 case 3:
                                     $filter[1] === "in"
                                         ? $query->whereIn(
-                                            $filter[0],
-                                            $filter[2],
-                                        )
+                                        $filter[0],
+                                        $filter[2],
+                                    )
                                         : $query->where(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                     break;
 
                                 case 4:
                                     $filter[3] === "whereBetween"
                                         ? $query->whereBetween($filter[0], [
-                                            $filter[1],
-                                            $filter[2],
-                                        ])
+                                        $filter[1],
+                                        $filter[2],
+                                    ])
                                         : $query->{$filter[3]}(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                     break;
                             }
                         }
@@ -640,8 +646,8 @@ class DataTagihanController extends Controller
         $search_arr = $request->get("search", []);
         $searchValue = $search_arr["value"] ?? "";
 
-        $columnName = "BILLAC";
-        $columnSortOrder = "DESC";
+        $columnName = "scctbill.FUrutan";
+        $columnSortOrder = "asc";
 
         if (!empty($order_arr)) {
             $columnIndex = $columnIndex_arr[0]["column"] ?? null;
@@ -695,12 +701,12 @@ class DataTagihanController extends Controller
                             )->endOfDay();
                             if ($startDate && $endDate) {
                                 $colName &&
-                                    ($filters[] = [
-                                        $colName,
-                                        $startDate,
-                                        $endDate,
-                                        "whereBetween",
-                                    ]);
+                                ($filters[] = [
+                                    $colName,
+                                    $startDate,
+                                    $endDate,
+                                    "whereBetween",
+                                ]);
                             }
                         }
                     } elseif ($key == "kelas") {
@@ -737,23 +743,23 @@ class DataTagihanController extends Controller
                                 $filter[1] === "in"
                                     ? $query->whereIn($filter[0], $filter[2])
                                     : $query->where(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
+                                    $filter[0],
+                                    $filter[1],
+                                    $filter[2],
+                                );
                                 break;
 
                             case 4:
                                 $filter[3] === "whereBetween"
                                     ? $query->whereBetween($filter[0], [
-                                        $filter[1],
-                                        $filter[2],
-                                    ])
+                                    $filter[1],
+                                    $filter[2],
+                                ])
                                     : $query->{$filter[3]}(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
+                                    $filter[0],
+                                    $filter[1],
+                                    $filter[2],
+                                );
                                 break;
                         }
                     }
@@ -771,6 +777,7 @@ class DataTagihanController extends Controller
                 "scctbill.PAIDST",
                 "scctbill.PAIDDT",
                 "scctbill.BTA",
+                "scctbill.FUrutan",
                 "scctbill.FIDBANK",
                 "scctbill.FUrutan",
                 "scctbill.CUSTID",
@@ -848,5 +855,261 @@ class DataTagihanController extends Controller
             "data" => $records ?? [],
         ];
         return response()->json($response);
+    }
+
+    public function getDataRekap(Request $request)
+    {
+        if (
+            $request->filter["kelas"] != null &&
+            $request->filter["kelas"] != "all"
+        ) {
+            $filters = [];
+            $filterQuery = null;
+            $filter_scctbill = [];
+            $post = false;
+            $kelas = [];
+            $tanggalMulai = null;
+            $tanggalSelesai = null;
+            $filter = $request->input("filter");
+            if ($filter) {
+                foreach ($filter as $key => $val) {
+                    if (
+                        is_array($val) ||
+                        (strtolower($val) != "all" &&
+                            $val !== null &&
+                            $val !== "")
+                    ) {
+                        $colName = match ($key) {
+                            "dari_tanggal",
+                            "sampai_tanggal"
+                            => "scctbill.FTGLTagihan",
+                            "tahun_akademik" => "scctbill.BTA",
+                            "post" => "scctbill.BILLNM",
+                            "unit" => "scctcust.CODE01",
+                            "kelas" => "scctcust.DESC02",
+                            "siswa" => "scctcust.nmcust",
+                            "custid" => "scctbill.CUSTID",
+                            default => null,
+                        };
+
+                        if ($key == "kelas") {
+                            $val = explode("~", $val);
+                            $kelas = $val;
+                            if (count($val) == 3) {
+                                $filters[] = ["scctcust.CODE02", "=", $val[0]];
+                                $filters[] = ["scctcust.DESC02", "=", $val[1]];
+                                $filters[] = ["scctcust.DESC03", "=", $val[2]];
+                            }
+                        } elseif ($key == "post") {
+                            $array = array_filter($val, function ($value) {
+                                return $value !== "all";
+                            });
+                            if (count($array) > 0) {
+                                $colName &&
+                                ($filters[] = [$colName, "in", $array]);
+                            }
+                            $post = $array;
+                        } elseif ($key == "siswa") {
+                            $val = is_numeric($val) ? $val : "%" . $val . "%";
+                            $colName = is_numeric($val)
+                                ? "scctcust.nocust"
+                                : $colName;
+                            $colName && ($filters[] = [$colName, "like", $val]);
+                        } else {
+                            $colName && ($filters[] = [$colName, "=", $val]);
+                        }
+                    }
+                }
+            }
+
+            $filter_main = [];
+
+            foreach ($filters as $item) {
+                if (str_contains($item[0], "scctbill")) {
+                    $filter_scctbill[] = $item;
+                } else {
+                    $filter_main[] = $item;
+                }
+            }
+
+            $whereAny = ["scctcust.nmcust", "scctcust.nocust"];
+
+            $select = array_unique(
+                array_merge($whereAny, [
+                    "scctcust.CODE02",
+                    "scctcust.DESC02",
+                    "scctcust.DESC03",
+                ]),
+            );
+
+            try {
+                $mstTagihan = mst_tagihan::select(["tagihan"])
+                    ->where(function ($query) use ($post) {
+                        if ($post) {
+                            $query->whereIn("tagihan", $post);
+                        }
+                    })
+                    //                    ->orderBy('urut', 'asc')
+                    ->orderByRaw(
+                        "
+                        CASE
+                            WHEN kode BETWEEN '07' AND '12' THEN 0
+                            WHEN kode BETWEEN '01' AND '06' THEN 1
+                            ELSE 2
+                        END,
+                        kode ASC
+                    ",
+                    )
+                    ->get();
+
+                $records = scctcust::leftJoin("scctbill", function ($join) use (
+                    $filter_scctbill,
+                ) {
+                    $join
+                        ->on("scctbill.CUSTID", "=", "scctcust.CUSTID")
+                        ->where("scctbill.PAIDST", 0)
+                        ->where("scctbill.FSTSBolehBayar", 1)
+                        ->where(function ($query) use ($filter_scctbill) {
+                            foreach ($filter_scctbill as $filter) {
+                                switch (count($filter)) {
+                                    case 3:
+                                        $filter[1] === "in"
+                                            ? $query->whereIn(
+                                            $filter[0],
+                                            $filter[2],
+                                        )
+                                            : $query->where(
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
+                                        break;
+                                    case 4:
+                                        $filter[3] === "whereBetween"
+                                            ? $query->whereBetween($filter[0], [
+                                            $filter[1],
+                                            $filter[2],
+                                        ])
+                                            : $query->{$filter[3]}(
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
+                                        break;
+                                }
+                            }
+                        });
+                })
+                    ->where(function ($query) use ($filter_main) {
+                        foreach ($filter_main as $filter) {
+                            switch (count($filter)) {
+                                case 3:
+                                    $filter[1] === "in"
+                                        ? $query->whereIn(
+                                        $filter[0],
+                                        $filter[2],
+                                    )
+                                        : $query->where(
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
+                                    break;
+
+                                case 4:
+                                    $filter[3] === "whereBetween"
+                                        ? $query->whereBetween($filter[0], [
+                                        $filter[1],
+                                        $filter[2],
+                                    ])
+                                        : $query->{$filter[3]}(
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
+                                    break;
+                            }
+                        }
+                    })
+                    ->where("scctcust.STCUST", 1)
+                    ->orderBy("scctcust.nmcust", "asc")
+                    ->select($select)
+                    ->groupBy("scctcust.CUSTID");
+
+                foreach ($mstTagihan as $val) {
+                    $namaPost = $val["tagihan"];
+                    $records->addSelect(
+                        DB::raw(
+                            "SUM(CASE WHEN scctbill.BILLNM = '{$namaPost}' THEN scctbill.BILLAM ELSE 0 END) AS '{$namaPost}'",
+                        ),
+                    );
+                }
+
+                $records = $records->get();
+
+                $kelas = mst_kelas::where("unit", $kelas[0])
+                    ->where("jenjang", $kelas[1])
+                    ->where("kelas", $kelas[2])
+                    ->first();
+                if (!$records || !$mstTagihan) {
+                    throw new \Exception("Gagal mengambil data tagihan");
+                }
+
+                $zeroColumns = [];
+                $filtered = $records->map(function ($item) use (
+                    $records,
+                    &$zeroColumns,
+                ) {
+                    $zeroColumns = collect($item)
+                        ->keys()
+                        ->filter(function ($key) use ($records) {
+                            return $records
+                                ->pluck($key)
+                                ->every(fn($value) => $value == 0);
+                        });
+
+                    return collect($item)->except($zeroColumns);
+                });
+
+                $mstTagihan = $mstTagihan->pluck("tagihan");
+                if ($zeroColumns->count() > 0) {
+                    $zeroColumns = $zeroColumns->toArray();
+                }
+                $filteredMstTagihan = $mstTagihan->reject(function (
+                    $value,
+                ) use ($zeroColumns) {
+                    return in_array($value, $zeroColumns, true);
+                });
+
+                //                $customPaper = [0, 0, 1684, 842];
+                $customPaper = [0, 0, 935.43, 595.28];
+
+                $data = [
+                    "data" => $filtered,
+                    "mstTagihan" => $filteredMstTagihan->toArray(),
+                    "kelas" => $kelas,
+                    "tanggalMulai" => $tanggalMulai,
+                    "tanggalSelesai" => $tanggalSelesai,
+                ];
+                 return response()->json($data, 200);
+            } catch (\Exception $e) {
+                return response()->json(
+                    [
+                        "message" =>
+                            "Tidak dapat mencetak rekap tagihan!<br> *Silahkan hubungi administrator",
+                        "error" => $e,
+                    ],
+                    422,
+                );
+            }
+        } else {
+            return response()->json(
+                [
+                    "message" =>
+                        "Tidak dapat mencetak rekap tagihan!<br> *Kelas Harus Diisi, silahkan pilih salah satu kelas",
+                ],
+                422,
+            );
+        }
     }
 }
