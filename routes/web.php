@@ -5,7 +5,6 @@ use App\Http\Controllers\Admin\Rekap\RekapTaighan\RekapTagihanPerAkunController;
 use App\Http\Controllers\Admin\RekapSaldoController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\RekapPenerimaanController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -39,7 +38,7 @@ Route::prefix("admin")
             ->name("data-tagihan.")
             ->group(function () {
                 Route::controller(
-                    \App\Http\Controllers\DataTagihanController::class,
+                    \App\Http\Controllers\Admin\DataTagihanController::class,
                 )->group(function () {
                     Route::get("get-data", "getData")->name("get-data");
                     Route::get("get-column", "getColumn")->name("get-column");
@@ -53,7 +52,7 @@ Route::prefix("admin")
                     );
                     Route::resource(
                         "",
-                        \App\Http\Controllers\DataTagihanController::class,
+                        \App\Http\Controllers\Admin\DataTagihanController::class,
                     )->parameters(["" => "id"]);
                 });
             });
@@ -87,7 +86,7 @@ Route::prefix("admin")
             ->name("data-penerimaan.")
             ->group(function () {
                 Route::controller(
-                    \App\Http\Controllers\DataPenerimaanController::class,
+                    \App\Http\Controllers\Admin\DataPenerimaanController::class,
                 )->group(function () {
                     Route::get("get-data", "getData")->name("get-data");
                     Route::get("get-column", "getColumn")->name("get-column");
@@ -107,7 +106,7 @@ Route::prefix("admin")
                     )->name("get-data-rekap");
                     Route::resource(
                         "",
-                        \App\Http\Controllers\DataPenerimaanController::class,
+                        \App\Http\Controllers\Admin\DataPenerimaanController::class,
                     )->parameters(["" => "id"]);
                 });
             });
@@ -141,7 +140,7 @@ Route::prefix("admin")
             ->name("rekap-penerimaan-harian.")
             ->group(function () {
                 Route::controller(
-                    \App\Http\Controllers\RekapPenerimaanController::class,
+                    \App\Http\Controllers\Admin\RekapPenerimaanController::class,
                 )->group(function () {
                     Route::get("get-data", "getData")->name("get-data");
                     Route::get("get-column", "getColumn")->name("get-column");
@@ -151,14 +150,14 @@ Route::prefix("admin")
                     )->name("cetak-rekap-harian");
                     Route::resource(
                         "",
-                        \App\Http\Controllers\RekapPenerimaanController::class,
+                        \App\Http\Controllers\Admin\RekapPenerimaanController::class,
                     )->parameters(["" => "id"]);
                 });
             });
 
         Route::prefix("cek-pelunasan")
             ->name("cek-pelunasan.")
-            ->controller(\App\Http\Controllers\CekPelunasanController::class)
+            ->controller(\App\Http\Controllers\Admin\CekPelunasanController::class)
             ->group(function () {
                 Route::get("get-data", "getData")->name("get-data");
                 Route::get("get-column", "getColumn")->name("get-column");
@@ -167,7 +166,7 @@ Route::prefix("admin")
                 );
                 Route::resource(
                     "",
-                    \App\Http\Controllers\CekPelunasanController::class,
+                    \App\Http\Controllers\Admin\CekPelunasanController::class,
                 )->parameters(["" => "id"]);
             });
 

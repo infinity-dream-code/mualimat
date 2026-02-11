@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\mst_kelas;
 use App\Models\mst_sekolah;
 use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
-use App\Models\scctbill;
 use App\Models\scctcust;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
