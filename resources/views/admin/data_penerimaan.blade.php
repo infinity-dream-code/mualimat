@@ -57,7 +57,7 @@
                     </li>
                 </ul>
             </div>
-            <form id="rekapForm">
+            <form id="filterForm">
                 <fieldset class="form-fieldset">
                     <div class="row">
                         <div class="col-lg-6">
@@ -119,7 +119,7 @@
                                         <option value="all">Semua</option>
                                         @foreach($metode_bayar as $key => $item)
                                             <option
-                                                value="{{$key}}">{{$item}}</option>
+                                                value="{{$key}}" data-value="{{$item}}">{{$item}}</option>
                                         @endforeach
                                     @else
                                         <option>data kosong</option>
@@ -240,7 +240,7 @@
 
         let dtOptions = {
             tableId: 'main_table',
-            formId: 'rekapForm',
+            formId: 'filterForm',
             columnUrl: '{{($columnsUrl??null)}}',
             dataUrl: '{{($datasUrl??null)}}',
             dataColumns: [],
@@ -361,8 +361,8 @@
                 maxDate: moment()
             }, function (start, end) {
                 let duration = end.diff(start, 'days');
-                if (duration > 100) {
-                    warningAlert("Maksimal 100 hari.");
+                if (duration > 365) {
+                    warningAlert("Maksimal 365 hari.");
                     date.data('daterangepicker').setStartDate(start);
                     date.data('daterangepicker').setEndDate(start.clone().add(6, 'days'));
                 }
@@ -370,230 +370,246 @@
 
             date.on('apply.daterangepicker hide.daterangepicker', function (ev, picker) {
                 if (picker.startDate && picker.endDate) {
-                    $(this).val(picker.startDate.format('DD-MM-YYYY') + ' ~ ' + picker.endDate.format('DD-MM-YYYY'));
+                    $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
                 }
             });
 
-            {{--document.getElementById('cetak-kartu-siswa').addEventListener('click', function (e) {--}}
-            {{--    e.preventDefault();--}}
-            {{--    loadingAlert(`Membuat Kartu Siswa ... <br> Proses ini membutuhkan waktu beberapa saat<br><hr>--}}
-            {{--        <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>--}}
-            {{--    `);--}}
-            {{--    let url = '{{route('admin.data-penerimaan.cetak-kartu-siswa')}}';--}}
-            {{--    const form = new FormData(document.getElementById('rekapForm'));--}}
-            {{--    const params = new URLSearchParams();--}}
-            {{--    for (const [key, value] of form.entries()) {--}}
-            {{--        params.append(key, value);--}}
-            {{--    }--}}
-            {{--    let data = DT[`${dtOptions.tableId}`].rows({selected: true}).data();--}}
-
-            {{--    if (!data[0]) {--}}
-            {{--        warningAlert('silahkan pilih siswa!')--}}
-            {{--        return;--}}
-            {{--    }--}}
-            {{--    params.append('custid', data[0].CUSTID)--}}
-            {{--    const fullUrl = `${url}?${params.toString()}`;--}}
-            {{--    const request = new Request(--}}
-            {{--        fullUrl, {--}}
-            {{--            method: "GET",--}}
-            {{--            headers: {--}}
-            {{--                'X-CSRF-TOKEN': csrfToken,--}}
-            {{--                'Accept': 'application/pdf'--}}
-            {{--            }--}}
-            {{--        });--}}
-
-            {{--    fetch(request)--}}
-            {{--        .then(res => res.blob())--}}
-            {{--        .then(blob => {--}}
-            {{--            const url = URL.createObjectURL(blob);--}}
-            {{--            window.open(url, '_blank');--}}
-            {{--            successAlert('Sukses, Rekap terbuka pada tab baru');--}}
-            {{--        })--}}
-            {{--        .catch(error => {--}}
-            {{--            if (error.status === 422) {--}}
-            {{--                const errors = error.error || error.errors;--}}
-            {{--                errorAlert(error.message);--}}
-            {{--                if (errors) {--}}
-            {{--                    processErrors(errors)--}}
-            {{--                }--}}
-            {{--            } else {--}}
-            {{--                const errorMessages = {--}}
-            {{--                    401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',--}}
-            {{--                    403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',--}}
-            {{--                    404: 'Halaman yang dituju tidak ditemukan 🧐',--}}
-            {{--                    405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',--}}
-            {{--                    419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',--}}
-            {{--                    429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',--}}
-            {{--                };--}}
-            {{--                errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");--}}
-            {{--            }--}}
-            {{--        });--}}
-            {{--})--}}
-
-            function generateTableRow(data, kelas) {
+            function generateTableRow(data, tagihan) {
                 return data.map(s => {
                     let row = {
-                        "Kode": s.KodeAkun,
-                        "Nama Post": s.NamaAkun,
-                        "Nama Tagihan": s.bill_name,
+                        "NIS": s.nocust,
+                        "Nama": s.nmcust
                     };
 
-                    kelas.forEach((it, i) => {
-                        let id = it.id;
-                        row[it.jenjang] = Number(s[id]);
+                    let total = 0;
+                    Object.keys(tagihan).forEach(function (key) {
+                        row[tagihan[key]] = Number(s[tagihan[key]] ?? 0);
+                        total += Number(s[tagihan[key]] ?? 0);
                     });
-
+                    // row['TOTAL'] = Number(total);
                     return row;
                 });
             }
 
-            function parseDDMMYYYY(str) {
-                if (!str) return null;
+            function parseDDMMYYYY(dateStr) {
+                if (!dateStr) return null;
 
-                const [dd, mm, yyyy] = str.split("-").map(Number);
-                if (!dd || !mm || !yyyy) return null;
+                const [dd, mm, yyyy] = dateStr.split('-');
 
-                return new Date(yyyy, mm, dd);
+                return new Date(`${yyyy}-${mm}-${dd}`);
             }
 
-            async function exportExcel(groupedData, params, kelas = []) {
+            async function exportExcel(groupedData, params, tagihans = []) {
                 const rows = groupedData;
                 if (!rows.length) return;
 
-                const invalidValues = [null, '', 'undefined', 'all'];
-                let statusBayarVal = params.get('filter[status_bayar]') ?? null;
-                if (invalidValues.includes(statusBayarVal)) {
-                  statusBayarVal = false;
-                }
-                console.log(statusBayarVal);
-                let kelasVal = params.get('filter[kelas]') ?? null;
-                if (invalidValues.includes(kelasVal)) {
-                  kelasVal = 'Semua';
-                }
+                try {
+                    const invalidValues = [null, '', 'undefined', 'all'];
+                    let kelasVal = params.get('filter[kelas]') ?? null;
+                    if (invalidValues.includes(kelasVal)) {
+                        kelasVal = 'Semua';
+                    }
 
-                let thnAkaVal = params.get('filter[angkatan]') ?? null;
-                if (invalidValues.includes(thnAkaVal)) {
-                  thnAkaVal = 'Semua';
-                }
+                    let thnAkaVal = params.get('filter[tahun_akademik]') ?? null;
+                    if (invalidValues.includes(thnAkaVal)) {
+                        thnAkaVal = 'Semua';
+                    }
 
-                let tanggalTransaksi = params.get('filter[tanggal-transaksi]') ?? null;
-                tanggalTransaksi = tanggalTransaksi.split(" - ")
+                    let angkatanVal = params.get('filter[angkatan]') ?? null;
+                    if (invalidValues.includes(angkatanVal)) {
+                        angkatanVal = 'Semua';
+                    }
 
-                const wbTitle = "REKAP PENERIMAAN"
-                const wb = new ExcelJS.Workbook();
-                const ws = wb.addWorksheet(wbTitle);
+                    let periodeVal = params.get('filter[periode]') ?? null;
+                    if (invalidValues.includes(periodeVal)) {
+                        periodeVal = 'Semua';
+                    }
 
-                const header = Object.keys(rows[0]);
+                    let metodeBayarVal = params.get('filter[metode_bayar]') ?? null;
+                    if (invalidValues.includes(metodeBayarVal)) {
+                        metodeBayarVal = 'Semua';
+                    }else{
+                        const option = document.querySelector(`#metode_bayar option[value="${metodeBayarVal}"]`);
+                        const metodeBayarVal = option?.dataset.value;
+                    }
 
-                ws.insertRow(1, [wbTitle]);
-                ws.insertRow(2, ["Unit, Kelas", kelasVal.replace(/~/g, " - ")]);
-                ws.insertRow(3, ["Status Bayar", !statusBayarVal ? "Semua" : statusBayarVal === 1 ? "Lunas" : "Belum Lunas"]);
-                ws.insertRow(4, ["Tahun Akademik", thnAkaVal]);
-                ws.insertRow(5, ["Dari", parseDDMMYYYY(tanggalTransaksi[0])]);
-                ws.insertRow(6, ["Hingga", parseDDMMYYYY(tanggalTransaksi[1])]);
+                    let tanggalTransaksi = params.get('filter[tanggal-transaksi]') ?? null;
+                    tanggalTransaksi = tanggalTransaksi.split(" - ")
+                    console.log(tanggalTransaksi)
 
-                [5, 6].forEach(rowNumber => {
-                    const cell = ws.getRow(rowNumber).getCell(2);
+                    const wbTitle = "REKAP DATA PENERIMAAN"
+                    const wb = new ExcelJS.Workbook();
+                    const ws = wb.addWorksheet(wbTitle);
 
-                    cell.numFmt = "dddd, dd mmmm yyyy";
-                });
+                    const header = Object.keys(rows[0]);
 
-                const boldRows = [1, 2, 3, 4, 5, 6];
+                    ws.insertRow(1, [wbTitle]);
+                    ws.insertRow(2, ["Unit, Kelas", kelasVal.replace(/~/g, " - ")]);
+                    ws.insertRow(3, ["Angkatan", angkatanVal]);
+                    ws.insertRow(4, ["Tahun Akademik", thnAkaVal]);
+                    ws.insertRow(5, ["Periode", periodeVal]);
+                    ws.insertRow(6, ["Metode Pembayaran", metodeBayarVal]);
+                    ws.insertRow(7, ["Dari", parseDDMMYYYY(tanggalTransaksi[0])]);
+                    ws.insertRow(8, ["Hingga", parseDDMMYYYY(tanggalTransaksi[1])]);
 
-                boldRows.forEach(rowNumber => {
-                    const row = ws.getRow(rowNumber);
+                    [7, 8].forEach(rowNumber => {
+                        const cell = ws.getRow(rowNumber).getCell(2);
 
-                    row.eachCell({ includeEmpty: true }, cell => {
-                        cell.font = { bold: true };
-                    });
-
-                    row.commit();
-                });
-
-                ws.insertRow(7, []);
-
-                const headerRowNumber = 8;
-
-                ws.getColumn(1).width = 35;
-                ws.getColumn(2).width = 35;
-
-                const headerRow = ws.insertRow(headerRowNumber, header);
-
-                headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-                    cell.font = { bold: true };
-                    cell.alignment = { horizontal: "center", vertical: "middle" };
-                    cell.border = fullBorder();
-
-                    if (colNumber <= 2) return;
-                    const headerText = String(cell.value || "");
-                    let width = Math.max(12, headerText.length + 4);
-                    ws.getColumn(colNumber).width = width;
-                    // console.log(width);
-                });
-
-                rows.forEach(r => {
-                    const row = ws.addRow(Object.values(r));
-
-                    row.eachCell({ includeEmpty: true }, cell => {
                         if (cell.value instanceof Date) {
-                            cell.numFmt = "dddd, dd mmmm yyyy";
+                            cell.numFmt = "[$-id-ID]dddd, dd mmmm yyyy";
                         }
-
-                        if (typeof cell.value === "number") {
-                            cell.numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
-                        }
-
-                        cell.border = fullBorder();
                     });
-                });
 
-                const dataStartRow = headerRowNumber + 1;
-                const dataEndRow = ws.lastRow.number;
+                    const boldRows = [1, 2, 3, 4, 5, 6, 7, 8];
 
-                const totalRow = ws.addRow([]);
-                totalRow.getCell(1).value = "TOTAL";
-                totalRow.getCell(1).font = { bold: true };
-                totalRow.getCell(1).border =  fullBorder();
-                headerRow.eachCell((cell, colNumber) => {
-                    const headerText = String(cell.value || "").toLowerCase();
-                    const jenjangs = kelas.map(b => b.jenjang.toLowerCase());
+                    boldRows.forEach(rowNumber => {
+                        const row = ws.getRow(rowNumber);
 
-                    const shouldSum = jenjangs.some(jenjang =>
-                        headerText.includes(jenjang)
-                    );
+                        row.eachCell({includeEmpty: true}, cell => {
+                            cell.font = {bold: true};
+                        });
 
-                    totalRow.getCell(colNumber).font = { bold: true };
-                    totalRow.getCell(colNumber).border = fullBorder();
+                        row.commit();
+                    });
 
-                    if (!shouldSum) return;
+                    ws.insertRow(9, []);
 
-                    const colLetter = ws.getColumn(colNumber).letter;
+                    const headerRowNumber = 10;
 
-                    totalRow.getCell(colNumber).value = {
-                        formula: `SUM(${colLetter}${dataStartRow}:${colLetter}${dataEndRow})`
-                    };
+                    ws.getColumn(1).width = 35;
+                    ws.getColumn(2).width = 35;
 
-                    totalRow.getCell(colNumber).numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
-                });
+                    const headerRow = ws.insertRow(headerRowNumber, header);
 
-                const buffer = await wb.xlsx.writeBuffer();
-                const blob = new Blob([buffer], {
-                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                });
+                    let totalColIndex = null;
 
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
-                a.download = wbTitle + " - " + kelasVal.replace(/~/g, " - ") + ".xlsx";
-                a.click();
+                    headerRow.eachCell((cell, colNumber) => {
+                        if (String(cell.value || "").toLowerCase().includes("total")) {
+                            totalColIndex = colNumber;
+                        }
+                    });
+
+                    if (!totalColIndex) {
+                        totalColIndex = headerRow.cellCount + 1;
+
+                        const totalCell = headerRow.getCell(totalColIndex);
+                        totalCell.value = "TOTAL";
+                        totalCell.font = { bold: true };
+                        totalCell.alignment = { horizontal: "center" };
+                        totalCell.border = fullBorder();
+
+                        ws.getColumn(totalColIndex).width = 18;
+                    }
+
+                    headerRow.eachCell({includeEmpty: true}, (cell, colNumber) => {
+                        cell.font = {bold: true};
+                        cell.alignment = {horizontal: "center", vertical: "middle"};
+                        cell.border = fullBorder();
+
+                        if (colNumber <= 2) return;
+                        const headerText = String(cell.value || "");
+                        let width = Math.max(12, headerText.length + 4);
+                        ws.getColumn(colNumber).width = width;
+                    });
+
+                    rows.forEach(r => {
+                        const row = ws.addRow(Object.values(r));
+
+                        row.eachCell({includeEmpty: true}, cell => {
+                            if (cell.value instanceof Date) {
+                                cell.numFmt = "dddd, dd mmmm yyyy";
+                            }
+
+                            if (typeof cell.value === "number") {
+                                cell.numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
+                            }
+
+                            cell.border = fullBorder();
+                        });
+                    });
+
+                    const dataStartRow = headerRowNumber + 1;
+                    const dataEndRow = ws.lastRow.number;
+
+                    const totalRow = ws.addRow([]);
+                    totalRow.getCell(1).value = "TOTAL";
+                    totalRow.getCell(1).font = {bold: true};
+                    totalRow.getCell(1).border = fullBorder();
+                    headerRow.eachCell((cell, colNumber) => {
+                        const headerText = String(cell.value || "").toLowerCase();
+                        let shouldSum = Object.values(tagihans).some(tagihan =>
+                            headerText.includes(tagihan.toLowerCase())
+                        );
+                        totalRow.getCell(colNumber).font = {bold: true};
+                        totalRow.getCell(colNumber).border = fullBorder();
+                        if (!shouldSum) return;
+                        const colLetter = ws.getColumn(colNumber).letter;
+                        totalRow.getCell(colNumber).value = {
+                            formula: `SUM(${colLetter}${dataStartRow}:${colLetter}${dataEndRow})`
+                        };
+                        totalRow.getCell(colNumber).numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
+                    });
+
+                    const sumColumns = [];
+
+                    headerRow.eachCell((cell, colNumber) => {
+                        const headerText = String(cell.value || "").toLowerCase();
+                        if (headerText === "total") {
+                            totalColIndex = colNumber;
+                            return;
+                        }
+                        const shouldSum = Object.values(tagihans).some(tagihan =>
+                            headerText.includes(tagihan.toLowerCase())
+                        );
+                        if (shouldSum) {
+                            sumColumns.push(colNumber);
+                        }
+                    });
+
+                    if (totalColIndex) {
+                        for (let rowNumber = dataStartRow; rowNumber <= dataEndRow + 1; rowNumber++) {
+                            const row = ws.getRow(rowNumber);
+                            const sumRange = sumColumns.map(col =>
+                                `${ws.getColumn(col).letter}${rowNumber}`
+                            );
+                            row.getCell(totalColIndex).value = {
+                                formula: `SUM(${sumRange.join(',')})`
+                            };
+                            row.getCell(totalColIndex).numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
+                            row.getCell(totalColIndex).font = {bold: true};
+                            row.getCell(totalColIndex).border = fullBorder();
+                            // ws.getColumn(totalColIndex).width = Math.max(12, headerText.length + 4);
+                        }
+                    }
+
+                    const buffer = await wb.xlsx.writeBuffer();
+                    if (!buffer || buffer.byteLength === 0) {
+                        throw new Error("Excel buffer empty");
+                    }
+                    const blob = new Blob([buffer], {
+                        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = wbTitle + " - " + kelasVal.replace(/~/g, " - ") + ".xlsx";
+                    document.body.appendChild(a);
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (err) {
+                    warningAlert('Gagal Mengexport Excel');
+                    console.log(err);
+                }
             }
 
             function fullBorder() {
-              return {
-                top: { style: "thin" },
-                left: { style: "thin" },
-                bottom: { style: "thin" },
-                right: { style: "thin" }
-              };
+                return {
+                    top: {style: "thin"},
+                    left: {style: "thin"},
+                    bottom: {style: "thin"},
+                    right: {style: "thin"}
+                };
             }
 
             $(document).on('click', '.btn-print-rekap', async function (e) {
@@ -601,21 +617,12 @@
                     <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
                 `);
                 let data = $(`#${dtOptions.formId}`).serialize();
-                // let kelasValue;
                 let params;
                 params = new URLSearchParams(data);
-                // function isValidInput(data) {
-                //     params = new URLSearchParams(data);
-                //     kelasValue = params.get('filter[kelas]');
-                //     const invalidValues = [null, '', 'undefined', 'all'];
-                //     return !invalidValues.includes(kelasValue);
-                // }
-
-                console.log(params);
 
                 if (params) {
                     let url = '{{route('admin.data-penerimaan.get-data-rekap')}}';
-                    const form = new FormData(document.getElementById('rekapForm'));
+                    const form = new FormData(document.getElementById('filterForm'));
                     const params = new URLSearchParams();
                     for (const [key, value] of form.entries()) {
                         params.append(key, value);
@@ -652,9 +659,15 @@
 
                         const result = await response.json();
 
-                        console.log(result);
-                        let tableRow = generateTableRow(result.data, result.kelas)
-                        await exportExcel(tableRow, params, result.kelas)
+                        if (!result['data'] || result['data'].length === 0) {
+                            console.log('kosong');
+                            const error = new Error("Data Tagihan Kosong");
+                            error.status = 422;
+                            throw error;
+                        }
+
+                        let tableRow = generateTableRow(result.data, result.mstTagihan)
+                        await exportExcel(tableRow, params, result.mstTagihan)
 
                         successAlert('Sukses, Rekap telah dicetak');
                     } catch (error) {
