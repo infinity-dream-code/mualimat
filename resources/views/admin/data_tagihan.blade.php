@@ -383,7 +383,7 @@
                         periodeVal = 'Semua';
                     }
 
-                    const wbTitle = "REKAP TAGIHAN"
+                    const wbTitle = "REKAP DATA TAGIHAN"
                     const wb = new ExcelJS.Workbook();
                     const ws = wb.addWorksheet(wbTitle);
 
@@ -519,15 +519,9 @@
                             row.getCell(totalColIndex).numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
                             row.getCell(totalColIndex).font = {bold: true};
                             row.getCell(totalColIndex).border = fullBorder();
-                            ws.getColumn(totalColIndex).width = Math.max(12, headerText.length + 4);
+                            // ws.getColumn(totalColIndex).width = Math.max(12, headerText.length + 4);
                         }
                     }
-
-                    console.log("Header:", header);
-                    console.log("Rows count:", rows.length);
-                    console.log("Last row:", ws.lastRow.number);
-                    console.log("Total column:", totalColIndex);
-                    console.log("Sum column", sumColumns);
 
                     const buffer = await wb.xlsx.writeBuffer();
                     if (!buffer || buffer.byteLength === 0) {
@@ -564,15 +558,8 @@
                     <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
                 `);
                 let data = $(`#${dtOptions.formId}`).serialize();
-                // let kelasValue;
                 let params;
                 params = new URLSearchParams(data);
-                // function isValidInput(data) {
-                //     params = new URLSearchParams(data);
-                //     kelasValue = params.get('filter[kelas]');
-                //     const invalidValues = [null, '', 'undefined', 'all'];
-                //     return !invalidValues.includes(kelasValue);
-                // }
 
                 if (params) {
                     let url = '{{route('admin.data-tagihan.get-data-rekap')}}';
