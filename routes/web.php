@@ -105,7 +105,7 @@ Route::prefix("admin")
                     );
                     Route::get(
                         "get-data-rekap",
-                        "getRekapDataPenerimaan",
+                        "getDataRekap",
                     )->name("get-data-rekap");
                     Route::resource(
                         "",
