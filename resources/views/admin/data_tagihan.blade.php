@@ -59,12 +59,6 @@
                 <fieldset class="form-fieldset">
                     <div class="row">
                         <div class="col-lg-6">
-                            <div class="mb-5">
-                                <label class="form-label required" for="dari-tanggal">Periode</label>
-                                <input type="text" class="form-control form-control"
-                                       placeholder="periode" id="filter[periode]"
-                                       name="filter[periode]">
-                            </div>
                             <div class="col mb-5">
                                 <label class="form-label" for="filter[tahun_akademik]">
                                     Tahun Akademik
@@ -83,6 +77,12 @@
                                         <option>data kosong</option>
                                     @endisset
                                 </select>
+                            </div>
+                            <div class="mb-5">
+                                <label class="form-label" for="dari-tanggal">Periode</label>
+                                <input type="text" class="form-control form-control"
+                                       placeholder="periode" id="filter[periode]"
+                                       name="filter[periode]">
                             </div>
                             <div class="col mb-5">
                                 <label class="form-label" for="post">
@@ -334,9 +334,12 @@
                         "Nama": s.nmcust
                     };
 
-                    Object.keys(tagihan).forEach(function(key) {
+                    let total = 0;
+                    Object.keys(tagihan).forEach(function (key) {
                         row[tagihan[key]] = Number(s[tagihan[key]] ?? 0);
+                        total += Number(s[tagihan[key]] ?? 0);
                     });
+                    // row['TOTAL'] = Number(total);
                     return row;
                 });
             }
@@ -354,13 +357,12 @@
                 const rows = groupedData;
                 if (!rows.length) return;
 
-                try{
+                try {
                     const invalidValues = [null, '', 'undefined', 'all'];
                     let statusBayarVal = params.get('filter[status_bayar]') ?? null;
                     if (invalidValues.includes(statusBayarVal)) {
                         statusBayarVal = false;
                     }
-                    console.log(statusBayarVal);
                     let kelasVal = params.get('filter[kelas]') ?? null;
                     if (invalidValues.includes(kelasVal)) {
                         kelasVal = 'Semua';
@@ -404,8 +406,8 @@
                     boldRows.forEach(rowNumber => {
                         const row = ws.getRow(rowNumber);
 
-                        row.eachCell({ includeEmpty: true }, cell => {
-                            cell.font = { bold: true };
+                        row.eachCell({includeEmpty: true}, cell => {
+                            cell.font = {bold: true};
                         });
 
                         row.commit();
@@ -420,22 +422,41 @@
 
                     const headerRow = ws.insertRow(headerRowNumber, header);
 
-                    headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-                        cell.font = { bold: true };
-                        cell.alignment = { horizontal: "center", vertical: "middle" };
+                    let totalColIndex = null;
+
+                    headerRow.eachCell((cell, colNumber) => {
+                        if (String(cell.value || "").toLowerCase().includes("total")) {
+                            totalColIndex = colNumber;
+                        }
+                    });
+
+                    if (!totalColIndex) {
+                        totalColIndex = headerRow.cellCount + 1;
+
+                        const totalCell = headerRow.getCell(totalColIndex);
+                        totalCell.value = "TOTAL";
+                        totalCell.font = { bold: true };
+                        totalCell.alignment = { horizontal: "center" };
+                        totalCell.border = fullBorder();
+
+                        ws.getColumn(totalColIndex).width = 18;
+                    }
+
+                    headerRow.eachCell({includeEmpty: true}, (cell, colNumber) => {
+                        cell.font = {bold: true};
+                        cell.alignment = {horizontal: "center", vertical: "middle"};
                         cell.border = fullBorder();
 
                         if (colNumber <= 2) return;
                         const headerText = String(cell.value || "");
                         let width = Math.max(12, headerText.length + 4);
                         ws.getColumn(colNumber).width = width;
-                        // console.log(width);
                     });
 
                     rows.forEach(r => {
                         const row = ws.addRow(Object.values(r));
 
-                        row.eachCell({ includeEmpty: true }, cell => {
+                        row.eachCell({includeEmpty: true}, cell => {
                             if (cell.value instanceof Date) {
                                 cell.numFmt = "dddd, dd mmmm yyyy";
                             }
@@ -453,38 +474,77 @@
 
                     const totalRow = ws.addRow([]);
                     totalRow.getCell(1).value = "TOTAL";
-                    totalRow.getCell(1).font = { bold: true };
-                    totalRow.getCell(1).border =  fullBorder();
+                    totalRow.getCell(1).font = {bold: true};
+                    totalRow.getCell(1).border = fullBorder();
                     headerRow.eachCell((cell, colNumber) => {
                         const headerText = String(cell.value || "").toLowerCase();
-                        const shouldSum = Object.values(tagihans).some(tagihan =>
+                        let shouldSum = Object.values(tagihans).some(tagihan =>
                             headerText.includes(tagihan.toLowerCase())
                         );
-
-                        totalRow.getCell(colNumber).font = { bold: true };
+                        totalRow.getCell(colNumber).font = {bold: true};
                         totalRow.getCell(colNumber).border = fullBorder();
-
                         if (!shouldSum) return;
-
                         const colLetter = ws.getColumn(colNumber).letter;
-
                         totalRow.getCell(colNumber).value = {
                             formula: `SUM(${colLetter}${dataStartRow}:${colLetter}${dataEndRow})`
                         };
-
                         totalRow.getCell(colNumber).numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
                     });
 
+                    const sumColumns = [];
+
+                    headerRow.eachCell((cell, colNumber) => {
+                        const headerText = String(cell.value || "").toLowerCase();
+                        if (headerText === "total") {
+                            totalColIndex = colNumber;
+                            return;
+                        }
+                        const shouldSum = Object.values(tagihans).some(tagihan =>
+                            headerText.includes(tagihan.toLowerCase())
+                        );
+                        if (shouldSum) {
+                            sumColumns.push(colNumber);
+                        }
+                    });
+
+                    if (totalColIndex) {
+                        for (let rowNumber = dataStartRow; rowNumber <= dataEndRow + 1; rowNumber++) {
+                            const row = ws.getRow(rowNumber);
+                            const sumRange = sumColumns.map(col =>
+                                `${ws.getColumn(col).letter}${rowNumber}`
+                            );
+                            row.getCell(totalColIndex).value = {
+                                formula: `SUM(${sumRange.join(',')})`
+                            };
+                            row.getCell(totalColIndex).numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
+                            row.getCell(totalColIndex).font = {bold: true};
+                            row.getCell(totalColIndex).border = fullBorder();
+                            ws.getColumn(totalColIndex).width = Math.max(12, headerText.length + 4);
+                        }
+                    }
+
+                    console.log("Header:", header);
+                    console.log("Rows count:", rows.length);
+                    console.log("Last row:", ws.lastRow.number);
+                    console.log("Total column:", totalColIndex);
+                    console.log("Sum column", sumColumns);
+
                     const buffer = await wb.xlsx.writeBuffer();
+                    if (!buffer || buffer.byteLength === 0) {
+                        throw new Error("Excel buffer empty");
+                    }
                     const blob = new Blob([buffer], {
                         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     });
-
+                    const url = URL.createObjectURL(blob);
                     const a = document.createElement("a");
-                    a.href = URL.createObjectURL(blob);
+                    a.href = url;
                     a.download = wbTitle + " - " + kelasVal.replace(/~/g, " - ") + ".xlsx";
+                    document.body.appendChild(a);
                     a.click();
-                }catch (err){
+                    URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (err) {
                     warningAlert('Gagal Mengexport Excel');
                     console.log(err);
                 }
@@ -492,10 +552,10 @@
 
             function fullBorder() {
                 return {
-                    top: { style: "thin" },
-                    left: { style: "thin" },
-                    bottom: { style: "thin" },
-                    right: { style: "thin" }
+                    top: {style: "thin"},
+                    left: {style: "thin"},
+                    bottom: {style: "thin"},
+                    right: {style: "thin"}
                 };
             }
 
@@ -553,7 +613,7 @@
 
                         const result = await response.json();
 
-                        if(!result['data'] || result['data'].length === 0){
+                        if (!result['data'] || result['data'].length === 0) {
                             console.log('kosong');
                             const error = new Error("Data Tagihan Kosong");
                             error.status = 422;
