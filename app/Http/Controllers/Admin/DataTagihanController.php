@@ -335,6 +335,7 @@ class DataTagihanController extends Controller
                             "kelas" => "scctcust.DESC02",
                             "siswa" => "scctcust.nmcust",
                             "custid" => "scctbill.CUSTID",
+                            "periode" => "scctbill.BILLAC",
                             default => null,
                         };
 
@@ -678,7 +679,7 @@ class DataTagihanController extends Controller
                         "kelas" => "scctcust.DESC02",
                         "siswa" => "scctcust.nmcust",
                         "custid" => "scctbill.CUSTID",
-                        "status_bayar" => "scctbill.PAIDST",
+                        "periode" => "scctbill.BILLAC",
                         default => null,
                     };
                     if ($key == "tanggal-pembuatan") {
@@ -889,6 +890,7 @@ class DataTagihanController extends Controller
                             "kelas" => "scctcust.DESC02",
                             "siswa" => "scctcust.nmcust",
                             "custid" => "scctbill.CUSTID",
+                            "periode" => "scctbill.BILLAC",
                             default => null,
                         };
 
