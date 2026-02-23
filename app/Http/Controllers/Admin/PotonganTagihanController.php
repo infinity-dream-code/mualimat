@@ -412,13 +412,13 @@ PotonganTagihanController extends Controller
                 }
                 $clean = str_replace('.', '', $value);
 
-                return (int) $clean;
+                return (int)$clean;
             }, $request['potongan'])
         );
 
         if ($bill->BILLAM < $total) {
-            $tagihan = 'Rp. ' . number_format($bill->BILLAM,0,',','.');
-            $potongan = 'Rp. ' . number_format($total,0,',','.');
+            $tagihan = 'Rp. ' . number_format($bill->BILLAM, 0, ',', '.');
+            $potongan = 'Rp. ' . number_format($total, 0, ',', '.');
             return response()->json(["message" => "Total potongan tidak boleh lebih besar dari tagihan! <br> Tagihan : $tagihan <br> Potongan: $potongan"], 422);
         }
 
@@ -446,5 +446,32 @@ PotonganTagihanController extends Controller
             DB::rollback();
             return response()->json(["message" => "Gagal menyimpan potognan tagihan", "error" => $e->getMessage()], 422);
         }
+    }
+
+    public function create()
+    {
+        $data["title"] = $this->title;
+        $data["mainTitle"] = "Buat " . $this->mainTitle;
+        $data["columnsUrl"] = route("admin.data-tagihan.get-column");
+        $data["datasUrl"] = route("admin.data-tagihan.get-data");
+        $data["post"] = mst_tagihan::select(["tagihan"])
+            ->orderByRaw(
+                "
+                        CASE
+                            WHEN kode BETWEEN '07' AND '12' THEN 0
+                            WHEN kode BETWEEN '01' AND '06' THEN 1
+                            ELSE 2
+                        END,
+                        kode ASC
+                    ",
+            )
+            ->get();
+        $data["thn_aka"] = mst_thn_aka::select(["thn_aka"])
+            ->where("thn_aka", "!=", null)
+            ->orderBy("thn_aka", "desc")
+            ->get();
+        $data["kelas"] = mst_kelas::get();
+
+        return view("admin.potongan_tagihan.create", $data);
     }
 }
