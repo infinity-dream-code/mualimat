@@ -62,13 +62,6 @@
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="mb-5">
-                                <label class="form-label" for="dari-tanggal">Tanggal Transaksi <span
-                                        class="text-warning">*</span>(tanggal-bulan-tahun - tanggal-bulan-tahun)</label>
-                                <input type="text" id="tanggal-transaksi" name="filter[tanggal-transaksi]"
-                                       placeholder="tanggal/bulan/tahun"
-                                       class="form-control" autocomplete="false" inputmode="numeric"/>
-                            </div>
-                            <div class="mb-5">
                                 <label class="form-label" for="tahun_akademik">
                                     Tahun Akademik
                                 </label>
