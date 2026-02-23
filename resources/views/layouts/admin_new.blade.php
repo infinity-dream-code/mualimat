@@ -1,6 +1,4 @@
-@php use Carbon\Carbon; @endphp
-    <!DOCTYPE html>
-
+<!DOCTYPE html>
 <html
     lang="en"
     class="light-style layout-navbar-fixed layout-menu-fixed layout-compact"
@@ -37,6 +35,7 @@
 
         <link rel="stylesheet" href="{{asset('libs/filepond/dist/custom.css')}}">
     @endif
+    @php use Carbon\Carbon; @endphp
 
     @hasSection('datatable')
         <link rel="stylesheet" href="{{asset('main/libs/datatables-bs5/datatables.bootstrap5.css')}}">
