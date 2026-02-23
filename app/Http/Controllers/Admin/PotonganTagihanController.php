@@ -452,8 +452,8 @@ PotonganTagihanController extends Controller
     {
         $data["title"] = $this->title;
         $data["mainTitle"] = "Buat " . $this->mainTitle;
-        $data["columnsUrl"] = route("admin.data-tagihan.get-column");
-        $data["datasUrl"] = route("admin.data-tagihan.get-data");
+        $data["columnsUrl"] = route("admin.data-penerimaan.get-column");
+        $data["datasUrl"] = route("admin.data-penerimaan.get-data");
         $data["post"] = mst_tagihan::select(["tagihan"])
             ->orderByRaw(
                 "
