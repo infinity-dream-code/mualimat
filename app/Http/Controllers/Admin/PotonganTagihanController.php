@@ -20,16 +20,16 @@ class
 PotonganTagihanController extends Controller
 {
     public string $title;
+    public string $mainTitle;
     public string $datasUrl;
-    public string $detailDatasUrl;
     public string $columnsUrl;
 
     public function __construct()
     {
         $this->title = "Potongan Tagihan";
         $this->mainTitle = "Potongan Tagihan";
-        $this->datasUrl = route("admin.data-tagihan.get-data");
-        $this->columnsUrl = route("admin.data-tagihan.get-column");
+        $this->datasUrl = route("admin.potongan-tagihan.get-data");
+        $this->columnsUrl = route("admin.potongan-tagihan.get-column");
     }
 
     public function index()
