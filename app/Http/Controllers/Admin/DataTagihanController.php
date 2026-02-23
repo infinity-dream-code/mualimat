@@ -10,10 +10,8 @@ use App\Models\mst_thn_aka;
 use App\Models\scctbill;
 use App\Models\scctcust;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 
 class DataTagihanController extends Controller
@@ -582,20 +580,15 @@ class DataTagihanController extends Controller
         $request["draw"] = 2;
         $request["start"] = 0;
         $request["length"] = "poll";
-        try {
-            $val = Crypt::decrypt($request["custid"]);
-        } catch (DecryptException $e) {
-            return response()->json(["message" => "siswa tidak ditemukan! 2"]);
-        }
 
-        $siswa = scctcust::where("CUSTID", $val)->first();
+        $siswa = scctcust::where("CUSTID", $request["custid"])->first();
         if (!$siswa) {
             return response()->json(["message" => "siswa tidak ditemukan! 3"]);
         }
 
         $request->merge([
             "filter" => array_merge($request->input("filter", []), [
-                "custid" => $val,
+                "custid" => $request["custid"],
             ]),
         ]);
 
@@ -842,10 +835,7 @@ class DataTagihanController extends Controller
                 default => "",
             };
 
-            if ($request->get("length") != "poll") {
-                $item->item_id = Crypt::encrypt($item["AA"]);
-                $item->CUSTID = Crypt::encrypt($item["CUSTID"]);
-            }
+            $item->item_id = $item['AA'];
             return $item;
         });
 
