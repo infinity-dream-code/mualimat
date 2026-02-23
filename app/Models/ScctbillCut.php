@@ -10,6 +10,8 @@ class ScctbillCut extends Model
 
     protected $table = 'scctbill_cut';
     protected $primaryKey = 'ID';
+
+    public $timestamps = false;
     protected $fillable = [
         'ID',
         'AA',
