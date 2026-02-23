@@ -307,7 +307,7 @@ PotonganTagihanController extends Controller
                 "scctcust.CUSTID",
                 "scctbill.CUSTID",
             )
-            ->where("scctbill.PAIDST", 0)
+            ->where("scctbill.PAIDST", 1)
             ->where("scctbill.FSTSBolehBayar", 1)
             ->where("scctcust.STCUST", 1)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
@@ -399,7 +399,7 @@ PotonganTagihanController extends Controller
             );
         }
 
-        $bill = scctbill::where('PAIDST', 0)
+        $bill = scctbill::where('PAIDST', 1)
             ->where("AA", $request->item_id)->first();
         if (!$bill) {
             return response()->json(["message" => "Tagihan yang dipilih tidak valid!"], 422);
