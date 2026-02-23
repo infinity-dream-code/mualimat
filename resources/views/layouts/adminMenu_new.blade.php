@@ -68,14 +68,12 @@
             <a href="{{route('admin.rekap-tagihan.index')}}" class="menu-link">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                     class="menu-icon icon icon-tabler icons-tabler-outline icon-tabler-list-check">
+                     class="menu-icon icon icon-tabler icons-tabler-outline icon-tabler-file-description">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M3.5 5.5l1.5 1.5l2.5 -2.5"/>
-                    <path d="M3.5 11.5l1.5 1.5l2.5 -2.5"/>
-                    <path d="M3.5 17.5l1.5 1.5l2.5 -2.5"/>
-                    <path d="M11 6l9 0"/>
-                    <path d="M11 12l9 0"/>
-                    <path d="M11 18l9 0"/>
+                    <path d="M14 3v4a1 1 0 0 0 1 1h4"/>
+                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2"/>
+                    <path d="M9 17h6"/>
+                    <path d="M9 13h6"/>
                 </svg>
                 <div data-i18n="Rekap Tagihan">Rekap Tagihan</div>
             </a>
@@ -84,44 +82,27 @@
             <a href="{{route('admin.rekap-penerimaan.index')}}" class="menu-link">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                     class="menu-icon icon icon-tabler icons-tabler-outline icon-tabler-list-check">
+                     class="menu-icon icon icon-tabler icons-tabler-outline icon-tabler-file-check">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M3.5 5.5l1.5 1.5l2.5 -2.5"/>
-                    <path d="M3.5 11.5l1.5 1.5l2.5 -2.5"/>
-                    <path d="M3.5 17.5l1.5 1.5l2.5 -2.5"/>
-                    <path d="M11 6l9 0"/>
-                    <path d="M11 12l9 0"/>
-                    <path d="M11 18l9 0"/>
+                    <path d="M14 3v4a1 1 0 0 0 1 1h4"/>
+                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2"/>
+                    <path d="M9 15l2 2l4 -4"/>
                 </svg>
                 <div data-i18n="Rekap Penerimaan">Rekap Penerimaan</div>
             </a>
         </li>
-{{--        <li class="menu-item  {{ Request::is(['admin/rekap-penerimaan-harian'])  ? 'active' : '' }}">--}}
-{{--            <a href="{{route('admin.rekap-penerimaan-harian.index')}}" class="menu-link">--}}
-{{--                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"--}}
-{{--                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"--}}
-{{--                     class="me-2 icon icon-tabler icons-tabler-outline icon-tabler-report-money">--}}
-{{--                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>--}}
-{{--                    <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/>--}}
-{{--                    <path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z"/>--}}
-{{--                    <path d="M14 11h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-2.5"/>--}}
-{{--                    <path d="M12 17v1m0 -8v1"/>--}}
-{{--                </svg>--}}
-{{--                <div data-i18n="Rekap Penerimaan Harian">Rekap Penerimaan Harian</div>--}}
-{{--            </a>--}}
-{{--        </li>--}}
-
         <li class="menu-item  {{ Request::is(['admin/cek-pelunasan'])  ? 'active' : '' }}">
             <a href="{{route('admin.cek-pelunasan.index')}}" class="menu-link">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                     class="menu-icon icon icon-tabler icons-tabler-outline icon-tabler-checkup-list">
+                     class="menu-icon icon icon-tabler icons-tabler-outline icon-tabler-list-letters">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/>
-                    <path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z"/>
-                    <path d="M9 14h.01"/>
-                    <path d="M9 17h.01"/>
-                    <path d="M12 16l1 1l3 -3"/>
+                    <path d="M11 6h9"/>
+                    <path d="M11 12h9"/>
+                    <path d="M11 18h9"/>
+                    <path d="M4 10v-4.5a1.5 1.5 0 0 1 3 0v4.5"/>
+                    <path d="M4 8h3"/>
+                    <path d="M4 20h1.5a1.5 1.5 0 0 0 0 -3h-1.5h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6"/>
                 </svg>
                 <div data-i18n="Data Penerimaan">Cek Pelunasan</div>
             </a>
@@ -145,21 +126,30 @@
             <a href="{{route('admin.rekap-saldo.index')}}" class="menu-link">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                     class="menu-icon icon icon-tabler icons-tabler-outline icon-tabler-checkup-list">
+                     class="menu-icon icon icon-tabler icons-tabler-outline icon-tabler-report-money">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                     <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/>
-                    <path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z"/>
-                    <path d="M9 14h.01"/>
-                    <path d="M9 17h.01"/>
-                    <path d="M12 16l1 1l3 -3"/>
+                    <path d="M9 5a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2"/>
+                    <path d="M14 11h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-2.5"/>
+                    <path d="M12 17v1m0 -8v1"/>
                 </svg>
-                <div data-i18n="Rekap SAldo">Rekap SAldo</div>
+                <div data-i18n="Rekap SAldo">Rekap Saldo</div>
             </a>
         </li>
 
         <li class="menu-item {{ Request::is(['admin/potongan-tagihan*'])  ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons ri ri-tools-line"></i>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     class="menu-icon icon icon-tabler icons-tabler-outline icon-tabler-file-scissors">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M14 3v4a1 1 0 0 0 1 1h4"/>
+                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2"/>
+                    <path d="M14 17a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/>
+                    <path d="M8 17a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/>
+                    <path d="M9 17l6 -6"/>
+                    <path d="M15 17l-6 -6"/>
+                </svg>
                 <div data-i18n="Potongan Tagihan">Potongan Tagihan</div>
             </a>
             <ul class="menu-sub">
