@@ -136,14 +136,11 @@
                     </div>
                     <div class="row">
                         <div class="d-flex justify-content-center flex-column flex-md-row justify-content-md-end gap-4">
-                            <button type="button" class="btn btn-success" id="simpan-potongan">
-                                <span class="ri-file-text-line me-2"></span>
-                                Simpan Potongan Tagihan
-                            </button>
-                            {{--                            <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">--}}
-                            {{--                                <span class="ri-profile-line me-2"></span>--}}
-                            {{--                                Cetak Kartu Siswa--}}
-                            {{--                            </button>--}}
+                            <a type="button" href="{{route('admin.potongan-tagihan.create')}}" class="btn btn-success"
+                               id="simpan-potongan">
+                                <span class="ri-add-line me-2"></span>
+                                Buat Potongan Tagihan
+                            </a>
                             <button type="reset" class="btn btn-secondary" disabled>
                                 <span class="ri-reset-left-line me-2"></span>
                                 Reset
@@ -159,51 +156,19 @@
         </div>
         <div class="card-body">
             <div class="row">
-                <div class="col-md-7">
-                    <fieldset class="form-fieldset">
-                        <div class="card-datatable table-responsive text-nowrap">
-                            <table class="table table-sm table-bordered table-hover"
-                                   id="main_table">
-                                <thead class="table-light">
+                <fieldset class="form-fieldset">
+                    <div class="card-datatable table-responsive text-nowrap">
+                        <table class="table table-sm table-bordered table-hover"
+                               id="main_table">
+                            <thead class="table-light">
 
-                                </thead>
-                                <tbody>
+                            </thead>
+                            <tbody>
 
-                                </tbody>
-                            </table>
-                        </div>
-                    </fieldset>
-                </div>
-                <div class="col">
-                    <form id="potongan-form">
-                        <fieldset class="form-fieldset">
-                            <label class="form-label">List Potongan Tagihan</label>
-                            <table id="potongan-table" class="table table-bordered w-100">
-                                <thead>
-                                <tr>
-                                    <th>Potongan</th>
-                                    <th>Detail</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr class="potongan-row">
-                                    <td>
-                                        <div class="input-group input-group-merge">
-                                            <span class="input-group-text">Rp. </span>
-                                            <input type="text" name="potongan[]" placeholder="Potongan Tagihan"
-                                                   class="potongan-input form-control formattedNumber"/>
-                                        </div>
-                                    </td>
-                                    <td>
-                                    <textarea type="text" name="deskripsi[]" placeholder="Deskripsi"
-                                              class="potongan-input form-control"></textarea>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
-                        </fieldset>
-                    </form>
-                </div>
+                            </tbody>
+                        </table>
+                    </div>
+                </fieldset>
             </div>
         </div>
     </div>
@@ -234,60 +199,8 @@
             fixedHeader: false,
             pageLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
-            select: true,
+            // select: true,
         };
-
-        function handleAutoAppend(e, tableId, inputClass) {
-            const table = document.getElementById(tableId);
-            const rows = table.querySelectorAll("tbody tr");
-            const lastRow = rows[rows.length - 1];
-            const input = lastRow.querySelector(`.${inputClass}`);
-
-            if (e.target === input && input.value.trim() !== "") {
-                const newRow = lastRow.cloneNode(true);
-                newRow.querySelectorAll("input").forEach(i => i.value = "");
-                // const newIndex = rows.length + 1;
-                // newRow.querySelector(".row-number").textContent = newIndex;
-                table.querySelector("tbody").appendChild(newRow);
-                // $(newRow).find('.timepicker').timepicker({
-                //     timeFormat: 'H:i',
-                //     step: 15
-                // });
-            }
-        }
-
-        function resetDynamicTable(tableId) {
-            const tableBody = document.querySelector(`#${tableId} tbody`);
-            if(!tableBody) return;
-            const rows = tableBody.querySelectorAll('tr');
-            rows.forEach((row, index) => {
-                if (index !== 0) {
-                    row.remove();
-                }
-            });
-            const firstRow = tableBody.querySelector('tr');
-            firstRow.querySelectorAll('input').forEach(input => {
-                input.value = '';
-            });
-        }
-
-        function handleAutoRemove(e, tableId, inputClass) {
-            if (!e) return;
-            if (!e.target.classList.contains(inputClass)) return;
-
-            const table = document.getElementById(tableId);
-            const row = e.target.closest("tr");
-            const inputVal = e.target.value.trim();
-            const rows = table.querySelectorAll("tbody tr");
-            let emptyRows = Array.from(rows).filter(r => {
-                const input = r.querySelector(`.${inputClass}`);
-                return input && input.value.trim() === "";
-            });
-            if (inputVal === "" && rows.length > 1 && emptyRows.length > 1) {
-                row.remove();
-                // updateRowNumbers(tableId);
-            }
-        }
 
         document.addEventListener("DOMContentLoaded", function () {
             if (dtOptions.dataUrl && dtOptions.columnUrl) {
@@ -323,98 +236,6 @@
                     });
                 });
             }
-
-            const inputTables = [
-                {id: 'potongan-table', inputClass: 'potongan-input'},
-            ];
-
-            document.addEventListener("input", function (e) {
-                inputTables.forEach(({id, inputClass}) => handleAutoAppend(e, id, inputClass));
-            });
-
-            document.addEventListener("blur", function (e) {
-                inputTables.forEach(({id, inputClass}) => handleAutoRemove(e, id, inputClass));
-            }, true);
-
-            document.getElementById('simpan-potongan').addEventListener('click', async function (e) {
-                e.preventDefault();
-                let data = DT[`${dtOptions.tableId}`].rows({selected: true}).data();
-
-                if (!data[0] || !data[0]['AA'] || data[0]['AA'].length === 0) {
-                    warningAlert('silahkan pilih tagihan yang akan dipotong!')
-                    return;
-                }
-
-                let potongan = new FormData(document.getElementById('potongan-form'));
-                const potonganValues = potongan.getAll('potongan[]');
-                const valid = potonganValues.some(val => val.trim() !== '');
-                if (!valid) {
-                    e.preventDefault();
-                    warningAlert('Silahkan isi minimal satu potongan tagihan!');
-                }
-
-                const formData = new FormData();
-                formData.append('item_id', data[0]['AA']);
-
-                for (const [key, value] of potongan.entries()) {
-                    formData.append(key, value);
-                }
-
-                const request = new Request(
-                    '{{route('admin.potongan-tagihan.store')}}', {
-                        method: "POST",
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Accept': "application/json"
-                        },
-                        body: formData
-                    });
-
-                try {
-                    const response = await fetch(request);
-
-                    if (!response.ok) {
-                        const status = response.status;
-                        const contentType = response.headers.get('content-type');
-                        let message = `Request failed with status ${status}`;
-                        if (contentType && contentType.includes('application/json')) {
-                            const errorData = await response.json();
-                            message = errorData.message || message;
-                        } else {
-                            const errorText = await response.text();
-                            message = errorText || message;
-                        }
-
-                        const error = new Error(message);
-                        error.status = status;
-                        throw error;
-                    }
-
-                    const result = await response.json();
-                    DT[`${dtOptions.tableId}`].rows().deselect();
-                    resetDynamicTable('potongan-table');
-                    successAlert(result['message']);
-                } catch (error) {
-                    if (error.status === 422) {
-                        const errors = error.error || error.errors;
-                        errorAlert(error.message);
-                        if (errors) {
-                            processErrors(errors)
-                        }
-                    } else {
-                        const errorMessages = {
-                            401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
-                            403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
-                            404: 'Halaman yang dituju tidak ditemukan 🧐',
-                            405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
-                            419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
-                            429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
-                        };
-                        errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
-                    }
-                }
-
-            })
         });
 
 
