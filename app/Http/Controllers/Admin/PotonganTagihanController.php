@@ -126,20 +126,9 @@ PotonganTagihanController extends Controller
             ],
             [
                 "data" => "TOTAL_BILL_CUT",
-                "name" => "Tagihan",
-//                "searchable" => true,
-//                "orderable" => true,
+                "name" => "Potongan",
                 "columnType" => "currency",
                 "className" => "text-end",
-                "exportable" => true,
-            ],
-            [
-                "data" => "PAIDST",
-                "name" => "Status",
-                "orderable" => true,
-                "columnType" => "boolean",
-                "trueVal" => "Lunas",
-                "falseVal" => "Belum Lunas",
                 "exportable" => true,
             ],
             [
