@@ -272,7 +272,7 @@
         }
 
         function handleAutoRemove(e, tableId, inputClass) {
-            if (!e) return ;
+            if (!e) return;
             if (!e.target.classList.contains(inputClass)) return;
 
             const table = document.getElementById(tableId);
@@ -335,6 +335,86 @@
             document.addEventListener("blur", function (e) {
                 inputTables.forEach(({id, inputClass}) => handleAutoRemove(e, id, inputClass));
             }, true);
+
+            document.getElementById('simpan-potongan').addEventListener('click', async function (e) {
+                e.preventDefault();
+                let data = DT[`${dtOptions.tableId}`].rows({selected: true}).data();
+
+                if (!data[0] || !data[0]['AA'] || data[0]['AA'].length === 0) {
+                    warningAlert('silahkan pilih tagihan yang akan dipotong!')
+                    return;
+                }
+
+                let potongan = new FormData(document.getElementById('potongan-form'));
+                const potonganValues = potongan.getAll('potongan[]');
+                const valid = potonganValues.some(val => val.trim() !== '');
+                if (!valid) {
+                    e.preventDefault();
+                    warningAlert('Silahkan isi minimal satu potongan tagihan!');
+                }
+
+                const formData = new FormData();
+                formData.append('item_id', data[0]['AA']);
+
+                for (const [key, value] of potongan.entries()) {
+                    formData.append(key, value);
+                }
+
+                const request = new Request(
+                    '{{route('admin.potongan-tagihan.store')}}', {
+                        method: "POST",
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': "application/json"
+                        },
+                        body: formData
+                    });
+
+                try {
+                    const response = await fetch(request);
+
+                    if (!response.ok) {
+                        const status = response.status;
+                        const contentType = response.headers.get('content-type');
+                        let message = `Request failed with status ${status}`;
+                        if (contentType && contentType.includes('application/json')) {
+                            const errorData = await response.json();
+                            message = errorData.message || message;
+                        } else {
+                            const errorText = await response.text();
+                            message = errorText || message;
+                        }
+
+                        const error = new Error(message);
+                        error.status = status;
+                        throw error;
+                    }
+
+                    const result = await response.json();
+                    DT[`${dtOptions.tableId}`].rows().deselect();
+                    resetDynamicTable('potongan-table');
+                    successAlert(result['message']);
+                } catch (error) {
+                    if (error.status === 422) {
+                        const errors = error.error || error.errors;
+                        errorAlert(error.message);
+                        if (errors) {
+                            processErrors(errors)
+                        }
+                    } else {
+                        const errorMessages = {
+                            401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                            403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
+                            404: 'Halaman yang dituju tidak ditemukan 🧐',
+                            405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
+                            419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                            429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
+                        };
+                        errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
+                    }
+                }
+
+            })
         });
 
 
