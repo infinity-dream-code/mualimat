@@ -300,12 +300,13 @@ PotonganTagihanController extends Controller
             ]),
         );
 
-        $query = ScctbillCut::leftJoin(
-            "scctcust",
-            "scctcust.CUSTID",
-            "scctbill.CUSTID",
-        )
-            ->leftJoin("scctbill", "scctbill_cut.AA", "scctbill.AA")
+        $query = ScctbillCut::
+        leftJoin("scctbill", "scctbill_cut.AA", "scctbill.AA")
+            ->leftJoin(
+                "scctcust",
+                "scctcust.CUSTID",
+                "scctbill.CUSTID",
+            )
             ->where("scctbill.PAIDST", 0)
             ->where("scctbill.FSTSBolehBayar", 1)
             ->where("scctcust.STCUST", 1)
@@ -314,15 +315,15 @@ PotonganTagihanController extends Controller
                 if ($filterQuery) {
                     $filterQuery($query);
                 }
-            })->groupBy('scctbill.AA');
+            })
+            ->groupBy('scctbill_cut.AA');
 
-        $totalRecords = ScctbillCut::groupBy('scctbill_cul.AA')->count();
+        $totalRecords = ScctbillCut::groupBy('scctbill_cut.AA')->count();
 
         $totalRecordswithFilter = (clone $query)->count();
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
         $records = (clone $query)
-            ->addSelect(DB::raw("'COALESCE(SUM(scctbill_cut.BILL_CUT), 0) as TOTAL_BILL_CUT')"))
             ->orderByRaw("
                 CASE
                     WHEN scctbill.BILLNM LIKE '%JULI%' THEN 1
@@ -342,6 +343,7 @@ PotonganTagihanController extends Controller
             ")
             ->orderBy($columnName, $columnSortOrder)
             ->select($select)
+            ->addSelect(DB::raw("COALESCE(SUM(scctbill_cut.BILL_CUT), 0) as TOTAL_BILL_CUT"))
             ->skip($start)
             ->take($rowperpage)
             ->get();
