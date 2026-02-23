@@ -256,6 +256,21 @@
             }
         }
 
+        function resetDynamicTable(tableId) {
+            const tableBody = document.querySelector(`#${tableId} tbody`);
+            if(!tableBody) return;
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach((row, index) => {
+                if (index !== 0) {
+                    row.remove();
+                }
+            });
+            const firstRow = tableBody.querySelector('tr');
+            firstRow.querySelectorAll('input').forEach(input => {
+                input.value = '';
+            });
+        }
+
         function handleAutoRemove(e, tableId, inputClass) {
             if (!e) return ;
             if (!e.target.classList.contains(inputClass)) return;
