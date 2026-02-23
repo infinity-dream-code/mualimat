@@ -136,9 +136,9 @@
                     </div>
                     <div class="row">
                         <div class="d-flex justify-content-center flex-column flex-md-row justify-content-md-end gap-4">
-                            <button type="button" class="btn btn-facebook btn-print-rekap" id="cetak-rekap">
+                            <button type="button" class="btn btn-success" id="simpan-potongan">
                                 <span class="ri-file-text-line me-2"></span>
-                                Cetak Rekap
+                                Simpan Potongan Tagihan
                             </button>
                             {{--                            <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">--}}
                             {{--                                <span class="ri-profile-line me-2"></span>--}}
