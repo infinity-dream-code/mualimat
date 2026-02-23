@@ -173,36 +173,36 @@
                             </table>
                         </div>
                     </fieldset>
-
                 </div>
                 <div class="col">
-                    <fieldset class="form-fieldset">
-                        <label class="form-label">List Potongan Tagihan</label>
-                        <table id="potongan-table" class="table table-bordered w-100">
-                            <thead>
-                            <tr>
-                                <th>Detail</th>
-                                <th>Detail</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr class="potongan-row">
-                                <td>
-                                    <div class="input-group input-group-merge">
-                                        <span class="input-group-text">Rp. </span>
-                                        <input type="text" name="potongan[]" placeholder="Potongan Tagihan"
-                                               class="potongan-input form-control formattedNumber"/>
-                                    </div>
-                                </td>
-                                <td>
+                    <form id="potongan-form">
+                        <fieldset class="form-fieldset">
+                            <label class="form-label">List Potongan Tagihan</label>
+                            <table id="potongan-table" class="table table-bordered w-100">
+                                <thead>
+                                <tr>
+                                    <th>Potongan</th>
+                                    <th>Detail</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr class="potongan-row">
+                                    <td>
+                                        <div class="input-group input-group-merge">
+                                            <span class="input-group-text">Rp. </span>
+                                            <input type="text" name="potongan[]" placeholder="Potongan Tagihan"
+                                                   class="potongan-input form-control formattedNumber"/>
+                                        </div>
+                                    </td>
+                                    <td>
                                     <textarea type="text" name="deskripsi[]" placeholder="Deskripsi"
-                                           class="potongan-input form-control"></textarea>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </fieldset>
-
+                                              class="potongan-input form-control"></textarea>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </fieldset>
+                    </form>
                 </div>
             </div>
         </div>
@@ -215,8 +215,8 @@
 @section('datatable-row-grup',true)
 @section('datatable-fixed-columns',true)
 @section('select2',true)
-<script src="{{asset('js/helper/formattedNumber.min.js')}}"></script>
 @section('script')
+    <script src="{{asset('js/helper/formattedNumber.min.js')}}"></script>
     <script type="text/javascript">
         const select2 = $(`[data-control='select2']`);
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
