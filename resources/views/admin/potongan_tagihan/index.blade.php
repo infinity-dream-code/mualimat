@@ -44,8 +44,7 @@
                 </ul>
             </div>
             <form id="filterForm">
-                <fieldset class="form-fieldset">
-
+                <fieldset class="form-fieldset mb-0">
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="col mb-5">
