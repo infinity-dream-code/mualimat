@@ -35,7 +35,7 @@ PotonganTagihanController extends Controller
     public function index()
     {
         $data["title"] = $this->title;
-        $data["mainTitle"] = $this->mainTitle;
+        $data["mainTitle"] = "Data " . $this->mainTitle;
         $data["columnsUrl"] = $this->columnsUrl;
         $data["datasUrl"] = $this->datasUrl;
         $data["post"] = mst_tagihan::select(["tagihan"])
@@ -57,33 +57,6 @@ PotonganTagihanController extends Controller
         $data["kelas"] = mst_kelas::get();
 
         return view("admin.potongan_tagihan.index", $data);
-    }
-
-    public function create()
-    {
-        $data["title"] = $this->title;
-        $data["mainTitle"] = $this->mainTitle;
-        $data["columnsUrl"] = $this->columnsUrl;
-        $data["datasUrl"] = $this->datasUrl;
-        $data["post"] = mst_tagihan::select(["tagihan"])
-            ->orderByRaw(
-                "
-                        CASE
-                            WHEN kode BETWEEN '07' AND '12' THEN 0
-                            WHEN kode BETWEEN '01' AND '06' THEN 1
-                            ELSE 2
-                        END,
-                        kode ASC
-                    ",
-            )
-            ->get();
-        $data["thn_aka"] = mst_thn_aka::select(["thn_aka"])
-            ->where("thn_aka", "!=", null)
-            ->orderBy("thn_aka", "desc")
-            ->get();
-        $data["kelas"] = mst_kelas::get();
-
-        return view("admin.potongan_tagihan.create", $data);
     }
 
     public function getColumn()
