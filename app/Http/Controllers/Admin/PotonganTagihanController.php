@@ -7,13 +7,17 @@ use App\Models\mst_kelas;
 use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
 use App\Models\scctbill;
+use App\Models\ScctbillCut;
+use App\Models\scctcust;
 use App\Models\ValidationMessage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
-class PotonganTagihanController extends Controller
+class
+PotonganTagihanController extends Controller
 {
     public string $title;
     public string $datasUrl;
@@ -405,10 +409,13 @@ class PotonganTagihanController extends Controller
         $validator = Validator::make(
             $request->all(),
             [
-                "item_id" => ["required", "array"],
-                "potongan" => ["required", "array"],
-                "potongan.*.potongan" => ["required", 'regex:/^[0-9]+(\.[0-9]{3})*$/'],
-                "potongan.deskripsi_potongan" => ["array"],
+                "item_id" => ["required"],
+                "potongan" => ["required", "array", "min:1"],
+                "potongan.*" => [
+                    "nullable",
+                    "regex:/^[0-9]+(\.[0-9]{3})*$/"
+                ],
+                "deskripsi" => ["nullable", "array"],
             ],
             ValidationMessage::messages(),
             ValidationMessage::attributes(),
@@ -428,18 +435,45 @@ class PotonganTagihanController extends Controller
             );
         }
 
-        $bills = scctbill::where('PAIDST', 0)
-            ->whereIn("AA", $request->item_id)->get();
-        $totalSelectedBill = count($request->item_id);
-        if ($bills->count() != $totalSelectedBill) {
+        $bill = scctbill::where('PAIDST', 0)
+            ->where("AA", $request->item_id)->first();
+        if (!$bill) {
             return response()->json(["message" => "Tagihan yang dipilih tidak valid!"], 422);
+        }
+
+        $total = array_sum(
+            array_map(function ($value) {
+                if (!$value) {
+                    return 0;
+                }
+                $clean = str_replace('.', '', $value);
+
+                return (int) $clean;
+            }, $request['potongan'])
+        );
+
+        if ($bill->BILLAM < $total) {
+            $tagihan = 'Rp. ' . number_format($bill->BILLAM,0,',','.');
+            $potongan = 'Rp. ' . number_format($total,0,',','.');
+            return response()->json(["message" => "Total potongan tidak boleh lebih besar dari tagihan! <br> Tagihan : $tagihan <br> Potongan: $potongan"], 422);
         }
 
         try {
             DB::beginTransaction();
-            foreach ($bills as $item => $bill ) {
-                foreach ($request->potongan as $id => $value) {
-
+            foreach ($request->potongan as $id => $value) {
+                $nominal = str_replace('.', '', $value);
+                if ($nominal > 0) {
+                    ScctbillCut::create([
+                        'AA' => $request->item_id,
+                        'BILLNM' => $bill->BILLNM,
+                        'BTA' => $bill->BTA,
+                        'BILLCD' => $bill->BILLCD,
+                        'BILLAM' => $bill->BILLAM,
+                        'BILL_CUT' => $nominal,
+                        'REASON' => $request->deskripsi[$id] ?? null,
+                        'CREATED_AT' => now(),
+                        'USER_ID' => Auth::user()->id
+                    ]);
                 }
             }
             DB::commit();
