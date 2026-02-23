@@ -328,45 +328,6 @@
                     }
                 }
             });
-
-            let startOfMonth = moment().startOf('month');
-            let today = moment();
-            let date = $('#tanggal-transaksi');
-            date.daterangepicker({
-                startDate: startOfMonth,
-                endDate: today,
-                autoUpdateInput: false,
-                todayHighlight: true,
-                autoclose: true,
-                clearBtn: true,
-                locale: {
-                    format: 'DD-MM-YYYY',
-                    separator: " - ",
-                    applyLabel: "Terapkan",
-                    cancelLabel: "Batal",
-                    fromLabel: "Dari",
-                    toLabel: "Ke",
-                    customRangeLabel: "Kustom",
-                    daysOfWeek: ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"],
-                    monthNames: ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"],
-                    firstDay: 0,
-                },
-                maxDate: moment()
-            }, function (start, end) {
-                let duration = end.diff(start, 'days');
-                if (duration > 100) {
-                    warningAlert("Maksimal 100 hari.");
-                    date.data('daterangepicker').setStartDate(start);
-                    date.data('daterangepicker').setEndDate(start.clone().add(6, 'days'));
-                }
-            });
-
-            // date.on('apply.daterangepicker hide.daterangepicker', function (ev, picker) {
-            //     if (picker.startDate && picker.endDate) {
-            //         $(this).val(picker.startDate.format('DD-MM-YYYY') + ' ~ ' + picker.endDate.format('DD-MM-YYYY'));
-            //     }
-            // });
-
         });
 
         document.getElementById('cetak-kartu-siswa').addEventListener('click', function (e) {
