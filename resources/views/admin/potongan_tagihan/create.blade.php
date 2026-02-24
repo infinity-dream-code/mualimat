@@ -1,5 +1,8 @@
 @extends('layouts.admin_new')
 @section('title',$dataTitle??$mainTitle??$title??'')
+@section('style')
+    <link rel="stylesheet" href="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.css')}}">
+@endsection
 @section('content')
     <h3 class="page-heading d-flex text-gray-900 fw-bold flex-column justify-content-center my-0">
         @if(isset($dataTitle) && isset($mainTitle) && $mainTitle != $dataTitle)
@@ -47,6 +50,13 @@
                 <fieldset class="form-fieldset mb-0">
                     <div class="row">
                         <div class="col-lg-6">
+                            <div class="mb-5">
+                                <label class="form-label" for="dari-tanggal">Tanggal Transaksi <span
+                                        class="text-warning">*</span>(tanggal-bulan-tahun - tanggal-bulan-tahun)</label>
+                                <input type="text" id="tanggal-transaksi" name="filter[tanggal-transaksi]"
+                                       placeholder="tanggal/bulan/tahun"
+                                       class="form-control" autocomplete="false" inputmode="numeric"/>
+                            </div>
                             <div class="col mb-5">
                                 <label class="form-label" for="tahun_akademik">
                                     Tahun Akademik
@@ -216,6 +226,8 @@
 @section('datatable-fixed-columns',true)
 @section('select2',true)
 @section('script')
+    <script src="{{asset('main/libs/moment/moment.js')}}"></script>
+    <script src="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.js')}}"></script>
     <script src="{{asset('js/helper/formattedNumber.min.js')}}"></script>
     <script type="text/javascript">
         const select2 = $(`[data-control='select2']`);
@@ -323,6 +335,43 @@
                     });
                 });
             }
+
+            let startOfMonth = moment().startOf('month');
+            let today = moment();
+            let date = $('#tanggal-transaksi');
+            date.daterangepicker({
+                startDate: startOfMonth,
+                endDate: today,
+                autoUpdateInput: true,
+                todayHighlight: true,
+                autoclose: true,
+                locale: {
+                    format: 'DD-MM-YYYY',
+                    separator: " - ",
+                    applyLabel: "Terapkan",
+                    cancelLabel: "Batal",
+                    fromLabel: "Dari",
+                    toLabel: "Ke",
+                    customRangeLabel: "Kustom",
+                    daysOfWeek: ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"],
+                    monthNames: ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"],
+                    firstDay: 0,
+                },
+                maxDate: moment()
+            }, function (start, end) {
+                let duration = end.diff(start, 'days');
+                if (duration > 365) {
+                    warningAlert("Maksimal 365 hari.");
+                    date.data('daterangepicker').setStartDate(start);
+                    date.data('daterangepicker').setEndDate(start.clone().add(6, 'days'));
+                }
+            });
+
+            date.on('apply.daterangepicker hide.daterangepicker', function (ev, picker) {
+                if (picker.startDate && picker.endDate) {
+                    $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
+                }
+            });
 
             const inputTables = [
                 {id: 'potongan-table', inputClass: 'potongan-input'},
