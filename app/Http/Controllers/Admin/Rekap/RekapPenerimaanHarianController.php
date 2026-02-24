@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Admin\Rekap;
 
 use App\Http\Controllers\Controller;
 use App\Models\mst_kelas;
@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 
-class RekapPenerimaanController extends Controller
+class RekapPenerimaanHarianController extends Controller
 {
     public function __construct()
     {
@@ -222,7 +222,7 @@ class RekapPenerimaanController extends Controller
                 'scctcust.CUSTID',
             ]));
 
-            $query = DB::table('scctcust')->where(function ($query) use ($filter_main) {
+            $query = DB::connection('DATA_MYSQL')->table('scctcust')->where(function ($query) use ($filter_main) {
                 foreach ($filter_main as $filter) {
                     switch (count($filter)) {
                         case 3:
@@ -254,7 +254,7 @@ class RekapPenerimaanController extends Controller
 
             $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
 
-            $billAgg = DB::table('scctbill')
+            $billAgg = DB::connection('DATA_MYSQL')->table('scctbill')
                 ->select('scctbill.CUSTID', DB::raw('SUM(scctbill.BILLAM) AS transaksi'))
                 ->where('scctbill.PAIDST', 1)
                 ->where('scctbill.FSTSBolehBayar', 1)
@@ -285,7 +285,7 @@ class RekapPenerimaanController extends Controller
                 })
                 ->groupBy('scctbill.CUSTID');
 
-            $tranAgg = DB::table('sccttran')
+            $tranAgg = DB::connection('DATA_MYSQL')->table('sccttran')
                 ->select('sccttran.CUSTID', DB::raw('SUM(sccttran.KREDIT) AS transaksi_va'))
                 ->whereNull('sccttran.FIDBANK')
                 ->whereIn('sccttran.REFFBANK', ['23','63'])
@@ -328,7 +328,7 @@ class RekapPenerimaanController extends Controller
             });
 
             $sub = $query;
-            $totals = DB::table(DB::raw("({$sub->toSql()}) as sub"))
+            $totals = DB::connection('DATA_MYSQL')->table(DB::raw("({$sub->toSql()}) as sub"))
                 ->mergeBindings($sub)
                 ->selectRaw('SUM(transaksi) as total_transaksi, SUM(transaksi_va) as total_transaksi_va')
                 ->first();
