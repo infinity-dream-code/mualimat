@@ -41,7 +41,7 @@ class RekapPenerimaanHarianController extends Controller
         $data['kelas'] = mst_kelas::get();
         $data['unit'] = mst_sekolah::get();
 
-        return view('admin.rekap_penerimaan', $data);
+        return view('admin.rekap_penerimaan_harian', $data);
     }
 
     public function getColumn()
