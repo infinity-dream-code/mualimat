@@ -309,8 +309,8 @@
 
             $("[name='filter[unit]']").on('change', function () {
                 const selectedGroup = $(this).find(':selected').data('group');
+                if(!selectedGroup) return;
                 const $kelasSelect = $("[name='filter[kelas]']");
-
                 if($(this).val() === 'all'){
                     $kelasSelect.find('option').each(function () {
                         $(this).prop('disabled', false);
@@ -318,7 +318,8 @@
                 }else{
                     $kelasSelect.find('option').each(function () {
                         const group = $(this).data('group');
-                        $(this).prop('disabled', group !== selectedGroup);
+                        if (!group) return;
+                        $(this).prop('disabled', group.toLowerCase() !== selectedGroup.toLowerCase());
                     });
                 }
                 $kelasSelect.val('all').trigger('change.select2');
