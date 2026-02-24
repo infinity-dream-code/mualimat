@@ -264,19 +264,21 @@
                 });
             }
 
-            $("[name='filter[unit]']").on('change', function() {
+            $("[name='filter[unit]']").on('change', function () {
                 const selectedGroup = $(this).find(':selected').data('group');
+                if(!selectedGroup) return;
                 const $kelasSelect = $("[name='filter[kelas]']");
-
-                $kelasSelect.find('option').each(function() {
-                    if($(this).val() === 'all') {
+                if($(this).val() === 'all'){
+                    $kelasSelect.find('option').each(function () {
                         $(this).prop('disabled', false);
-                        return;
-                    }
-                    const group = $(this).data('group');
-                    $(this).prop('disabled', group !== selectedGroup);
-                });
-
+                    });
+                }else{
+                    $kelasSelect.find('option').each(function () {
+                        const group = $(this).data('group');
+                        if (!group) return;
+                        $(this).prop('disabled', group.toLowerCase() !== selectedGroup.toLowerCase());
+                    });
+                }
                 $kelasSelect.val('all').trigger('change.select2');
             });
 
