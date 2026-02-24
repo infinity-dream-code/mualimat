@@ -143,7 +143,7 @@ Route::prefix("admin")
             ->name("rekap-penerimaan-harian.")
             ->group(function () {
                 Route::controller(
-                    \App\Http\Controllers\Admin\RekapPenerimaanController::class,
+                    \App\Http\Controllers\Admin\Rekap\RekapPenerimaanHarianController::class,
                 )->group(function () {
                     Route::get("get-data", "getData")->name("get-data");
                     Route::get("get-column", "getColumn")->name("get-column");
@@ -153,7 +153,7 @@ Route::prefix("admin")
                     )->name("cetak-rekap-harian");
                     Route::resource(
                         "",
-                        \App\Http\Controllers\Admin\RekapPenerimaanController::class,
+                        \App\Http\Controllers\Admin\Rekap\RekapPenerimaanHarianController::class,
                     )->parameters(["" => "id"]);
                 });
             });
