@@ -405,22 +405,22 @@ PotonganTagihanController extends Controller
             return response()->json(["message" => "Tagihan yang dipilih tidak valid!"], 422);
         }
 
-        $total = array_sum(
-            array_map(function ($value) {
-                if (!$value) {
-                    return 0;
-                }
-                $clean = str_replace('.', '', $value);
-
-                return (int)$clean;
-            }, $request['potongan'])
-        );
-
-        if ($bill->BILLAM < $total) {
-            $tagihan = 'Rp. ' . number_format($bill->BILLAM, 0, ',', '.');
-            $potongan = 'Rp. ' . number_format($total, 0, ',', '.');
-            return response()->json(["message" => "Total potongan tidak boleh lebih besar dari tagihan! <br> Tagihan : $tagihan <br> Potongan: $potongan"], 422);
-        }
+//        $total = array_sum(
+//            array_map(function ($value) {
+//                if (!$value) {
+//                    return 0;
+//                }
+//                $clean = str_replace('.', '', $value);
+//
+//                return (int)$clean;
+//            }, $request['potongan'])
+//        );
+//
+//        if ($bill->BILLAM < $total) {
+//            $tagihan = 'Rp. ' . number_format($bill->BILLAM, 0, ',', '.');
+//            $potongan = 'Rp. ' . number_format($total, 0, ',', '.');
+//            return response()->json(["message" => "Total potongan tidak boleh lebih besar dari tagihan! <br> Tagihan : $tagihan <br> Potongan: $potongan"], 422);
+//        }
 
         try {
             DB::beginTransaction();
