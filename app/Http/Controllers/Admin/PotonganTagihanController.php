@@ -114,6 +114,16 @@ PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
+                "duplicate" => false
+            ],
+            [
+                "data" => "PAIDDT",
+                "name" => "Tanggal Bayar",
+                "columnType" => "timestamp",
+                "searchable" => true,
+                "orderable" => true,
+                "exportable" => true,
+                "duplicate" => false
             ],
             [
                 "data" => "BILLAM",
@@ -123,25 +133,25 @@ PotonganTagihanController extends Controller
                 "columnType" => "currency",
                 "className" => "text-end",
                 "exportable" => true,
+                "duplicate" => false
             ],
             [
-                "data" => "TOTAL_BILL_CUT",
+                "data" => "BILL_CUT",
                 "name" => "Potongan",
                 "columnType" => "currency",
                 "className" => "text-end",
                 "exportable" => true,
             ],
+//            [
+//                "data" => "TOTAL_BILL_CUT",
+//                "name" => "Total Potongan",
+//                "columnType" => "currency",
+//                "className" => "text-end",
+//                "exportable" => true,
+//            ],
             [
-                "data" => "FUrutan",
-                "name" => "urutan",
-                "orderable" => true,
-                "exportable" => true,
-            ],
-            [
-                "data" => "BTA",
-                "name" => "Tahun AKA",
-                "searchable" => true,
-                "orderable" => true,
+                "data" => "REASON",
+                "name" => "Keterangan",
                 "exportable" => true,
             ],
         ];
@@ -280,7 +290,7 @@ PotonganTagihanController extends Controller
             }
         }
 
-        $whereAny = ["scctcust.nmcust", "scctcust.nocust"];
+        $whereAny = ["scctcust.nmcust", "scctcust.nocust", "scctbill_cut.REASON"];
 
         $select = array_unique(
             array_merge($whereAny, [
@@ -297,6 +307,7 @@ PotonganTagihanController extends Controller
                 "scctcust.CODE02",
                 "scctcust.DESC02",
                 "scctcust.DESC03",
+                "scctbill_cut.BILL_CUT"
             ]),
         );
 
@@ -316,14 +327,18 @@ PotonganTagihanController extends Controller
                     $filterQuery($query);
                 }
             })
-            ->groupBy('scctbill_cut.AA');
+//            ->groupBy('scctbill_cut.AA')
+        ;
 
-        $totalRecords = ScctbillCut::groupBy('scctbill_cut.AA')->count();
+        $totalRecords = ScctbillCut::
+//        groupBy('scctbill_cut.AA')
+            count();
 
         $totalRecordswithFilter = (clone $query)->count();
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
         $records = (clone $query)
+            ->orderBy('scctcust.nmcust', 'asc')
             ->orderByRaw("
                 CASE
                     WHEN scctbill.BILLNM LIKE '%JULI%' THEN 1
@@ -343,7 +358,7 @@ PotonganTagihanController extends Controller
             ")
             ->orderBy($columnName, $columnSortOrder)
             ->select($select)
-            ->addSelect(DB::raw("COALESCE(SUM(scctbill_cut.BILL_CUT), 0) as TOTAL_BILL_CUT"))
+//            ->addSelect(DB::raw("COALESCE(SUM(scctbill_cut.BILL_CUT), 0) as TOTAL_BILL_CUT"))
             ->skip($start)
             ->take($rowperpage)
             ->get();
