@@ -98,6 +98,265 @@ function applyStyleToColumns(sheetXml, styleIndex, targetColumnIndexes) {
     });
 }
 
+function dateToExcelSerial(jsDate) {
+    const y = jsDate.getFullYear();
+    const m = jsDate.getMonth();
+    const d = jsDate.getDate();
+    const h = jsDate.getHours();
+    const min = jsDate.getMinutes();
+    const s = jsDate.getSeconds();
+
+    const dateUtc = Date.UTC(y, m, d);
+    const epochUtc = Date.UTC(1899, 11, 30);
+    const days = (dateUtc - epochUtc) / 86400000;
+    const timeFraction = (h * 3600 + min * 60 + s) / 86400;
+
+    return days + timeFraction;
+}
+
+const EXCEL_DATE_FORMATS = {
+    'basicdate':  { code: 'd mmmm yyyy',                   id: '177' },
+    'date':       { code: 'dddd", "d mmmm yyyy',           id: '178' },
+    'dateformat': { code: 'dddd", "d mmmm yyyy',           id: '178' },
+    'timestamp':  { code: 'dddd", "d mmmm yyyy hh:mm',     id: '179' },
+    'datetime':   { code: 'dddd", "d mmmm yyyy hh:mm',     id: '179' },
+};
+
+function addExcelDateStyle(xlsx, formatCode, numFmtId) {
+    const stylesXml = xlsx.xl['styles.xml'];
+    const numFmts = ensureNumFmts(stylesXml);
+
+    const existing = Array.from(stylesXml.getElementsByTagName('numFmt'))
+        .find(n => n.getAttribute('numFmtId') === numFmtId);
+    if (!existing) {
+        const numFmt = stylesXml.createElement('numFmt');
+        numFmt.setAttribute('numFmtId', numFmtId);
+        numFmt.setAttribute('formatCode', formatCode);
+        numFmts.appendChild(numFmt);
+        numFmts.setAttribute('count',
+            String(parseInt(numFmts.getAttribute('count') || '0', 10) + 1));
+    }
+
+    const cellXfs = stylesXml.getElementsByTagName('cellXfs')[0];
+    const xf = stylesXml.createElement('xf');
+    xf.setAttribute('numFmtId', numFmtId);
+    xf.setAttribute('fontId', '0');
+    xf.setAttribute('fillId', '0');
+    xf.setAttribute('borderId', '0');
+    xf.setAttribute('xfId', '0');
+    xf.setAttribute('applyNumberFormat', '1');
+
+    cellXfs.appendChild(xf);
+    const xfCount = cellXfs.getElementsByTagName('xf').length;
+    cellXfs.setAttribute('count', String(xfCount));
+
+    return xfCount - 1;
+}
+
+function applyExcelDateStyles(xlsx, sheet, dataColumns) {
+    const rows = $('row', sheet);
+    const styleCache = {};
+
+    let excelIdx = 0;
+    dataColumns.forEach(col => {
+        if (col.exportable !== true) return;
+        const ct = col.columnType?.toLowerCase();
+        const fmt = ct ? EXCEL_DATE_FORMATS[ct] : null;
+
+        if (fmt) {
+            if (!styleCache[fmt.id]) {
+                styleCache[fmt.id] = addExcelDateStyle(xlsx, fmt.code, fmt.id);
+            }
+            const styleIdx = String(styleCache[fmt.id]);
+
+            rows.each(function (rowIdx) {
+                if (rowIdx === 0) return;
+                const cell = $('c', this).eq(excelIdx);
+                if (cell.length) {
+                    cell.attr('s', styleIdx);
+                    cell.removeAttr('t');
+                }
+            });
+        }
+        excelIdx++;
+    });
+}
+
+function getExcelColumnName(index) {
+    let columnName = '';
+    let dividend = index + 1;
+    while (dividend > 0) {
+        const modulo = (dividend - 1) % 26;
+        columnName = String.fromCharCode(65 + modulo) + columnName;
+        dividend = Math.floor((dividend - modulo) / 26);
+    }
+    return columnName;
+}
+
+function getDuplicateExportColumns(dataColumns) {
+    const result = [];
+    let excelIdx = 0;
+    dataColumns.forEach(col => {
+        if (col.exportable !== true) return;
+        if (!col.duplicate) result.push(excelIdx);
+        excelIdx++;
+    });
+    return result;
+}
+
+function getExcelCellValue(cell) {
+    const $cell = $(cell);
+    const v = $('v', $cell);
+    if (v.length) return v.text();
+    const is = $('is', $cell);
+    if (is.length) return is.text();
+    return '';
+}
+
+function clearExcelCell(cell) {
+    $(cell).children().remove();
+}
+
+function getVerticalTopStyleForCell(xlsx, cell) {
+    const stylesXml = xlsx.xl['styles.xml'];
+    const cellXfs = stylesXml.getElementsByTagName('cellXfs')[0];
+    const xfElements = cellXfs.getElementsByTagName('xf');
+
+    const existingIdx = parseInt($(cell).attr('s') || '0');
+    const baseXf = xfElements[existingIdx];
+
+    const xf = baseXf ? baseXf.cloneNode(true) : stylesXml.createElement('xf');
+    if (!baseXf) {
+        xf.setAttribute('numFmtId', '0');
+        xf.setAttribute('fontId', '0');
+        xf.setAttribute('fillId', '0');
+        xf.setAttribute('borderId', '0');
+        xf.setAttribute('xfId', '0');
+    }
+    xf.setAttribute('applyAlignment', '1');
+
+    let alignment = xf.getElementsByTagName('alignment')[0];
+    if (!alignment) {
+        alignment = stylesXml.createElement('alignment');
+        xf.appendChild(alignment);
+    }
+    alignment.setAttribute('vertical', 'top');
+    alignment.setAttribute('wrapText', '1');
+
+    cellXfs.appendChild(xf);
+    const xfCount = xfElements.length;
+    cellXfs.setAttribute('count', String(xfCount));
+
+    return xfCount - 1;
+}
+
+function mergeExcelDuplicates(xlsx, sheet, duplicateCols) {
+    const rows = $('row', sheet);
+    const mergeRefs = [];
+
+    duplicateCols.forEach(colIdx => {
+        let colName = null;
+        let lastValue = null;
+        let groupStartRow = null;
+        let lastExcelRow = null;
+        let groupStartCell = null;
+
+        rows.each(function (rowIdx) {
+            if (rowIdx === 0) return;
+
+            const excelRow = parseInt($(this).attr('r'));
+            const cell = $('c', this).eq(colIdx);
+            if (!cell.length) return;
+
+            if (!colName) {
+                colName = cell.attr('r').replace(/[0-9]/g, '');
+            }
+
+            const value = getExcelCellValue(cell);
+
+            if (value !== lastValue) {
+                if (groupStartCell && lastExcelRow && groupStartRow !== lastExcelRow) {
+                    mergeRefs.push(colName + groupStartRow + ':' + colName + lastExcelRow);
+                    const styleIdx = getVerticalTopStyleForCell(xlsx, groupStartCell);
+                    groupStartCell.attr('s', String(styleIdx));
+                }
+                lastValue = value;
+                groupStartRow = excelRow;
+                groupStartCell = cell;
+            } else {
+                clearExcelCell(cell);
+            }
+            lastExcelRow = excelRow;
+        });
+
+        if (colName && lastExcelRow && groupStartRow !== lastExcelRow) {
+            mergeRefs.push(colName + groupStartRow + ':' + colName + lastExcelRow);
+            if (groupStartCell) {
+                const styleIdx = getVerticalTopStyleForCell(xlsx, groupStartCell);
+                groupStartCell.attr('s', String(styleIdx));
+            }
+        }
+    });
+
+    if (mergeRefs.length > 0) {
+        let mergeCells = $('mergeCells', sheet);
+        if (mergeCells.length === 0) {
+            $('sheetData', sheet).after('<mergeCells></mergeCells>');
+            mergeCells = $('mergeCells', sheet);
+        }
+        const existingCount = parseInt(mergeCells.attr('count') || '0');
+        mergeRefs.forEach(ref => {
+            mergeCells.append('<mergeCell ref="' + ref + '"/>');
+        });
+        mergeCells.attr('count', existingCount + mergeRefs.length);
+    }
+}
+
+function mergePdfDuplicates(doc, duplicateCols) {
+    const table = doc.content.find(c => c.table);
+    if (!table) return;
+
+    const body = table.table.body;
+
+    duplicateCols.forEach(colIdx => {
+        let groupStart = null;
+        let groupValue = null;
+
+        for (let rowIdx = 1; rowIdx < body.length; rowIdx++) {
+            const cell = body[rowIdx][colIdx];
+            const value = (cell && typeof cell === 'object') ? String(cell.text ?? '') : String(cell ?? '');
+
+            if (value !== groupValue) {
+                if (groupStart !== null && rowIdx - groupStart > 1) {
+                    const first = body[groupStart][colIdx];
+                    if (first && typeof first === 'object') {
+                        first.rowSpan = rowIdx - groupStart;
+                    } else {
+                        body[groupStart][colIdx] = {text: first ?? '', rowSpan: rowIdx - groupStart};
+                    }
+                    for (let i = groupStart + 1; i < rowIdx; i++) {
+                        body[i][colIdx] = {};
+                    }
+                }
+                groupStart = rowIdx;
+                groupValue = value;
+            }
+        }
+
+        if (groupStart !== null && body.length - groupStart > 1) {
+            const first = body[groupStart][colIdx];
+            if (first && typeof first === 'object') {
+                first.rowSpan = body.length - groupStart;
+            } else {
+                body[groupStart][colIdx] = {text: first ?? '', rowSpan: body.length - groupStart};
+            }
+            for (let i = groupStart + 1; i < body.length; i++) {
+                body[i][colIdx] = {};
+            }
+        }
+    });
+}
+
 function addCustomNumberFormat(xlsx, numberFormat) {
 
     //kodingan seko stackoverflow ramudeng njir
@@ -197,46 +456,34 @@ function dtButtons(options, buttons) {
             text: '<i class="ri ri-file-excel-line me-2"></i>Excel',
             customize: function (xlsx) {
                 const sheet = xlsx.xl.worksheets['sheet1.xml'];
-
                 const rupiahStyleIndex = addRupiahStyleOnce(xlsx);
 
                 const currencyColumns = [];
-                DT[`${options.tableId}`].settings().init().columns.forEach((col, index) => {
+                let excelColIdx = 0;
+                options.dataColumns.forEach(col => {
+                    if (col.exportable !== true) return;
                     if (col.columnType === 'currency' || col.columnType === 'money' || col.columnType === 'rupiah') {
-                        currencyColumns.push(index);
+                        currencyColumns.push(excelColIdx);
                     }
+                    excelColIdx++;
                 });
 
                 applyStyleToColumns(sheet, rupiahStyleIndex, currencyColumns);
+                applyExcelDateStyles(xlsx, sheet, options.dataColumns);
 
-                // $('row c[r]', sheet).each(function () {
-                //     const cell = $(this);
-                //     const cellRef = cell.attr('r');
-                //     const columnIndex = cellRef.replace(/[0-9]/g, '').charCodeAt(0) - 65; // Get column index
-                //
-                //     console.log(columnIndex, cellRef)
-                //     if (currencyColumns.includes(columnIndex)) {
-                //         console.log(columnIndex, cellRef)
-                //         addCustomNumberFormat(xlsx, '!R!p!. #,##0.00;[Red]!R!p!. - #,##0.00');
-                //         formatTargetColumn(xlsx, cellRef);
-                //         // // Apply a custom number format for currency: $#,##0.00
-                //         // const numFmtId = '164';  // Custom format ID for currency ($#,##0.00)
-                //         // cell.attr('s', '56'); // Apply a predefined style ID for currency (if necessary)
-                //         // cell.attr('t', 'n'); // Set the type to number for correct formatting
-                //     }
-                // });
-                //
-                // $('row:first c', sheet).attr('s', '22');
-                // const styles = xlsx.xl['styles.xml'];
-                // $(styles).find('cellXfs xf').eq(21).attr('fillId', '3');
-                // $(styles).find('fills fill').eq(3).html('<patternFill patternType="solid"><fgColor rgb="FFFFF00"/></patternFill>');
+                const duplicateCols = getDuplicateExportColumns(options.dataColumns);
+                mergeExcelDuplicates(xlsx, sheet, duplicateCols);
             },
         },
         pdf: {
             extend: 'pdf',
             title: '',
             text: '<i class="ri ri-file-pdf-2-line me-2"></i>Pdf',
-            modifier: {page: 'all'}
+            modifier: {page: 'all'},
+            customize: function (doc) {
+                const duplicateCols = getDuplicateExportColumns(options.dataColumns);
+                mergePdfDuplicates(doc, duplicateCols);
+            }
         },
         csv: {
             extend: 'csv',
@@ -281,6 +528,10 @@ function dtButtons(options, buttons) {
                             case 'no':
                                 return row + 1;
                             case 'basicdate':
+                                if (!data) return '';
+                                if (config.extend === 'excel') {
+                                    return dateToExcelSerial(new Date(data));
+                                }
                                 let basicDate = new Date(data);
                                 let basicDateOptions = {
                                     day: 'numeric',
@@ -290,14 +541,46 @@ function dtButtons(options, buttons) {
                                 return basicDate.toLocaleDateString('id-ID', basicDateOptions);
                             case 'date':
                             case 'dateformat':
+                                if (!data) return '';
+                                if (config.extend === 'excel') {
+                                    return dateToExcelSerial(new Date(data));
+                                }
                                 let date = new Date(data);
-                                let options = {
+                                let dateOptions = {
                                     weekday: 'long',
                                     day: 'numeric',
                                     month: 'long',
                                     year: 'numeric'
                                 };
-                                return date.toLocaleDateString('id-ID', options);
+                                return date.toLocaleDateString('id-ID', dateOptions);
+                            case 'timestamp':
+                            case 'datetime':
+                                if (!data) return '';
+                                if (config.extend === 'excel') {
+                                    return dateToExcelSerial(new Date(data));
+                                }
+                                let tsDate = new Date(data);
+                                let tsOptions = {
+                                    weekday: 'long',
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric',
+                                    hour: 'numeric',
+                                    minute: 'numeric'
+                                };
+                                return tsDate.toLocaleDateString('id-ID', tsOptions);
+                            case 'periode':
+                            case 'yearmonth':
+                                if (!data || typeof data !== 'string' || data.length !== 6 || !/^\d{6}$/.test(data)) {
+                                    return '';
+                                }
+                                const monthsID = [
+                                    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                                    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+                                ];
+                                const pmYear = Math.floor(data / 100);
+                                const pmMonth = data % 100;
+                                return (pmMonth >= 1 && pmMonth <= 12) ? `${monthsID[pmMonth - 1]} ${pmYear}` : '';
                             case 'currency':
                                 if (config.extend !== 'excel') {
                                     return new Intl.NumberFormat('id-ID', {
@@ -953,12 +1236,13 @@ async function getDT(options) {
                         }
                     }
 
+                    const isDuplicate = column.duplicate ?? true;
                     options.dataColumns.push({
                         data: column.data,
                         name: column.name,
-                        duplicate: column.duplicate ?? true,
+                        duplicate: isDuplicate,
                         searchable: column.searchable ?? false,
-                        orderable: column.orderable ?? false,
+                        orderable: !isDuplicate ? false : (column.orderable ?? false),
                         render: renderFunc ?? false,
                         className: column.className ?? false,
                         search: false,
