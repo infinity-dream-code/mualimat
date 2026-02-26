@@ -52,7 +52,7 @@
     @endif
 
     @hasSection('bootstrap-daterangepicker')
-        <link rel="stylesheet" href="{{asset('main/libs/bootstrap-datepicker/bootstrap-datepicker.css')}}">
+        <link rel="stylesheet" href="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.css')}}">
     @endif
 
     @hasSection('select2')
