@@ -173,7 +173,8 @@
         </li>
 
         <li class="menu-item mt-auto pb-2">
-            <a href="{{route('logout')}}" class="menu-link btn-danger text-white">
+            <a href="{{route('logout')}}" class="menu-link btn-danger text-white"  onclick="event.preventDefault();
+                              document.getElementById('logout-form').submit();">
                 <i class="menu-icon ri ri-logout-box-r-line"></i>
                 <div data-i18n="Logout">
                     Logout

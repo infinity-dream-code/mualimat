@@ -215,7 +215,8 @@
                                 {{--                                </li>--}}
                                 <li>
                                     <div class="d-grid px-4 pt-2 pb-1">
-                                        <a class="btn btn-sm btn-danger d-flex" href="{{route('logout')}}">
+                                        <a href="{{route('logout')}}" class="btn btn-sm btn-danger d-flex"  onclick="event.preventDefault();
+                                            document.getElementById('logout-form').submit();">
                                             <small class="align-middle">Logout</small>
                                             <i class="ri-logout-box-r-line ms-2 ri-16px"></i>
                                         </a>
