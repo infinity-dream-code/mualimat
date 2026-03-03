@@ -322,11 +322,11 @@ PotonganTagihanController extends Controller
 //            ->where("scctbill.FSTSBolehBayar", 1)
 //            ->where("scctcust.STCUST", 1)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
-//            ->where(function ($query) use ($filterQuery) {
-//                if ($filterQuery) {
-//                    $filterQuery($query);
-//                }
-//            })
+            ->where(function ($query) use ($filterQuery) {
+                if ($filterQuery) {
+                    $filterQuery($query);
+                }
+            })
 //            ->groupBy('scctbill_cut.AA')
         ;
 
