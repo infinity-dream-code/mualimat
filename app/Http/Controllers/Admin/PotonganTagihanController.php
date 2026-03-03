@@ -322,11 +322,11 @@ PotonganTagihanController extends Controller
             ->where("scctbill.FSTSBolehBayar", 1)
             ->where("scctcust.STCUST", 1)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
-            ->where(function ($query) use ($filterQuery) {
-                if ($filterQuery) {
-                    $filterQuery($query);
-                }
-            })
+//            ->where(function ($query) use ($filterQuery) {
+//                if ($filterQuery) {
+//                    $filterQuery($query);
+//                }
+//            })
 //            ->groupBy('scctbill_cut.AA')
         ;
 
@@ -338,24 +338,24 @@ PotonganTagihanController extends Controller
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
         $records = (clone $query)
-//            ->orderBy('scctcust.nmcust', 'asc')
-//            ->orderByRaw("
-//                CASE
-//                    WHEN scctbill.BILLNM LIKE '%JULI%' THEN 1
-//                    WHEN scctbill.BILLNM LIKE '%AGUSTUS%' THEN 2
-//                    WHEN scctbill.BILLNM LIKE '%SEPTEMBER%' THEN 3
-//                    WHEN scctbill.BILLNM LIKE '%OKTOBER%' THEN 4
-//                    WHEN scctbill.BILLNM LIKE '%NOVEMBER%' THEN 5
-//                    WHEN scctbill.BILLNM LIKE '%DESEMBER%' THEN 6
-//                    WHEN scctbill.BILLNM LIKE '%JANUARI%' THEN 7
-//                    WHEN scctbill.BILLNM LIKE '%FEBRUARI%' THEN 8
-//                    WHEN scctbill.BILLNM LIKE '%MARET%' THEN 9
-//                    WHEN scctbill.BILLNM LIKE '%APRIL%' THEN 10
-//                    WHEN scctbill.BILLNM LIKE '%MEI%' THEN 11
-//                    WHEN scctbill.BILLNM LIKE '%JUNI%' THEN 12
-//                    ELSE 999
-//                END
-//            ")
+            ->orderBy('scctcust.nmcust', 'asc')
+            ->orderByRaw("
+                CASE
+                    WHEN scctbill.BILLNM LIKE '%JULI%' THEN 1
+                    WHEN scctbill.BILLNM LIKE '%AGUSTUS%' THEN 2
+                    WHEN scctbill.BILLNM LIKE '%SEPTEMBER%' THEN 3
+                    WHEN scctbill.BILLNM LIKE '%OKTOBER%' THEN 4
+                    WHEN scctbill.BILLNM LIKE '%NOVEMBER%' THEN 5
+                    WHEN scctbill.BILLNM LIKE '%DESEMBER%' THEN 6
+                    WHEN scctbill.BILLNM LIKE '%JANUARI%' THEN 7
+                    WHEN scctbill.BILLNM LIKE '%FEBRUARI%' THEN 8
+                    WHEN scctbill.BILLNM LIKE '%MARET%' THEN 9
+                    WHEN scctbill.BILLNM LIKE '%APRIL%' THEN 10
+                    WHEN scctbill.BILLNM LIKE '%MEI%' THEN 11
+                    WHEN scctbill.BILLNM LIKE '%JUNI%' THEN 12
+                    ELSE 999
+                END
+            ")
             ->orderBy($columnName, $columnSortOrder)
             ->select($select)
 //            ->addSelect(DB::raw("COALESCE(SUM(scctbill_cut.BILL_CUT), 0) as TOTAL_BILL_CUT"))
