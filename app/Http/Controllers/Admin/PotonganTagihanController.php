@@ -318,9 +318,9 @@ PotonganTagihanController extends Controller
                 "scctcust.CUSTID",
                 "scctbill.CUSTID",
             )
-            ->where("scctbill.PAIDST", 1)
-            ->where("scctbill.FSTSBolehBayar", 1)
-            ->where("scctcust.STCUST", 1)
+//            ->where("scctbill.PAIDST", 1)
+//            ->where("scctbill.FSTSBolehBayar", 1)
+//            ->where("scctcust.STCUST", 1)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
 //            ->where(function ($query) use ($filterQuery) {
 //                if ($filterQuery) {
