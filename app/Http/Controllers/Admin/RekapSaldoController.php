@@ -47,6 +47,12 @@ class RekapSaldoController extends Controller
     {
         return [
             [
+                "data" => null,
+                "name" => "no",
+                "columnType" => "row",
+                "exportable" => true,
+            ],
+            [
                 "data" => "nocust",
                 "name" => "NIS",
                 "searchable" => true,
