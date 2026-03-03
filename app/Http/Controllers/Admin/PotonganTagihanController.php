@@ -312,27 +312,27 @@ PotonganTagihanController extends Controller
         );
 
         $query = ScctbillCut::
-        leftJoin("scctbill", "scctbill_cut.AA", "scctbill.AA")
+        leftJoin('scctbill', function ($join) {
+            $join->on('scctbill_cut.AA', '=', "scctbill.AA")
+                ->where("scctbill.PAIDST", 1)
+                ->where("scctbill.FSTSBolehBayar", 1);
+        })
             ->leftJoin(
-                "scctcust",
-                "scctcust.CUSTID",
-                "scctbill.CUSTID",
-            )
-//            ->where("scctbill.PAIDST", 1)
-//            ->where("scctbill.FSTSBolehBayar", 1)
-//            ->where("scctcust.STCUST", 1)
+                "scctcust", function ($join) {
+                $join->on("scctbill.CUSTID", "=", "scctcust.CUSTID")
+                    ->where("scctcust.STCUST", 1);
+            })
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
             ->where(function ($query) use ($filterQuery) {
                 if ($filterQuery) {
                     $filterQuery($query);
                 }
-            })
-//            ->groupBy('scctbill_cut.AA')
+            })//            ->groupBy('scctbill_cut.AA')
         ;
 
         $totalRecords = ScctbillCut::
 //        groupBy('scctbill_cut.AA')
-            count();
+        count();
 
         $totalRecordswithFilter = (clone $query)->count();
 
