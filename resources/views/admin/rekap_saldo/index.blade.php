@@ -50,7 +50,7 @@
             <div class="row px-5 mb-2">
                 <ul class="list-group list-group-timeline">
                     <li class="list-group-item list-group-timeline-danger">
-                        <strong>Pastikan telah mengisi Tanggal Transaksi!</strong>
+                        <strong>Pastikan telah mengisi <a href="#filter[periode]">PERIODE</a>!</strong>
                     </li>
                     <li class="list-group-item list-group-timeline-danger">
                         <strong>Pastikan browser anda tidak memblokir <i>POP-UP</i>!</strong>
