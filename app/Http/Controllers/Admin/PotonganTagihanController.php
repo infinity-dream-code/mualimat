@@ -312,16 +312,15 @@ PotonganTagihanController extends Controller
         );
 
         $query = ScctbillCut::
-        leftJoin('scctbill', function ($join) {
-            $join->on('scctbill_cut.AA', '=', "scctbill.AA")
-                ->where("scctbill.PAIDST", 1)
-                ->where("scctbill.FSTSBolehBayar", 1);
-        })
+        leftJoin("scctbill", "scctbill_cut.AA", "scctbill.AA")
             ->leftJoin(
-                "scctcust", function ($join) {
-                $join->on("scctbill.CUSTID", "=", "scctcust.CUSTID")
-                    ->where("scctcust.STCUST", 1);
-            })
+                "scctcust",
+                "scctcust.CUSTID",
+                "scctbill.CUSTID",
+            )
+            ->where("scctbill.PAIDST", 1)
+            ->where("scctbill.FSTSBolehBayar", 1)
+            ->where("scctcust.STCUST", 1)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
             ->where(function ($query) use ($filterQuery) {
                 if ($filterQuery) {
@@ -329,6 +328,17 @@ PotonganTagihanController extends Controller
                 }
             })//            ->groupBy('scctbill_cut.AA')
         ;
+
+        //other join leftJoin('scctbill', function ($join) {
+        //            $join->on('scctbill_cut.AA', '=', "scctbill.AA")
+        //                ->where("scctbill.PAIDST", 1)
+        //                ->where("scctbill.FSTSBolehBayar", 1);
+        //        })
+        //            ->leftJoin(
+        //                "scctcust", function ($join) {
+        //                $join->on("scctbill.CUSTID", "=", "scctcust.CUSTID")
+        //                    ->where("scctcust.STCUST", 1);
+        //            })
 
         $totalRecords = ScctbillCut::
 //        groupBy('scctbill_cut.AA')
