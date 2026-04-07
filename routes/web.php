@@ -205,16 +205,10 @@ Route::prefix("admin")
                 )->group(function () {
                     Route::get("get-data", "getData")->name("get-data");
                     Route::get("get-column", "getColumn")->name("get-column");
-//                    Route::get("cetak-rekap", "cetakRekapPenerimaan")->name(
-//                        "cetak-rekap",
-//                    );
-//                    Route::get("cetak-kartu-siswa", "cetakKartuSiswa")->name(
-//                        "cetak-kartu-siswa",
-//                    );
-//                    Route::get(
-//                        "get-data-rekap",
-//                        "getRekapDataPenerimaan",
-//                    )->name("get-data-rekap");
+                    Route::get(
+                        "get-data-rekap",
+                        "getDataRekap",
+                    )->name("get-data-rekap");
                     Route::resource(
                         "",
                         RekapSaldoController::class,
