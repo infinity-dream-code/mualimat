@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\mst_kelas;
+use App\Models\mst_sekolah;
 use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
 use App\Models\scctbill;
@@ -39,6 +40,7 @@ class RekapSaldoController extends Controller
             ->orderBy("thn_aka", "desc")
             ->get();
         $data["kelas"] = mst_kelas::get();
+        $data['unit'] = mst_sekolah::get();
 
         return view("admin.rekap_saldo.index", $data);
     }
@@ -103,6 +105,64 @@ class RekapSaldoController extends Controller
                 "columnType" => "currency",
             ],
         ];
+    }
+
+    public function getDataRekap(Request $request)
+    {
+        $periode = $request->filter["periode"] ?? null;
+        $unit = $request->filter["unit"] ?? null;
+        $kelas = $request->filter["kelas"] ?? null;
+
+        if ($periode == null ||
+            !preg_match('/^\d{6}$/', $periode) ||
+            !checkdate(substr($periode, 4, 2), 1, substr($periode, 0, 4))
+        ) {
+            return response()->json([
+                "error" => "Periode is not valid or defined!",
+                "message" => "Silahkan pilih periode terlebih dahulu"
+            ], 422);
+        }
+
+        $kelas = strtolower(trim($kelas ?? ''));
+        $unit  = strtolower(trim($unit ?? ''));
+
+        if (($kelas === '' || $kelas === 'all') && ($unit === '' || $unit === 'all')) {
+            return response()->json([
+                "error" => "Filter tidak valid!",
+                "message" => "Silahkan pilih satu Unit atau satu kelas!"
+            ], 422);
+        }
+
+        $request["draw"] = 2;
+        $request["start"] = 0;
+        $request["length"] = "poll";
+
+        try {
+            $filter = $request;
+            $saldos = $this->getData($filter);
+
+            $saldos = json_decode(json_encode($saldos), true);
+            $saldos = $saldos["original"]["data"];
+            if (!$saldos) {
+                return response()->json(
+                    ["message" => "Data saldo kosong"],
+                    422,
+                );
+            }
+
+            return response()->json([
+                "data" => $saldos,
+            ], 200);
+        } catch
+        (\Throwable $e) {
+            return response()->json(
+                [
+                    "message" => "Data Saldo Tidak Ditemukan",
+                    "error" => $e->getMessage(),
+                ],
+                422,
+            );
+        }
     }
 
     public function getData(Request $request)
@@ -226,7 +286,7 @@ class RekapSaldoController extends Controller
             $monthEnd = Carbon::createFromFormat('Ym', $periode)->endOfMonth();
 
             $query = scctcust::where("scctcust.STCUST", 1
-            ) ->where(function ($query) use ($filterQuery) {
+            )->where(function ($query) use ($filterQuery) {
                 if ($filterQuery) {
                     $filterQuery($query);
                 }
@@ -257,7 +317,14 @@ class RekapSaldoController extends Controller
                         ->whereBetween('TRXDATE', [$monthStart, $monthEnd])
                         ->selectRaw('COALESCE(SUM(sccttran.DEBET), 0) as DEBET_BULAN')
                 ])
-                ->whereAny($whereAny, "like", "%" . $searchValue . "%")
+                ->when(!blank($searchValue), function ($query) use ($whereAny, $searchValue) {
+                    $query->where(function ($q) use ($whereAny, $searchValue) {
+                        $sanitizeSearch = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $searchValue);
+                        foreach ($whereAny as $column) {
+                            $q->orWhere($column, 'like', '%' . $sanitizeSearch . '%');
+                        }
+                    });
+                })
                 ->skip($start)
                 ->take($rowperpage)
                 ->get();
@@ -288,8 +355,6 @@ class RekapSaldoController extends Controller
             "recordsTotal" => $totalRecords ?? 0,
             "recordsFiltered" => $totalRecordswithFilter ?? 0,
             "data" => $records ?? [],
-            "monthStart" => $monthStart ?? null,
-            "monthEnd" => $monthEnd ?? null,
             "tran" => $tran ?? [],
         ];
         return response()->json($response);
