@@ -117,7 +117,8 @@
                                     @isset($unit)
                                         @foreach($unit as $item)
                                             <option
-                                                value="{{$item->CODE01}}" data-group="{{$item->DESC01}}">{{$item->DESC01}}</option>
+                                                value="{{$item->CODE01}}"
+                                                data-group="{{$item->DESC01}}">{{$item->DESC01}}</option>
                                         @endforeach
                                     @else
                                         <option>data kosong</option>
@@ -134,7 +135,8 @@
                                     @isset($kelas)
                                         @foreach($kelas as $item)
                                             <option
-                                                value="{{$item->unit}}~{{$item->jenjang}}~{{$item->kelas}}" data-group="{{$item->unit}}">
+                                                value="{{$item->unit}}~{{$item->jenjang}}~{{$item->kelas}}"
+                                                data-group="{{$item->unit}}">
                                                 {{$item->unit}} - {{$item->jenjang}} {{$item->kelas}}
                                             </option>
                                         @endforeach
@@ -253,13 +255,13 @@
 
             $("[name='filter[unit]']").on('change', function () {
                 const selectedGroup = $(this).find(':selected').data('group');
-                if(!selectedGroup) return;
+                if (!selectedGroup) return;
                 const $kelasSelect = $("[name='filter[kelas]']");
-                if($(this).val() === 'all'){
+                if ($(this).val() === 'all') {
                     $kelasSelect.find('option').each(function () {
                         $(this).prop('disabled', false);
                     });
-                }else{
+                } else {
                     $kelasSelect.find('option').each(function () {
                         const group = $(this).data('group');
                         if (!group) return;
@@ -270,7 +272,7 @@
             });
 
             const $postInput = $('#post');
-            $postInput.on('select2:select', function(e) {
+            $postInput.on('select2:select', function (e) {
                 if (e.params.data.id === 'all') {
                     $('#post option').prop('selected', true);
                     $postInput.trigger('change');
@@ -309,20 +311,17 @@
                 autoclose: true
             });
 
-            function generateTableRow(data, kelas) {
-                return data.map(s => {
-                    let row = {
-                        "Kode": s.KodeAkun,
-                        "Nama Post": s.NamaAkun,
-                        "Nama Tagihan": s.bill_name,
+            function generateTableRekap(data) {
+                console.log(data);
+                return data.map((s, index) => {
+                    return {
+                        "No": `${index + 1}`,
+                        "NIS": s.nocust,
+                        "Nama": s.nmcust,
+                        "Saldo Awal": s.opening_balance,
+                        "Saldo Periode Dipilih": s.current_net,
+                        "Saldo Akhir": s.closing_balance,
                     };
-
-                    kelas.forEach((it, i) => {
-                        let id = it.id;
-                        row[it.jenjang] = Number(s[id]);
-                    });
-
-                    return row;
                 });
             }
 
@@ -340,25 +339,21 @@
                 if (!rows.length) return;
 
                 const invalidValues = [null, '', 'undefined', 'all'];
-                let statusBayarVal = params.get('filter[status_bayar]') ?? null;
-                if (invalidValues.includes(statusBayarVal)) {
-                  statusBayarVal = false;
+                let periodeVal = params.get('filter[periode]') ?? null;
+                if (invalidValues.includes(periodeVal)) {
+                    periodeVal = false;
                 }
-                console.log(statusBayarVal);
                 let kelasVal = params.get('filter[kelas]') ?? null;
                 if (invalidValues.includes(kelasVal)) {
-                  kelasVal = 'Semua';
+                    kelasVal = 'Semua';
                 }
 
                 let thnAkaVal = params.get('filter[angkatan]') ?? null;
                 if (invalidValues.includes(thnAkaVal)) {
-                  thnAkaVal = 'Semua';
+                    thnAkaVal = 'Semua';
                 }
 
-                let tanggalTransaksi = params.get('filter[tanggal-transaksi]') ?? null;
-                tanggalTransaksi = tanggalTransaksi.split(" - ")
-
-                const wbTitle = "REKAP PENERIMAAN"
+                const wbTitle = "REKAP SALDO"
                 const wb = new ExcelJS.Workbook();
                 const ws = wb.addWorksheet(wbTitle);
 
@@ -366,23 +361,16 @@
 
                 ws.insertRow(1, [wbTitle]);
                 ws.insertRow(2, ["Unit, Kelas", kelasVal.replace(/~/g, " - ")]);
-                ws.insertRow(3, ["Tahun Akademik", thnAkaVal]);
-                ws.insertRow(4, ["Dari", parseDDMMYYYY(tanggalTransaksi[0])]);
-                ws.insertRow(5, ["Hingga", parseDDMMYYYY(tanggalTransaksi[1])]);
+                ws.insertRow(3, ["Tahun Angkatan", thnAkaVal]);
+                ws.insertRow(4, ["Periode", periodeVal]);
 
-                [4, 5].forEach(rowNumber => {
-                    const cell = ws.getRow(rowNumber).getCell(2);
-
-                    cell.numFmt = "dddd, dd mmmm yyyy";
-                });
-
-                const boldRows = [1, 2, 3, 4, 5];
+                const boldRows = [1, 2, 3, 4];
 
                 boldRows.forEach(rowNumber => {
                     const row = ws.getRow(rowNumber);
 
-                    row.eachCell({ includeEmpty: true }, cell => {
-                        cell.font = { bold: true };
+                    row.eachCell({includeEmpty: true}, cell => {
+                        cell.font = {bold: true};
                     });
 
                     row.commit();
@@ -392,33 +380,33 @@
 
                 const headerRowNumber = 8;
 
-                ws.getColumn(1).width = 35;
-                ws.getColumn(2).width = 35;
-
                 const headerRow = ws.insertRow(headerRowNumber, header);
 
-                headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-                    cell.font = { bold: true };
-                    cell.alignment = { horizontal: "center", vertical: "middle" };
+                headerRow.eachCell({includeEmpty: true}, (cell, colNumber) => {
+                    cell.font = {bold: true};
+                    cell.alignment = {horizontal: "center", vertical: "middle"};
                     cell.border = fullBorder();
+                    cell.fill = cellBGColor();
 
-                    if (colNumber <= 2) return;
-                    const headerText = String(cell.value || "");
-                    let width = Math.max(12, headerText.length + 4);
-                    ws.getColumn(colNumber).width = width;
-                    // console.log(width);
+                    if (colNumber !== 1) {
+                        ws.getColumn(colNumber).width = 30;
+                    }else{
+                        const headerText = String(cell.value || "");
+                        let width = Math.max(12, headerText.length + 4);
+                        ws.getColumn(colNumber).width = width;
+                    }
                 });
 
                 rows.forEach(r => {
                     const row = ws.addRow(Object.values(r));
 
-                    row.eachCell({ includeEmpty: true }, cell => {
+                    row.eachCell({includeEmpty: true}, cell => {
                         if (cell.value instanceof Date) {
                             cell.numFmt = "dddd, dd mmmm yyyy";
                         }
 
                         if (typeof cell.value === "number") {
-                            cell.numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
+                            cell.numFmt = '"Rp "#,##0;[Red]-"Rp "#,##0';
                         }
 
                         cell.border = fullBorder();
@@ -429,21 +417,21 @@
                 const dataEndRow = ws.lastRow.number;
 
                 const totalRow = ws.addRow([]);
-                totalRow.getCell(1).value = "TOTAL";
-                totalRow.getCell(1).font = { bold: true };
-                totalRow.getCell(1).border =  fullBorder();
+                ws.mergeCells(totalRow.number, 1, totalRow.number, 3);
+
+                const cell = totalRow.getCell(1);
+                cell.value = "TOTAL";
+                cell.font = { bold: true };
+                cell.alignment = { horizontal: 'center' };
+                cell.fill = cellBGColor();
                 headerRow.eachCell((cell, colNumber) => {
                     const headerText = String(cell.value || "").toLowerCase();
-                    const jenjangs = kelas.map(b => b.jenjang.toLowerCase());
-
-                    const shouldSum = jenjangs.some(jenjang =>
-                        headerText.includes(jenjang)
-                    );
-
-                    totalRow.getCell(colNumber).font = { bold: true };
+                    totalRow.getCell(colNumber).font = {bold: true};
                     totalRow.getCell(colNumber).border = fullBorder();
 
-                    if (!shouldSum) return;
+                    if (['no', 'nis', 'nama'].includes(headerText)) {
+                        return;
+                    }
 
                     const colLetter = ws.getColumn(colNumber).letter;
 
@@ -452,6 +440,7 @@
                     };
 
                     totalRow.getCell(colNumber).numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
+                    totalRow.getCell(colNumber).fill = cellBGColor();
                 });
 
                 const buffer = await wb.xlsx.writeBuffer();
@@ -463,90 +452,106 @@
                 a.href = URL.createObjectURL(blob);
                 a.download = wbTitle + " - " + kelasVal.replace(/~/g, " - ") + ".xlsx";
                 a.click();
+
+                return true;
             }
 
             function fullBorder() {
-              return {
-                top: { style: "thin" },
-                left: { style: "thin" },
-                bottom: { style: "thin" },
-                right: { style: "thin" }
-              };
+                return {
+                    top: {style: "thin"},
+                    left: {style: "thin"},
+                    bottom: {style: "thin"},
+                    right: {style: "thin"}
+                };
+            }
+
+            function cellBGColor() {
+                return {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: {argb: 'FFEBE1FF'}
+                }
             }
 
             $(document).on('click', '.btn-print-rekap', async function (e) {
-                warningAlert("Sedang dalam perbaikan");
-                {{--loadingAlert(`Membuat Rekap ... <br> Proses ini membutuhkan waktu beberapa saat<br><hr>--}}
-                {{--    <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>--}}
-                {{--`);--}}
-                {{--let data = $(`#${dtOptions.formId}`).serialize();--}}
-                {{--let params;--}}
-                {{--params = new URLSearchParams(data);--}}
+                // warningAlert("Sedang dalam perbaikan");
+                loadingAlert(`Membuat Rekap ... <br> Proses ini membutuhkan waktu beberapa saat<br><hr>
+                    <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
+                `);
+                let data = $(`#${dtOptions.formId}`).serialize();
+                let params;
+                params = new URLSearchParams(data);
 
-                {{--if (params) {--}}
-                {{--    let url = '{{route('admin.rekap-penerimaan.get-data-rekap')}}';--}}
-                {{--    const form = new FormData(document.getElementById('rekapForm'));--}}
-                {{--    const params = new URLSearchParams();--}}
-                {{--    for (const [key, value] of form.entries()) {--}}
-                {{--        params.append(key, value);--}}
-                {{--    }--}}
-                {{--    const fullUrl = `${url}?${params.toString()}`;--}}
-                {{--    const request = new Request(--}}
-                {{--        fullUrl, {--}}
-                {{--            method: "GET",--}}
-                {{--            headers: {--}}
-                {{--                'X-CSRF-TOKEN': csrfToken,--}}
-                {{--                'Accept': "application/json"--}}
-                {{--            }--}}
-                {{--        });--}}
+                if (params) {
+                    let url = '{{route('admin.rekap-saldo.get-data-rekap')}}';
+                    const form = new FormData(document.getElementById('rekapForm'));
+                    const params = new URLSearchParams();
+                    for (const [key, value] of form.entries()) {
+                        params.append(key, value);
+                    }
+                    const fullUrl = `${url}?${params.toString()}`;
+                    const request = new Request(
+                        fullUrl, {
+                            method: "GET",
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': "application/json"
+                            }
+                        });
 
-                {{--    try {--}}
-                {{--        const response = await fetch(request);--}}
+                    try {
+                        const response = await fetch(request);
 
-                {{--        if (!response.ok) {--}}
-                {{--            const status = response.status;--}}
-                {{--            const contentType = response.headers.get('content-type');--}}
-                {{--            let message = `Request failed with status ${status}`;--}}
-                {{--            if (contentType && contentType.includes('application/json')) {--}}
-                {{--                const errorData = await response.json();--}}
-                {{--                message = errorData.message || message;--}}
-                {{--            } else {--}}
-                {{--                const errorText = await response.text();--}}
-                {{--                message = errorText || message;--}}
-                {{--            }--}}
+                        if (!response.ok) {
+                            const status = response.status;
+                            const contentType = response.headers.get('content-type');
+                            let message = `Request failed with status ${status}`;
+                            if (contentType && contentType.includes('application/json')) {
+                                const errorData = await response.json();
+                                message = errorData.message || message;
+                            } else {
+                                const errorText = await response.text();
+                                message = errorText || message;
+                            }
 
-                {{--            const error = new Error(message);--}}
-                {{--            error.status = status;--}}
-                {{--            throw error;--}}
-                {{--        }--}}
+                            const error = new Error(message);
+                            error.status = status;
+                            throw error;
+                        }
 
-                {{--        const result = await response.json();--}}
-                {{--        let tableRow = generateTableRow(result.data, result.kelas)--}}
-                {{--        await exportExcel(tableRow, params, result.kelas)--}}
+                        const result = await response.json();
+                        let tableRow = generateTableRekap(result.data);
+                        let file = await exportExcel(tableRow, params);
 
-                {{--        successAlert('Sukses, Rekap telah dicetak');--}}
-                {{--    } catch (error) {--}}
-                {{--        if (error.status === 422) {--}}
-                {{--            const errors = error.error || error.errors;--}}
-                {{--            errorAlert(error.message);--}}
-                {{--            if (errors) {--}}
-                {{--                processErrors(errors)--}}
-                {{--            }--}}
-                {{--        } else {--}}
-                {{--            const errorMessages = {--}}
-                {{--                401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',--}}
-                {{--                403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',--}}
-                {{--                404: 'Halaman yang dituju tidak ditemukan 🧐',--}}
-                {{--                405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',--}}
-                {{--                419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',--}}
-                {{--                429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',--}}
-                {{--            };--}}
-                {{--            errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");--}}
-                {{--        }--}}
-                {{--    }--}}
-                {{--} else {--}}
-                {{--    warningAlert('Silahkan pilih salah satu kelas terlebih dahulu!')--}}
-                {{--}--}}
+                        if (file) {
+                            successAlert('Sukses, Rekap telah dicetak');
+                        }else{
+                            const error = new Error('gagal mencetak');
+                            error.status = 422;
+                            throw error;
+                        }
+                    } catch (error) {
+                        if (error.status === 422) {
+                            const errors = error.error || error.errors;
+                            errorAlert(error.message);
+                            if (errors) {
+                                processErrors(errors)
+                            }
+                        } else {
+                            const errorMessages = {
+                                401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                                403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
+                                404: 'Halaman yang dituju tidak ditemukan 🧐',
+                                405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
+                                419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                                429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
+                            };
+                            errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
+                        }
+                    }
+                } else {
+                    warningAlert('Silahkan pilih salah satu kelas terlebih dahulu!')
+                }
             });
         });
 
