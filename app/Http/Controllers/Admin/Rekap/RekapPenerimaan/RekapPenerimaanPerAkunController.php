@@ -42,6 +42,7 @@ class RekapPenerimaanPerAkunController extends Controller
             ->get();
         $data["metode_bayar"] = MetodeBayar::attributes();
         $data["kelas"] = mst_kelas::get();
+        $data['unit'] = mst_sekolah::get();
 
         return view("admin.rekap_penerimaan.index", $data);
     }
