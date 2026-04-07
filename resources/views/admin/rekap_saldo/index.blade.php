@@ -215,7 +215,6 @@
             cache: true,
             pageLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
-            buttons: ['copy', 'excel', 'pdf'],
         };
 
         document.addEventListener("DOMContentLoaded", function () {
