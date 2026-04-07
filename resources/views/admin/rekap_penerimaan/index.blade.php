@@ -398,7 +398,7 @@
                 const [dd, mm, yyyy] = str.split("-").map(Number);
                 if (!dd || !mm || !yyyy) return null;
 
-                return new Date(yyyy, mm, dd);
+                return new Date(yyyy, mm - 1, dd, 12);
             }
 
             async function exportExcel(groupedData, params, kelas = []) {
