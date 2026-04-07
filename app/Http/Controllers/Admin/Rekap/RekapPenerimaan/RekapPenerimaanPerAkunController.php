@@ -156,7 +156,7 @@ class RekapPenerimaanPerAkunController extends Controller
                         $colName = match ($key) {
                             "dari_tanggal",
                             "sampai_tanggal"
-                                => "scctbill.FTGLTagihan",
+                            => "scctbill.FTGLTagihan",
                             "tanggal-transaksi" => "scctbill.PAIDDT",
                             "tahun_akademik" => "scctbill.BTA",
                             "post" => "scctbill.BILLNM",
@@ -244,27 +244,27 @@ class RekapPenerimaanPerAkunController extends Controller
                                 case 3:
                                     $filter[1] === "in"
                                         ? $query->whereIn(
-                                            $filter[0],
-                                            $filter[2],
-                                        )
+                                        $filter[0],
+                                        $filter[2],
+                                    )
                                         : $query->where(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                     break;
 
                                 case 4:
                                     $filter[3] === "whereBetween"
                                         ? $query->whereBetween($filter[0], [
-                                            $filter[1],
-                                            $filter[2],
-                                        ])
+                                        $filter[1],
+                                        $filter[2],
+                                    ])
                                         : $query->{$filter[3]}(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                     break;
                             }
                         }
@@ -333,9 +333,16 @@ class RekapPenerimaanPerAkunController extends Controller
 
             $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
             $records = (clone $query)
+                ->when(!blank($searchValue), function ($query) use ($whereAny, $searchValue) {
+                    $query->where(function ($q) use ($whereAny, $searchValue) {
+                        $sanitizeSearch = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $searchValue);
+                        foreach ($whereAny as $column) {
+                            $q->orWhere($column, 'like', '%' . $sanitizeSearch . '%');
+                        }
+                    });
+                })
                 ->orderBy($columnName, $columnSortOrder)
                 ->select($select)
-                ->whereAny($whereAny, "like", "%" . $searchValue . "%")
                 ->skip($start)
                 ->take($rowperpage)
                 ->get();
@@ -395,7 +402,7 @@ class RekapPenerimaanPerAkunController extends Controller
                     $colName = match ($key) {
                         "dari_tanggal",
                         "sampai_tanggal"
-                            => "scctbill.FTGLTagihan",
+                        => "scctbill.FTGLTagihan",
                         "tanggal-transaksi" => "scctbill.PAIDDT",
                         "tahun_akademik" => "scctbill.BTA",
                         "post" => "scctbill.BILLNM",
@@ -541,26 +548,26 @@ class RekapPenerimaanPerAkunController extends Controller
                                     case 3:
                                         $filter[1] === "in"
                                             ? $query->whereIn(
-                                                $filter[0],
-                                                $filter[2],
-                                            )
+                                            $filter[0],
+                                            $filter[2],
+                                        )
                                             : $query->where(
-                                                $filter[0],
-                                                $filter[1],
-                                                $filter[2],
-                                            );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                         break;
                                     case 4:
                                         $filter[3] === "whereBetween"
                                             ? $query->whereBetween($filter[0], [
-                                                $filter[1],
-                                                $filter[2],
-                                            ])
+                                            $filter[1],
+                                            $filter[2],
+                                        ])
                                             : $query->{$filter[3]}(
-                                                $filter[0],
-                                                $filter[1],
-                                                $filter[2],
-                                            );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                         break;
                                 }
                             }
