@@ -2,6 +2,7 @@
 @section('title',$dataTitle??$mainTitle??$title??'')
 @section('style')
     <link rel="stylesheet" href="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.css')}}">
+    <link rel="stylesheet" href="{{asset('main/libs/bootstrap-datepicker/bootstrap-datepicker.css')}}">
 @endsection
 @section('content')
     <h3 class="page-heading d-flex text-gray-900 fw-bold flex-column justify-content-center my-0">
@@ -169,7 +170,7 @@
         </div>
         <div class="card-body">
             <div class="row">
-                <div class="col-md-7">
+                <div class="col-md-6">
                     <fieldset class="form-fieldset">
                         <div class="card-datatable table-responsive text-nowrap">
                             <table class="table table-sm table-bordered table-hover"
@@ -192,6 +193,7 @@
                                 <thead>
                                 <tr>
                                     <th>Potongan</th>
+                                    <th>Tanggal</th>
                                     <th>Detail</th>
                                 </tr>
                                 </thead>
@@ -203,6 +205,10 @@
                                             <input type="text" name="potongan[]" placeholder="Potongan Tagihan"
                                                    class="potongan-input form-control formattedNumber"/>
                                         </div>
+                                    </td>
+                                    <td>
+                                    <input type="text" name="tanggal[]" placeholder="Tanggal"
+                                              class="potongan-input form-control input-tanggal">
                                     </td>
                                     <td>
                                     <textarea type="text" name="deskripsi[]" placeholder="Deskripsi"
@@ -229,9 +235,11 @@
     <script src="{{asset('main/libs/moment/moment.js')}}"></script>
     <script src="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.js')}}"></script>
     <script src="{{asset('js/helper/formattedNumber.min.js')}}"></script>
+    <script src="{{asset('main/libs/bootstrap-datepicker/bootstrap-datepicker.js')}}"></script>
     <script type="text/javascript">
         const select2 = $(`[data-control='select2']`);
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        let today = moment();
 
         let dtOptions = {
             tableId: 'main_table',
@@ -261,10 +269,11 @@
                 // const newIndex = rows.length + 1;
                 // newRow.querySelector(".row-number").textContent = newIndex;
                 table.querySelector("tbody").appendChild(newRow);
-                // $(newRow).find('.timepicker').timepicker({
-                //     timeFormat: 'H:i',
-                //     step: 15
-                // });
+                $(newRow).find('.input-tanggal').datepicker({
+                    format: "dd-mm-yyyy",
+                    autoclose: true,
+                    setDate: today
+                });
             }
         }
 
@@ -285,6 +294,7 @@
 
         function handleAutoRemove(e, tableId, inputClass) {
             if (!e) return;
+            if (!e.target.classList) return;
             if (!e.target.classList.contains(inputClass)) return;
 
             const table = document.getElementById(tableId);
@@ -337,7 +347,6 @@
             }
 
             let startOfMonth = moment().startOf('month');
-            let today = moment();
             let date = $('#tanggal-transaksi');
             date.daterangepicker({
                 startDate: startOfMonth,
@@ -373,6 +382,14 @@
                 }
             });
 
+            const inputTanggal = $('input[name="tanggal[]"]');
+
+            inputTanggal.datepicker({
+                format: "dd-mm-yyyy",
+                autoclose: true,
+                setDate: today
+            });
+
             const inputTables = [
                 {id: 'potongan-table', inputClass: 'potongan-input'},
             ];
@@ -387,6 +404,7 @@
 
             document.getElementById('simpan-potongan').addEventListener('click', async function (e) {
                 e.preventDefault();
+                loadingAlert('menyimpan data potongan');
                 let data = DT[`${dtOptions.tableId}`].rows({selected: true}).data();
 
                 if (!data[0] || !data[0]['AA'] || data[0]['AA'].length === 0) {
@@ -396,10 +414,20 @@
 
                 let potongan = new FormData(document.getElementById('potongan-form'));
                 const potonganValues = potongan.getAll('potongan[]');
+                const tanggalValues = potongan.getAll('tanggal[]');
                 const valid = potonganValues.some(val => val.trim() !== '');
+                const validTanggal = tanggalValues.some(val => val.trim() !== '');
+
                 if (!valid) {
                     e.preventDefault();
                     warningAlert('Silahkan isi minimal satu potongan tagihan!');
+                    return;
+                }
+
+                if(!validTanggal) {
+                    e.preventDefault();
+                    warningAlert('Silahkan isi tanggal potongan tagihan!');
+                    return;
                 }
 
                 const formData = new FormData();
