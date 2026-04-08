@@ -409,9 +409,14 @@ PotonganTagihanController extends Controller
             [
                 "item_id" => ["required"],
                 "potongan" => ["required", "array", "min:1"],
+                "tanggal" => ["required", "array", "min:1"],
                 "potongan.*" => [
                     "nullable",
                     "regex:/^[0-9]+(\.[0-9]{3})*$/"
+                ],
+                "tanggal.*" => [
+                    "nullable",
+                    "regex:/^\d{2}-\d{2}-\d{4}$/"
                 ],
                 "deskripsi" => ["nullable", "array"],
             ],
@@ -456,6 +461,20 @@ PotonganTagihanController extends Controller
 //            return response()->json(["message" => "Total potongan tidak boleh lebih besar dari tagihan! <br> Tagihan : $tagihan <br> Potongan: $potongan"], 422);
 //        }
 
+        foreach ($request->potongan as $id => $value) {
+            $nominal = str_replace('.', '', $value);
+            $tanggal = $request->tanggal[$id] ?? null;
+
+            $hasPotongan = !empty($nominal) && $nominal > 0;
+            $hasTanggal  = !empty($tanggal);
+
+            if ($hasPotongan xor $hasTanggal) {
+                return response()->json([
+                    "message" => "Potongan dan tanggal harus diisi, cek potongan baris ke-" . ($id + 1)
+                ], 422);
+            }
+        }
+
         try {
             DB::beginTransaction();
             foreach ($request->potongan as $id => $value) {
@@ -482,7 +501,7 @@ PotonganTagihanController extends Controller
             return response()->json(["message" => "Data potongan disimpan!"], 200);
         } catch (\Exception $e) {
             DB::rollback();
-            return response()->json(["message" => "Gagal menyimpan potognan tagihan", "error" => $e->getMessage()], 422);
+            return response()->json(["message" => "Gagal menyimpan potongan tagihan", "error" => $e->getMessage()], 422);
         }
     }
 
