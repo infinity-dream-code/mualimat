@@ -136,15 +136,15 @@ PotonganTagihanController extends Controller
                 "duplicate" => true
             ],
             [
-                "data" => "BILL_CUT",
-                "name" => "Potongan",
+                "data" => "TOTAL_BILL_CUT",
+                "name" => "Total Potongan",
                 "columnType" => "currency",
                 "className" => "text-end",
                 "exportable" => true,
             ],
             [
                 "data" => "BILL_CUT_LISTS",
-                "name" => "Potongan",
+                "name" => "Detail",
                 "columnType" => "array",
                 "exportable" => true,
             ],
@@ -363,7 +363,7 @@ PotonganTagihanController extends Controller
             ")
             ->orderBy($columnName, $columnSortOrder)
             ->select($select)
-//            ->addSelect(DB::raw("COALESCE(SUM(scctbill_cut.BILL_CUT), 0) as TOTAL_BILL_CUT"))
+            ->addSelect(DB::raw("COALESCE(SUM(scctbill_cut.BILL_CUT), 0) as TOTAL_BILL_CUT"))
             ->skip($start)
             ->take($rowperpage)
             ->get();
