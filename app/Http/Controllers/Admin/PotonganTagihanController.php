@@ -74,7 +74,7 @@ PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => false
+                "duplicate" => true
             ],
             [
                 "data" => "nmcust",
@@ -82,7 +82,7 @@ PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => false
+                "duplicate" => true
             ],
             [
                 "data" => "CODE02",
@@ -90,7 +90,7 @@ PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => false
+                "duplicate" => true
             ],
             [
                 "data" => "DESC02",
@@ -98,7 +98,7 @@ PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => false
+                "duplicate" => true
             ],
             [
                 "data" => "DESC03",
@@ -106,7 +106,7 @@ PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => false
+                "duplicate" => true
             ],
             [
                 "data" => "BILLNM",
@@ -114,7 +114,7 @@ PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => false
+                "duplicate" => true
             ],
             [
                 "data" => "PAIDDT",
@@ -123,7 +123,7 @@ PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => false
+                "duplicate" => true
             ],
             [
                 "data" => "BILLAM",
@@ -133,7 +133,7 @@ PotonganTagihanController extends Controller
                 "columnType" => "currency",
                 "className" => "text-end",
                 "exportable" => true,
-                "duplicate" => false
+                "duplicate" => true
             ],
             [
                 "data" => "BILL_CUT",
@@ -142,16 +142,10 @@ PotonganTagihanController extends Controller
                 "className" => "text-end",
                 "exportable" => true,
             ],
-//            [
-//                "data" => "TOTAL_BILL_CUT",
-//                "name" => "Total Potongan",
-//                "columnType" => "currency",
-//                "className" => "text-end",
-//                "exportable" => true,
-//            ],
             [
-                "data" => "REASON",
-                "name" => "Keterangan",
+                "data" => "BILL_CUT_LISTS",
+                "name" => "Potongan",
+                "columnType" => "array",
                 "exportable" => true,
             ],
         ];
@@ -326,7 +320,8 @@ PotonganTagihanController extends Controller
                 if ($filterQuery) {
                     $filterQuery($query);
                 }
-            })//            ->groupBy('scctbill_cut.AA')
+            })
+                        ->groupBy('scctbill_cut.AA')
         ;
 
         //other join leftJoin('scctbill', function ($join) {
@@ -379,6 +374,20 @@ PotonganTagihanController extends Controller
                 "ma" => scctcust::showVAMA($item->nocust),
                 default => "",
             };
+            $cutLists = ScctbillCut::
+            select(['CUT_DATE','BILL_CUT','REASON'])
+                ->where('AA', $item->AA)
+                ->get()
+                ->map(function ($row) {
+                    $date = \Carbon\Carbon::parse($row->CUT_DATE)
+                        ->translatedFormat('d F Y');
+
+                    $bill = 'Rp ' . number_format($row->BILL_CUT, 0, ',', '.');
+
+                    return "{$date} | {$bill} | {$row->REASON}";
+                });
+
+            $item->BILL_CUT_LISTS = $cutLists;
 
             $item->item_id = $item['AA'];
             return $item;
@@ -452,6 +461,9 @@ PotonganTagihanController extends Controller
             foreach ($request->potongan as $id => $value) {
                 $nominal = str_replace('.', '', $value);
                 if ($nominal > 0) {
+                    $tanggal = Carbon::createFromFormat(
+                        "d-m-Y",
+                        $request->tanggal[$id]);
                     ScctbillCut::create([
                         'AA' => $request->item_id,
                         'BILLNM' => $bill->BILLNM,
@@ -459,6 +471,7 @@ PotonganTagihanController extends Controller
                         'BILLCD' => $bill->BILLCD,
                         'BILLAM' => $bill->BILLAM,
                         'BILL_CUT' => $nominal,
+                        'CUT_DATE' => $tanggal,
                         'REASON' => $request->deskripsi[$id] ?? null,
                         'CREATED_AT' => now(),
                         'USER_ID' => Auth::user()->id
