@@ -1203,6 +1203,34 @@ async function getDT(options) {
                                     return data;
                                 }
                                 break;
+                            case "array":
+                                renderFunc = function (data, type, row) {
+                                    if (!data) return "";
+                                    if (type === 'display' || type === 'filter') {
+                                        const listItems = parseArrayForRow(
+                                            data,
+                                            column.currency,
+                                        );
+                                        return `<ul style="padding-left:16px; margin:0;">${listItems}</ul>`;
+                                    }
+                                    return data;
+                                };
+                                break;
+                            case "arraykey":
+                                renderFunc = function (data, type, row) {
+                                    const arr = column.array ?? [];
+                                    if (arr.length === 0) return "";
+                                    const defaultValue =
+                                        column.defaultValue ?? "";
+                                    const key = column.arrayKey ?? "id";
+                                    const value = column.arrayValue ?? "val";
+                                    const item = arr.find(
+                                        (obj) => obj[key] === data,
+                                    );
+
+                                    return item ? item[value] : defaultValue;
+                                };
+                                break;
                             case 'custom_code_tagihan':
                                 renderFunc = function (data, type, row) {
                                     const descriptions = {
@@ -1285,4 +1313,20 @@ function mergeTableRows(tableSelector, columnIndex) {
             rowspan = 1;
         }
     });
+}
+
+function parseArrayForRow(data, currency = false) {
+    return Object.entries(data)
+        .map(([key, value]) => {
+            const keyLabel = key
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (c) => c.toUpperCase());
+            const formattedValue =
+                currency === true
+                    ? "Rp. " +
+                    value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+                    : value;
+            return `<li>${formattedValue}</li>`;
+        })
+        .join("");
 }
