@@ -20,6 +20,7 @@ class ScctbillCut extends Model
         'BILLCD',
         'BILLAM',
         'BILL_CUT',
+        'CUT_DATE',
         'REASON',
         'CREATED_AT',
         'USER_ID'
