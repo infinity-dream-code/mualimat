@@ -220,6 +220,11 @@
                                             <small class="align-middle">Logout</small>
                                             <i class="ri-logout-box-r-line ms-2 ri-16px"></i>
                                         </a>
+
+                                        <form id="logout-form" action="{{ route('logout') }}" method="POST"
+                                              class="d-none">
+                                            @csrf
+                                        </form>
                                     </div>
                                 </li>
                             </ul>
