@@ -195,6 +195,20 @@
 @section('bootstrap-daterangepicker', true)
 @section('select2',true)
 @section('script')
+    <script type="module">
+        import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/pdfmake.min.js"
+            integrity="sha512-axXaF5grZBaYl7qiM6OMHgsgVXdSLxqq0w7F4CQxuFyrcPmn0JfnqsOtYHUun80g6mRRdvJDrTCyL8LQqBOt/Q=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/vfs_fonts.min.js"
+            integrity="sha512-EFlschXPq/G5zunGPRSYqazR1CMKj0cQc8v6eMrQwybxgIbhsfoO5NAMQX3xFDQIbFlViv53o7Hy+yCWw6iZxA=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
     <script src="{{asset('js/helper/formattedNumber.min.js')}}"></script>
     <script type="text/javascript">
         const select2 = $(`[data-control='select2']`);
@@ -214,7 +228,7 @@
             pageLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
             buttons: ['copy', 'excel', 'pdf'],
-            // select: true,
+            select: true,
         };
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -287,6 +301,364 @@
                 if (picker.startDate && picker.endDate) {
                     $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
                 }
+            });
+
+            const instansi = {
+                nama_instansi: "{{ config('app.nama_instansi') }}",
+                nama_sub_1: "{{ config('app.nama_sub_instansi_1') }}",
+                nama_sub_2: "{{ config('app.nama_sub_instansi_2') }}",
+                akreditasi: "{{ config('app.akreditasi') }}",
+                alamat: "{{ config('app.alamat') }}",
+                kontak: {
+                    telepon: "{{ config('app.telepon') }}",
+                    email: "{{ config('app.email') }}",
+                    website: "{{ config('app.website') }}"
+                }
+            };
+            const headerLogo = "{{ base64_encode(file_get_contents(public_path('logo.png'))) }}";
+            const userName = "{{ Auth::user()->name }}";
+            const domisili = "{{ config('app.domisili') }}";
+
+            pdfMake.fonts = {
+                Times: {
+                    normal: 'https://cdn.jsdelivr.net/npm/@canvas-fonts/times-new-roman@1.0.4/Times New Roman.ttf',
+                    bold: 'https://cdn.jsdelivr.net/npm/@canvas-fonts/times-new-roman-bold@1.0.4/Times New Roman Bold.ttf',
+                    italics: 'https://cdn.jsdelivr.net/npm/@canvas-fonts/times-new-roman-italic@1.0.4/Times New Roman Italic.ttf',
+                    bolditalics: 'https://cdn.jsdelivr.net/npm/@canvas-fonts/times-new-roman-bold@1.0.4/Times New Roman Bold.ttf'
+                }, Roboto: {
+                    normal: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf',
+                    bold: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Medium.ttf',
+                    italics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Italic.ttf',
+                    bolditalics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-MediumItalic.ttf'
+                },
+            };
+
+            function formatRupiah(amount) {
+                if (!amount) return 'Rp 0';
+                return 'Rp. ' + amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            }
+
+            function getContentWidth(pageSize = 'A4', orientation = 'portrait', margins = [30, 30, 30, 30]) {
+                const sizes = {
+                    A4: [595.28, 841.89],
+                    A3: [841.89, 1190.55],
+                    LETTER: [612, 792],
+                    LEGAL: [612, 1008]
+                };
+                const key = String(pageSize).toUpperCase();
+                const size = sizes[key] || sizes.A4;
+
+                const pageW = orientation === 'landscape' ? size[1] : size[0];
+                const [ml, , mr] = margins;
+                return pageW - ml - mr;
+            }
+
+            async function generatePdf(title, bodyContent) {
+                try {
+                    let logo = 'data:image/png;base64,' + headerLogo;
+
+                    const orientation = 'portrait';
+                    const pageMargins = [20, 20, 20, 20];
+                    const tanggalSekarang = new Date().toLocaleDateString('id-ID', {
+                        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                    });
+                    const availableWidth = getContentWidth('A4', orientation, pageMargins);
+
+                    const headerTable = {
+                        alignment: 'center',
+                        table: {
+                            widths: [60, '*'],
+                            body: [[
+                                logo ? {
+                                    image: logo,
+                                    width: 60,
+                                    alignment: 'center'
+                                } : '',
+                                {
+                                    stack: [
+                                        instansi.nama_sub_1 ? {
+                                            text: instansi.nama_sub_1.toUpperCase(),
+                                            style: 'headerSmall'
+                                        } : '',
+                                        instansi.nama_sub_2 ? {
+                                            text: instansi.nama_sub_2.toUpperCase(),
+                                            style: 'headerSmall'
+                                        } : '',
+                                        {text: instansi.nama_instansi.toUpperCase(), style: 'headerBig'},
+                                        instansi.akreditasi ? {text: instansi.akreditasi, style: 'headerSmall'} : '',
+                                        instansi.alamat ? {text: instansi.alamat, style: 'headerSmall'} : '',
+                                        {
+                                            text: `Telp: ${instansi.kontak.telepon || '-'} | Email: ${instansi.kontak.email || '-'} | Web: ${instansi.kontak.website || '-'}`,
+                                            style: 'headerSmall'
+                                        }
+                                    ],
+                                    alignment: 'center'
+                                }
+                            ]]
+                        },
+                        layout: 'noBorders'
+                    };
+
+                    // Footer (shared)
+                    const footer = {
+                        columns: [
+                            {text: '', width: '*'},
+                            {
+                                stack: [
+                                    {
+                                        text: `${domisili}, ${tanggalSekarang}`,
+                                        margin: [0, 10, 0, 0],
+                                        alignment: 'center'
+                                    },
+                                    {text: userName, alignment: 'center'}
+                                ],
+                                width: 'auto'
+                            }
+                        ]
+                    };
+
+                    const content = [
+                        headerTable,
+                        {
+                            margin: [0, 5, 0, 5],
+                            canvas: [
+                                {type: 'line', x1: 0, y1: 0, x2: availableWidth, y2: 0, lineWidth: 2},
+                                {
+                                    type: 'line',
+                                    x1: 0,
+                                    y1: 3,
+                                    x2: availableWidth,
+                                    y2: 3,
+                                    lineWidth: 0.5,
+                                    lineColor: '#888'
+                                }
+                            ]
+                        },
+                        {text: title, style: 'title', margin: [0, 5, 0, 5]},
+                        ...bodyContent,
+                        footer
+                    ];
+
+                    // PDF definition
+                    const docDefinition = {
+                        pageSize: 'A4',
+                        pageOrientation: orientation,
+                        pageMargins: pageMargins,
+                        content: content,
+                        styles: {
+                            headerBig: {fontSize: 16, bold: true, alignment: 'center'},
+                            headerSmall: {fontSize: 12, alignment: 'center'},
+                            title: {fontSize: 14, bold: true, alignment: 'center'},
+                            subTitle: {fontSize: 12, bold: true},
+                            tableHeader: {bold: true, fillColor: '#ededed', alignment: 'center'},
+                            small: {fontSize: 9, alignment: 'center'},
+                            tableFont: {fontSize: 5}
+                        },
+                        defaultStyle: {font: 'Times'}
+                    };
+
+                    pdfMake.createPdf(docDefinition).open();
+
+                    successAlert('File telah didownload <br>' +
+                        '<p><span class="badge badge-dot bg-danger me-1"></span> Cek pada menu unduhan browser anda untuk memeriksa!</p>');
+                } catch (e) {
+                    console.error('Error generating PDF:', e);
+                    errorAlert(e.message);
+                }
+            }
+
+            function generateKuitansi(biayaLayanan = false) {
+                let data = DT[`${dtOptions.tableId}`].rows({selected: true}).data().toArray();
+
+                if (!data[0]) {
+                    warningAlert('silahkan pilih siswa!');
+                    return;
+                }
+
+                let firstValue = data[0]?.nocust;
+                let allSame = data.every(row => row.nocust === firstValue);
+
+                if (!allSame) {
+                    warningAlert('silahkan pilih siswa yang sama!');
+                    return;
+                }
+
+                let siswa = data[0];
+                let nocust = siswa.nocust === null || siswa.nocust === '' || siswa.nocust === '-' || !siswa.nocust ? false : siswa.nocust;
+
+                const mainTable = [
+                    [(nocust ? 'NIS ' : 'No. Pendaftaran'), ': ' + (nocust ? nocust : siswa.NUM2ND), 'Unit', ': ' + siswa.CODE02],
+                    ['No. VA', ': ' + siswa.NOVA, 'Kelas', ': ' + siswa.DESC02 + ' ' + siswa.DESC03],
+                    ['Nama ', ': ' + siswa.nmcust, '', ''],
+                    ['Metode Bayar', ': ' + formatMetodePembayaran(siswa.FIDBANK ?? ''), '', ' '],
+                ]
+
+                let content = [];
+                const headerContent = [
+                    {
+                        table: {
+                            widths: ['15%', '35%', '15%', '35%'],
+                            body: mainTable
+                        },
+                        layout: 'noBorders'
+                    },
+                    {
+                        text: '',
+                        margin: [0, 5, 0, 5]
+                    },
+                ]
+
+                content.push(headerContent);
+
+                const tableBody = [];
+                tableBody.push(
+                    ['#', 'Nama Tagihan', 'Peridoe', 'Tagihan', 'Bayar', 'Tanggal Bayar']
+                        .map(h => ({text: h, style: 'tableHeader'})),
+                );
+
+                let totalTagihan = 0;
+
+                data.forEach((item, index) => {
+                    let tanggalBayar = item.PAIDDT;
+                    if (tanggalBayar && tanggalBayar !== '' && tanggalBayar !== '0000-00-00 00:00:00') {
+                        tanggalBayar = new Date(tanggalBayar).toLocaleDateString('id-ID', {
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                        });
+                    }
+
+                    totalTagihan += item.BILLAM;
+
+                    tableBody.push([
+                        {text: index + 1, alignment: 'center'},
+                        {text: item.BILLNM, alignment: 'left'},
+                        {text: item.BTA, alignment: 'left'},
+                        {text: formatRupiah(item.BILLAM), alignment: 'right'},
+                        {text: formatRupiah(item.BILLAM), alignment: 'right'},
+                        {text: tanggalBayar, alignment: 'left'},
+                    ]);
+                })
+
+                if (biayaLayanan) {
+                    tableBody.push([
+                        {colSpan: 4, text: 'Biaya Layanan', alignment: 'right', style: 'tableHeader'},
+                        {}, {}, {},
+                        {text: formatRupiah(2000), alignment: 'right'},
+                        {},
+                    ])
+                }
+
+
+                tableBody.push([
+                    {colSpan: 4, text: 'Total', alignment: 'right', style: 'tableHeader'},
+                    {}, {}, {},
+                    {text: formatRupiah(totalTagihan + (biayaLayanan ? 2000 : 0)), alignment: 'right'},
+                    {},
+                ])
+
+                content.push({
+                    table: {
+                        widths: ['3%', '25%', '15%', '15%', '20%', '22%'],
+                        body: tableBody,
+                    },
+                    layout: {
+                        fillColor: (rowIndex) => rowIndex === 0 ? '#ededed' : null,
+                        hLineWidth: () => 0.5,
+                        vLineWidth: () => 0.5
+                    },
+                    margin: [0, 0, 0, 10],
+                    fontSize: 12
+                });
+
+                let cutLists = data[0].BILL_CUT_LISTS_RAW;
+                if (cutLists) {
+                    content.push({text: 'List Potongan', margin: [0, 5, 0, 5]},);
+                    const tableCutList = [];
+                    let totalPotongan = 0;
+                    tableCutList.push(
+                        ['#', 'Tanggal', 'Potongan', 'Keterangan']
+                            .map(h => ({text: h, style: 'tableHeader'})),
+                    );
+
+                    cutLists.forEach((item, index) => {
+                        let tanggalPotongan = item.CUT_DATE;
+                        if (tanggalPotongan && tanggalPotongan !== '' && tanggalPotongan !== '0000-00-00 00:00:00') {
+                            tanggalPotongan = new Date(tanggalPotongan).toLocaleDateString('id-ID', {
+                                weekday: 'long',
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                            });
+                        }
+
+                        totalPotongan += item.BILL_CUT;
+                        tableCutList.push([
+                            {text: index + 1, alignment: 'center'},
+                            {text: tanggalPotongan, alignment: 'left'},
+                            {text: formatRupiah(item.BILL_CUT), alignment: 'right'},
+                            {text: item.REASON, alignment: 'left'},
+                        ])
+                    })
+
+                    tableCutList.push([
+                        {colSpan: 2, text: 'Total', alignment: 'right', style: 'tableHeader'},
+                        {},
+                        {text: formatRupiah(totalPotongan), alignment: 'right'},
+                        {},
+                    ])
+
+                    content.push({
+                        table: {
+                            widths: ['3%', '27%', '25%', '45%',],
+                            body: tableCutList,
+                        },
+                        layout: {
+                            fillColor: (rowIndex) => rowIndex === 0 ? '#ededed' : null,
+                            hLineWidth: () => 0.5,
+                            vLineWidth: () => 0.5
+                        },
+                        margin: [0, 0, 0, 10],
+                        fontSize: 12
+                    });
+
+
+                }
+
+                generatePdf('KUITANSI', content);
+            }
+
+            function formatMetodePembayaran(data) {
+                const descriptions = {
+                    '1140000': 'Manual Cash',
+                    '1140001': 'Manual BMI',
+                    '1140002': 'Manual SALDO',
+                    '1140003': 'Transfer Bank Lain',
+                    '1140004': 'Transfer Bank BNI',
+                    '1140005': 'Transfer Bank BRI',
+                    '1200001': 'Loket Manual - Beasiswa',
+                    '1200002': 'Loket Manual - Potongan',
+                    '1': 'H2H VA BMI - ATM',
+                    '2': 'H2H VA BMI - Teller',
+                    '3': 'H2H VA BMI - IBANK',
+                    '4': 'H2H VA BMI - EDC',
+                    '5': 'H2H VA BMI - MOBILE',
+                    '6': 'ALL BMI',
+                    null: 'Nomor VA',
+                    '': 'Nomor VA'
+                };
+                return descriptions[data] || data;
+            }
+
+            document.getElementById('cetak-kuitansi').addEventListener('click', function (e) {
+                e.preventDefault();
+                generateKuitansi();
+            });
+
+            document.getElementById('cetak-kuitansi-2000').addEventListener('click', function (e) {
+                e.preventDefault();
+                generateKuitansi(true);
             });
         });
 
