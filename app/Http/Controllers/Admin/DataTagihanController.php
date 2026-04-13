@@ -1070,12 +1070,10 @@ class DataTagihanController extends Controller
                 });
 
                 $mstTagihan = $mstTagihan->pluck("tagihan");
-                if ($zeroColumns->count() > 0) {
-                    $zeroColumns = $zeroColumns->toArray();
-                }
-                $filteredMstTagihan = $mstTagihan->reject(function (
-                    $value,
-                ) use ($zeroColumns) {
+
+                $zeroColumns = $zeroColumns->toArray(); // <-- always convert
+
+                $filteredMstTagihan = $mstTagihan->reject(function ($value) use ($zeroColumns) {
                     return in_array($value, $zeroColumns, true);
                 });
 
