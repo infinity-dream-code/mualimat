@@ -789,7 +789,14 @@ class DataTagihanController extends Controller
             ->where("scctbill.PAIDST", 0)
             ->where("scctbill.FSTSBolehBayar", 1)
             ->where("scctcust.STCUST", 1)
-            ->whereAny($whereAny, "like", "%" . $searchValue . "%")
+            ->when(!blank($searchValue), function ($query) use ($whereAny, $searchValue) {
+                $query->where(function ($q) use ($whereAny, $searchValue) {
+                    $sanitizeSearch = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $searchValue);
+                    foreach ($whereAny as $column) {
+                        $q->orWhere($column, 'like', '%' . $sanitizeSearch . '%');
+                    }
+                });
+            })
             ->where(function ($query) use ($filterQuery) {
                 if ($filterQuery) {
                     $filterQuery($query);
@@ -813,8 +820,7 @@ class DataTagihanController extends Controller
                 ");
 
         // Total records
-        $totalRecords = scctbill::select("count(*) as allcount")
-            ->where("scctbill.PAIDST", 0)
+        $totalRecords = scctbill::where("scctbill.PAIDST", 0)
             ->where("scctbill.FSTSBolehBayar", 1)
             ->count();
 
