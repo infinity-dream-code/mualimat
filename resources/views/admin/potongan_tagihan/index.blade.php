@@ -30,10 +30,13 @@
     </ul>
 
     <div class="card">
-        <div class="card-header">
-            <div class="row mb-3">
-                <h5 class="mb-0 me-2">{{($dataTitle??$mainTitle??$title)}}</h5>
-            </div>
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <h5 class="card-title m-0 me-2">{{($dataTitle??$mainTitle??$title)}}</h5>
+            <a type="button" href="{{route('admin.potongan-tagihan.create')}}" class="btn btn-success"
+               id="simpan-potongan">
+                <span class="ri-add-line me-2"></span>
+                Buat Potongan Tagihan
+            </a>
         </div>
         <div class="card-body">
             <div class="row px-5 mb-2">
@@ -43,7 +46,7 @@
                     </li>
                 </ul>
             </div>
-            <form id="filterForm">
+            <form id="filter_form">
                 <fieldset class="form-fieldset mb-0">
                     <div class="row">
                         <div class="col-lg-6">
@@ -143,11 +146,14 @@
                     </div>
                     <div class="row">
                         <div class="d-flex justify-content-center flex-column flex-md-row justify-content-md-end gap-4">
-                            <a type="button" href="{{route('admin.potongan-tagihan.create')}}" class="btn btn-success"
-                               id="simpan-potongan">
-                                <span class="ri-add-line me-2"></span>
-                                Buat Potongan Tagihan
-                            </a>
+                            <button type="button" class="btn btn-facebook text-nowrap" id="cetak-kuitansi">
+                                <span class="ri-info-card-line me-2"></span>
+                                Cetak Kuitansi
+                            </button>
+                            <button type="button" class="btn btn-facebook text-nowrap" id="cetak-kuitansi-2000">
+                                <span class="ri-info-card-line me-2"></span>
+                                Cetak Kuitansi Dengan 2000
+                            </button>
                             <button type="reset" class="btn btn-secondary" disabled>
                                 <span class="ri-reset-left-line me-2"></span>
                                 Reset
@@ -196,7 +202,7 @@
 
         let dtOptions = {
             tableId: 'main_table',
-            formId: 'filterForm',
+            formId: 'filter_form',
             columnUrl: '{{($columnsUrl??null)}}',
             dataUrl: '{{($datasUrl??null)}}',
             dataColumns: [],
