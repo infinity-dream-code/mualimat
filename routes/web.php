@@ -191,6 +191,7 @@ Route::prefix("admin")
             ->group(function () {
                 Route::get("get-data", "getData")->name("get-data");
                 Route::get("get-column", "getColumn")->name("get-column");
+                Route::get("cetak-kuitansi", "cetakKuitansi")->name("cetak-kuitansi");
                 Route::resource(
                     "",
                     \App\Http\Controllers\Admin\PotonganTagihanController::class,
