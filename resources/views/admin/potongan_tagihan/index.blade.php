@@ -272,7 +272,7 @@
             date.daterangepicker({
                 startDate: startOfMonth,
                 endDate: today,
-                autoUpdateInput: true,
+                autoUpdateInput: false,
                 todayHighlight: true,
                 autoclose: true,
                 locale: {
@@ -301,6 +301,12 @@
                 if (picker.startDate && picker.endDate) {
                     $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
                 }
+            });
+
+            date.on('cancel.daterangepicker', function (ev, picker) {
+                $(this).val('');
+                // picker.setStartDate(moment().startOf('month'));
+                // picker.setEndDate(moment());
             });
 
             const instansi = {
