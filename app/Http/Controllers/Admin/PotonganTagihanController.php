@@ -10,9 +10,12 @@ use App\Models\scctbill;
 use App\Models\ScctbillCut;
 use App\Models\scctcust;
 use App\Models\ValidationMessage;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -315,14 +318,18 @@ PotonganTagihanController extends Controller
             ->where("scctbill.PAIDST", 1)
             ->where("scctbill.FSTSBolehBayar", 1)
             ->where("scctcust.STCUST", 1)
-            ->whereAny($whereAny, "like", "%" . $searchValue . "%")
-            ->where(function ($query) use ($filterQuery) {
+            ->when(!blank($searchValue), function ($query) use ($whereAny, $searchValue) {
+                $query->where(function ($q) use ($whereAny, $searchValue) {
+                    $sanitizeSearch = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $searchValue);
+                    foreach ($whereAny as $column) {
+                        $q->orWhere($column, 'like', '%' . $sanitizeSearch . '%');
+                    }
+                });
+            })->where(function ($query) use ($filterQuery) {
                 if ($filterQuery) {
                     $filterQuery($query);
                 }
-            })
-                        ->groupBy('scctbill_cut.AA')
-        ;
+            });
 
         //other join leftJoin('scctbill', function ($join) {
         //            $join->on('scctbill_cut.AA', '=', "scctbill.AA")
@@ -335,14 +342,13 @@ PotonganTagihanController extends Controller
         //                    ->where("scctcust.STCUST", 1);
         //            })
 
-        $totalRecords = ScctbillCut::
-//        groupBy('scctbill_cut.AA')
-        count();
+        $totalRecords = ScctbillCut::distinct(['scctbill_cut.AA'])->count('scctbill_cut.AA');
 
-        $totalRecordswithFilter = (clone $query)->count();
+        $totalRecordswithFilter = (clone $query)->distinct(['scctbill_cut.AA'])->count('scctbill_cut.AA');
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
         $records = (clone $query)
+            ->groupBy('scctbill_cut.AA')
             ->orderBy('scctcust.nmcust', 'asc')
             ->orderByRaw("
                 CASE
@@ -374,10 +380,14 @@ PotonganTagihanController extends Controller
                 "ma" => scctcust::showVAMA($item->nocust),
                 default => "",
             };
-            $cutLists = ScctbillCut::
-            select(['CUT_DATE','BILL_CUT','REASON'])
+
+            $billCutQuery = ScctbillCut::select(['CUT_DATE', 'BILL_CUT', 'REASON'])
                 ->where('AA', $item->AA)
-                ->get()
+                ->get();
+
+            $item->BILL_CUT_LISTS_RAW = $billCutQuery;
+
+            $cutLists = $billCutQuery
                 ->map(function ($row) {
                     $date = \Carbon\Carbon::parse($row->CUT_DATE)
                         ->translatedFormat('d F Y');
@@ -466,7 +476,7 @@ PotonganTagihanController extends Controller
             $tanggal = $request->tanggal[$id] ?? null;
 
             $hasPotongan = !empty($nominal) && $nominal > 0;
-            $hasTanggal  = !empty($tanggal);
+            $hasTanggal = !empty($tanggal);
 
             if ($hasPotongan xor $hasTanggal) {
                 return response()->json([
@@ -530,5 +540,28 @@ PotonganTagihanController extends Controller
         $data["kelas"] = mst_kelas::get();
 
         return view("admin.potongan_tagihan.create", $data);
+    }
+
+    public function cetakKuitansi(Request $request)
+    {
+        $filter = $request;
+        if (!$filter['AA']) return response()->json(['error' => 'Tagihan Tidak Ditemukan!']);
+        $filter['draw'] = 2;
+        $filter['start'] = 0;
+        $filter['length'] = "poll";
+
+        $tagihan = ScctbillCut::distinct('AA')
+            ->where('AA', $filter['AA'])
+            ->first();
+        if (!$tagihan) return response()->json(['error' => 'Tagihan Tidak Ditemukan!']);
+
+        try {
+            $tagihans = json_decode(json_encode($tagihan), true);
+            $tagihans = $tagihans['original']['data'];
+            if (!$tagihans) return response()->json(['message' => 'Tagihan Tidak Ditemukan!'], 422);
+            return response()->json(['tagihans' => $tagihans]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Tagihan Tidak Ditemukan!'], 422);
+        }
     }
 }
