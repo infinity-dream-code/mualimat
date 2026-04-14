@@ -193,6 +193,7 @@ PotonganTagihanController extends Controller
                 ) {
                     $colName = match ($key) {
                         "tanggal-pembuatan" => "scctbill.FTGLTagihan",
+                        "tanggal-transaksi" => "scctbill.PAIDDT",
                         "tahun_akademik" => "scctbill.BTA",
                         "post" => "scctbill.BILLNM",
                         "kelas" => "scctcust.DESC02",
@@ -201,7 +202,7 @@ PotonganTagihanController extends Controller
                         "periode" => "scctbill.BILLAC",
                         default => null,
                     };
-                    if ($key == "tanggal-pembuatan") {
+                    if ($key == "tanggal-transaksi") {
                         if (
                             preg_match(
                                 '/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/',
