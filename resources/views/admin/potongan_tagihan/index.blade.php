@@ -228,7 +228,7 @@
             pageLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
             buttons: ['copy', 'excel', 'pdf'],
-            select: true,
+            select: 'multi',
         };
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -477,7 +477,7 @@
                 let data = DT[`${dtOptions.tableId}`].rows({selected: true}).data().toArray();
 
                 if (!data[0]) {
-                    warningAlert('silahkan pilih siswa!');
+                    warningAlert('silahkan pilih minimal satu tagihan!');
                     return;
                 }
 
@@ -545,6 +545,58 @@
                         {text: formatRupiah(item.BILLAM), alignment: 'right'},
                         {text: tanggalBayar, alignment: 'left'},
                     ]);
+                    let cutLists = item.BILL_CUT_LISTS_RAW;
+                    if (cutLists) {
+                        tableBody.push([
+                            {},
+                            {
+                                colSpan: 5,
+                                text: "Potongan " + item.BILLNM,
+                                alignment: 'left',
+                                style: 'tableHeader'
+                            }, {}, {}, {}, {}
+                        ])
+
+                        let totalPotongan = 0;
+                        tableBody.push([
+                            {},
+                            {text: "Tanggal", alignment: 'center', style: 'tableHeader',colSpan: 2},
+                            {},
+                            {text: "Potongan", alignment: 'center', style: 'tableHeader'},
+                            {colSpan: 2, text: "Keterangan", alignment: 'center', style: 'tableHeader'},
+                            {}
+                        ]);
+
+                        cutLists.forEach((cut_item, index) => {
+                            let tanggalPotongan = cut_item.CUT_DATE;
+                            if (tanggalPotongan && tanggalPotongan !== '' && tanggalPotongan !== '0000-00-00 00:00:00') {
+                                tanggalPotongan = new Date(tanggalPotongan).toLocaleDateString('id-ID', {
+                                    weekday: 'long',
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric'
+                                });
+                            }
+
+                            totalPotongan += cut_item.BILL_CUT;
+                            tableBody.push([
+                                {},
+                                {text: tanggalPotongan,colSpan: 2, alignment: 'left'},
+                                {},
+                                {text: formatRupiah(cut_item.BILL_CUT), alignment: 'right'},
+                                {text: cut_item.REASON ?? '-', alignment: 'left', colSpan: 2},
+                                {}
+                            ])
+                        })
+
+                        tableBody.push([
+                            {colSpan: 3, text: 'Total Potongan', alignment: 'right', style: 'tableHeader'},
+                            {},
+                            {},
+                            {text: formatRupiah(totalPotongan), alignment: 'right'},
+                            {text:'', colSpan: 2, style: 'tableHeader'}, {}
+                        ])
+                    }
                 })
 
                 if (biayaLayanan) {
@@ -558,7 +610,7 @@
 
 
                 tableBody.push([
-                    {colSpan: 4, text: 'Total', alignment: 'right', style: 'tableHeader'},
+                    {colSpan: 4, text: 'Total Tagihan Yang Dibayarkan', alignment: 'right', style: 'tableHeader'},
                     {}, {}, {},
                     {text: formatRupiah(totalTagihan + (biayaLayanan ? 2000 : 0)), alignment: 'right'},
                     {},
@@ -577,60 +629,6 @@
                     margin: [0, 0, 0, 10],
                     fontSize: 12
                 });
-
-                let cutLists = data[0].BILL_CUT_LISTS_RAW;
-                if (cutLists) {
-                    content.push({text: 'List Potongan', margin: [0, 5, 0, 5]},);
-                    const tableCutList = [];
-                    let totalPotongan = 0;
-                    tableCutList.push(
-                        ['#', 'Tanggal', 'Potongan', 'Keterangan']
-                            .map(h => ({text: h, style: 'tableHeader'})),
-                    );
-
-                    cutLists.forEach((item, index) => {
-                        let tanggalPotongan = item.CUT_DATE;
-                        if (tanggalPotongan && tanggalPotongan !== '' && tanggalPotongan !== '0000-00-00 00:00:00') {
-                            tanggalPotongan = new Date(tanggalPotongan).toLocaleDateString('id-ID', {
-                                weekday: 'long',
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric'
-                            });
-                        }
-
-                        totalPotongan += item.BILL_CUT;
-                        tableCutList.push([
-                            {text: index + 1, alignment: 'center'},
-                            {text: tanggalPotongan, alignment: 'left'},
-                            {text: formatRupiah(item.BILL_CUT), alignment: 'right'},
-                            {text: item.REASON, alignment: 'left'},
-                        ])
-                    })
-
-                    tableCutList.push([
-                        {colSpan: 2, text: 'Total', alignment: 'right', style: 'tableHeader'},
-                        {},
-                        {text: formatRupiah(totalPotongan), alignment: 'right'},
-                        {},
-                    ])
-
-                    content.push({
-                        table: {
-                            widths: ['3%', '27%', '25%', '45%',],
-                            body: tableCutList,
-                        },
-                        layout: {
-                            fillColor: (rowIndex) => rowIndex === 0 ? '#ededed' : null,
-                            hLineWidth: () => 0.5,
-                            vLineWidth: () => 0.5
-                        },
-                        margin: [0, 0, 0, 10],
-                        fontSize: 12
-                    });
-
-
-                }
 
                 generatePdf('KUITANSI', content);
             }
