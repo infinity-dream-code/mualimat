@@ -480,7 +480,25 @@ function dtButtons(options, buttons) {
             title: '',
             text: '<i class="ri ri-file-pdf-2-line me-2"></i>Pdf',
             modifier: {page: 'all'},
+            orientation: 'portrait',
+            pageSize: 'A4',
+            exportOptions: {
+                columns: ':visible'
+            },
             customize: function (doc) {
+                const totalColumns = options.dataColumns.length;
+                const LANDSCAPE_THRESHOLD = 8;
+
+                if (totalColumns > LANDSCAPE_THRESHOLD) {
+                    doc.pageOrientation = 'landscape';
+                }
+                doc.pageMargins = [10, 10, 10, 10];
+                doc.defaultStyle.fontSize = 7;
+                const tableNode = doc.content.find(n => n.table);
+                if (tableNode && tableNode.table && tableNode.table.body) {
+                    tableNode.table.widths =
+                        Array(tableNode.table.body[0].length).fill('*');
+                }
                 const duplicateCols = getDuplicateExportColumns(options.dataColumns);
                 mergePdfDuplicates(doc, duplicateCols);
             }
@@ -1206,14 +1224,25 @@ async function getDT(options) {
                             case "array":
                                 renderFunc = function (data, type, row) {
                                     if (!data) return "";
-                                    if (type === 'display' || type === 'filter') {
-                                        const listItems = parseArrayForRow(
-                                            data,
-                                            column.currency,
-                                        );
-                                        return `<ul style="padding-left:16px; margin:0;">${listItems}</ul>`;
+
+                                    const parsed = parseArrayForRow(data, column.currency);
+
+                                    // UI rendering (HTML list)
+                                    if (type === 'display') {
+                                        return `<ul style="padding-left:16px; margin:0;">${parsed}</ul>`;
                                     }
-                                    return data;
+
+                                    // Export rendering (plain text)
+                                    if (type === 'export') {
+                                        // Convert <li> to readable lines
+                                        return parsed
+                                            .replace(/<li>/g, '• ')
+                                            .replace(/<\/li>/g, '\n')
+                                            .replace(/<[^>]*>/g, ''); // strip any remaining HTML
+                                    }
+
+                                    // Default fallback (filter/sort)
+                                    return parsed.replace(/<[^>]*>/g, '');
                                 };
                                 break;
                             case "arraykey":
