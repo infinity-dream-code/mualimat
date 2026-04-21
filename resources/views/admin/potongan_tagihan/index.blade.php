@@ -1,5 +1,13 @@
 @extends('layouts.admin_new')
 @section('title',$dataTitle??$mainTitle??$title??'')
+@section('style')
+    <link rel="stylesheet" href="{{asset('main/libs/select2/select2.css')}}">
+    <style>
+        .select2-container--default .select2-results__option[aria-disabled=true] {
+            display: none;
+        }
+    </style>
+@endsection
 @section('content')
     <h3 class="page-heading d-flex text-gray-900 fw-bold flex-column justify-content-center my-0">
         @if(isset($dataTitle) && isset($mainTitle) && $mainTitle != $dataTitle)
@@ -51,9 +59,16 @@
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="mb-5">
-                                <label class="form-label" for="dari-tanggal">Tanggal Transaksi <span
+                                <label class="form-label" for="tanggal-transaksi">Tanggal Transaksi <span
                                         class="text-warning">*</span>(tanggal-bulan-tahun - tanggal-bulan-tahun)</label>
                                 <input type="text" id="tanggal-transaksi" name="filter[tanggal-transaksi]"
+                                       placeholder="tanggal/bulan/tahun"
+                                       class="form-control" autocomplete="false" inputmode="numeric"/>
+                            </div>
+                            <div class="mb-5">
+                                <label class="form-label" for="tanggal-potongan">Tanggal Potongan <span
+                                        class="text-warning">*</span>(tanggal-bulan-tahun - tanggal-bulan-tahun)</label>
+                                <input type="text" id="tanggal-potongan" name="filter[tanggal-potongan]"
                                        placeholder="tanggal/bulan/tahun"
                                        class="form-control" autocomplete="false" inputmode="numeric"/>
                             </div>
@@ -76,7 +91,7 @@
                                     @endisset
                                 </select>
                             </div>
-                            <div class="col mb-5">
+                            <div class="mb-5">
                                 <label class="form-label" for="post">
                                     Nama Tagihan
                                 </label>
@@ -193,8 +208,9 @@
 @section('datatable-row-grup',true)
 @section('datatable-fixed-columns',true)
 @section('bootstrap-daterangepicker', true)
-@section('select2',true)
 @section('script')
+    <script src="{{asset('main/libs/select2/select2.js')}}"></script>
+
     <script type="module">
         import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
 
@@ -269,6 +285,7 @@
             let startOfMonth = moment().startOf('month');
             let today = moment();
             let date = $('#tanggal-transaksi');
+            let tanggal_potongan = $('#tanggal-potongan');
             date.daterangepicker({
                 startDate: startOfMonth,
                 endDate: today,
@@ -304,6 +321,46 @@
             });
 
             date.on('cancel.daterangepicker', function (ev, picker) {
+                $(this).val('');
+                // picker.setStartDate(moment().startOf('month'));
+                // picker.setEndDate(moment());
+            });
+
+            tanggal_potongan.daterangepicker({
+                startDate: startOfMonth,
+                endDate: today,
+                autoUpdateInput: false,
+                todayHighlight: true,
+                autoclose: true,
+                locale: {
+                    format: 'DD-MM-YYYY',
+                    separator: " - ",
+                    applyLabel: "Terapkan",
+                    cancelLabel: "Batal",
+                    fromLabel: "Dari",
+                    toLabel: "Ke",
+                    customRangeLabel: "Kustom",
+                    daysOfWeek: ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"],
+                    monthNames: ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"],
+                    firstDay: 0,
+                },
+                maxDate: moment()
+            }, function (start, end) {
+                let duration = end.diff(start, 'days');
+                if (duration > 365) {
+                    warningAlert("Maksimal 365 hari.");
+                    tanggal_potongan.data('daterangepicker').setStartDate(start);
+                    tanggal_potongan.data('daterangepicker').setEndDate(start.clone().add(6, 'days'));
+                }
+            });
+
+            tanggal_potongan.on('apply.daterangepicker hide.daterangepicker', function (ev, picker) {
+                if (picker.startDate && picker.endDate) {
+                    $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
+                }
+            });
+
+            tanggal_potongan.on('cancel.daterangepicker', function (ev, picker) {
                 $(this).val('');
                 // picker.setStartDate(moment().startOf('month'));
                 // picker.setEndDate(moment());
