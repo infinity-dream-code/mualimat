@@ -69,7 +69,6 @@ PotonganTagihanController extends Controller
                 "data" => "AA",
                 "name" => "no",
                 "columnType" => "row",
-                "exportable" => true,
             ],
             [
                 "data" => "nocust",
@@ -196,6 +195,7 @@ PotonganTagihanController extends Controller
                         "tanggal-transaksi" => "scctbill.PAIDDT",
                         "tahun_akademik" => "scctbill.BTA",
                         "post" => "scctbill.BILLNM",
+                        "tanggal-potongan" => "scctbill_cut.CUT_DATE",
                         "kelas" => "scctcust.DESC02",
                         "siswa" => "scctcust.nmcust",
                         "custid" => "scctbill.CUSTID",
@@ -203,6 +203,34 @@ PotonganTagihanController extends Controller
                         default => null,
                     };
                     if ($key == "tanggal-transaksi") {
+                        if (
+                            preg_match(
+                                '/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/',
+                                $val,
+                            )
+                        ) {
+                            $val = preg_replace("/[-\/~]/", "-", $val);
+
+                            [$startDate, $endDate] = explode(" - ", $val);
+                            $startDate = Carbon::createFromFormat(
+                                "d-m-Y",
+                                $startDate,
+                            )->startOfDay();
+                            $endDate = Carbon::createFromFormat(
+                                "d-m-Y",
+                                $endDate,
+                            )->endOfDay();
+                            if ($startDate && $endDate) {
+                                $colName &&
+                                ($filters[] = [
+                                    $colName,
+                                    $startDate,
+                                    $endDate,
+                                    "whereBetween",
+                                ]);
+                            }
+                        }
+                    }elseif ($key == "tanggal-potongan") {
                         if (
                             preg_match(
                                 '/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/',
@@ -384,14 +412,18 @@ PotonganTagihanController extends Controller
 
             $billCutQuery = ScctbillCut::select(['CUT_DATE', 'BILL_CUT', 'REASON'])
                 ->where('AA', $item->AA)
+                ->orderBy('CUT_DATE','ASC')
                 ->get();
 
             $item->BILL_CUT_LISTS_RAW = $billCutQuery;
 
             $cutLists = $billCutQuery
                 ->map(function ($row) {
-                    $date = \Carbon\Carbon::parse($row->CUT_DATE)
-                        ->translatedFormat('d F Y');
+                    $date = '';
+                    if ($row->CUT_DATE){
+                        $date = \Carbon\Carbon::parse($row->CUT_DATE)
+                            ->translatedFormat('d F Y');
+                    }
 
                     $bill = 'Rp ' . number_format($row->BILL_CUT, 0, ',', '.');
 
