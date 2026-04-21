@@ -165,10 +165,6 @@
                                 <span class="ri-info-card-line me-2"></span>
                                 Cetak Kuitansi
                             </button>
-                            <button type="button" class="btn btn-facebook text-nowrap" id="cetak-kuitansi-2000">
-                                <span class="ri-info-card-line me-2"></span>
-                                Cetak Kuitansi Dengan 2000
-                            </button>
                             <button type="reset" class="btn btn-secondary" disabled>
                                 <span class="ri-reset-left-line me-2"></span>
                                 Reset
@@ -717,10 +713,10 @@
                 generateKuitansi();
             });
 
-            document.getElementById('cetak-kuitansi-2000').addEventListener('click', function (e) {
-                e.preventDefault();
-                generateKuitansi(true);
-            });
+            // document.getElementById('cetak-kuitansi-2000').addEventListener('click', function (e) {
+            //     e.preventDefault();
+            //     generateKuitansi(true);
+            // });
         });
 
 
