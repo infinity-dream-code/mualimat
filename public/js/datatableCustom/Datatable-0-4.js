@@ -449,11 +449,17 @@ function dtButtons(options, buttons) {
             extend: 'copy',
             title: '',
             text: '<i class="ri ri-file-copy-2-line me-2"></i>Copy',
+            exportOptions: {
+                columns: ':visible:not(.no-export)'
+            },
         },
         excel: {
             extend: 'excel',
             title: '',
             text: '<i class="ri ri-file-excel-line me-2"></i>Excel',
+            exportOptions: {
+                columns: ':visible:not(.no-export)'
+            },
             customize: function (xlsx) {
                 const sheet = xlsx.xl.worksheets['sheet1.xml'];
                 const rupiahStyleIndex = addRupiahStyleOnce(xlsx);
@@ -483,7 +489,7 @@ function dtButtons(options, buttons) {
             orientation: 'portrait',
             pageSize: 'A4',
             exportOptions: {
-                columns: ':visible'
+                columns: ':visible:not(.no-export)',
             },
             customize: function (doc) {
                 const totalColumns = options.dataColumns.length;
@@ -526,6 +532,9 @@ function dtButtons(options, buttons) {
                 return exportableColumn === true;
             }, format: {
                 header: function (data, columnIdx) {
+                    if (typeof data === 'string' && data.includes('select-all')) {
+                        return 'NO';
+                    }
                     return data.toUpperCase();
                 },
                 body: function (data, row, column, node) {
@@ -722,7 +731,7 @@ async function dataTableCreate(options) {
                 targets: 0,
                 searchable: false,
                 orderable: false,
-                className: options.select ? '' : ' table_dt_no',
+                className: options.select ? 'no-export' : ' table_dt_no',
                 checkboxes: options.select ? options.select === 'multi'
                         ? {
                             selectRow: true,
