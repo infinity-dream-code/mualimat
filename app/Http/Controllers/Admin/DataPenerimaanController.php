@@ -247,6 +247,7 @@ class DataPenerimaanController extends Controller
                         "post" => "scctbill.BILLNM",
                         "unit" => "scctcust.CODE01",
                         "kelas" => "scctcust.DESC02",
+                        "angkatan" => "scctcust.DESC04",
                         "siswa" => "scctcust.nmcust",
                         "custid" => "scctbill.CUSTID",
                         "metode_bayar" => "scctbill.FIDBANK",
