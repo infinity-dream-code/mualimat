@@ -69,6 +69,7 @@ PotonganTagihanController extends Controller
                 "data" => "AA",
                 "name" => "no",
                 "columnType" => "row",
+                "exportable" => true,
             ],
             [
                 "data" => "nocust",
@@ -198,6 +199,7 @@ PotonganTagihanController extends Controller
                         "tanggal-potongan" => "scctbill_cut.CUT_DATE",
                         "kelas" => "scctcust.DESC02",
                         "siswa" => "scctcust.nmcust",
+                        "angkatan" => "scctcust.DESC04",
                         "custid" => "scctbill.CUSTID",
                         "periode" => "scctbill.BILLAC",
                         default => null,
