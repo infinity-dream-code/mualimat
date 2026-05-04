@@ -232,7 +232,7 @@ PotonganTagihanController extends Controller
                                 ]);
                             }
                         }
-                    }elseif ($key == "tanggal-potongan") {
+                    } elseif ($key == "tanggal-potongan") {
                         if (
                             preg_match(
                                 '/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/',
@@ -414,7 +414,7 @@ PotonganTagihanController extends Controller
 
             $billCutQuery = ScctbillCut::select(['CUT_DATE', 'BILL_CUT', 'REASON'])
                 ->where('AA', $item->AA)
-                ->orderBy('CUT_DATE','ASC')
+                ->orderBy('CUT_DATE', 'ASC')
                 ->get();
 
             $item->BILL_CUT_LISTS_RAW = $billCutQuery;
@@ -422,7 +422,7 @@ PotonganTagihanController extends Controller
             $cutLists = $billCutQuery
                 ->map(function ($row) {
                     $date = '';
-                    if ($row->CUT_DATE){
+                    if ($row->CUT_DATE) {
                         $date = \Carbon\Carbon::parse($row->CUT_DATE)
                             ->translatedFormat('d F Y');
                     }
@@ -452,7 +452,7 @@ PotonganTagihanController extends Controller
         $validator = Validator::make(
             $request->all(),
             [
-                "item_id" => ["required"],
+                "item_id" => ["required", "array", "min:1"],
                 "potongan" => ["required", "array", "min:1"],
                 "tanggal" => ["required", "array", "min:1"],
                 "potongan.*" => [
@@ -484,7 +484,7 @@ PotonganTagihanController extends Controller
         }
 
         $bill = scctbill::where('PAIDST', 1)
-            ->where("AA", $request->item_id)->first();
+            ->whereIn("AA", $request->item_id)->get();
         if (!$bill) {
             return response()->json(["message" => "Tagihan yang dipilih tidak valid!"], 422);
         }
@@ -522,26 +522,29 @@ PotonganTagihanController extends Controller
 
         try {
             DB::beginTransaction();
-            foreach ($request->potongan as $id => $value) {
-                $nominal = str_replace('.', '', $value);
-                if ($nominal > 0) {
-                    $tanggal = Carbon::createFromFormat(
-                        "d-m-Y",
-                        $request->tanggal[$id]);
-                    ScctbillCut::create([
-                        'AA' => $request->item_id,
-                        'BILLNM' => $bill->BILLNM,
-                        'BTA' => $bill->BTA,
-                        'BILLCD' => $bill->BILLCD,
-                        'BILLAM' => $bill->BILLAM,
-                        'BILL_CUT' => $nominal,
-                        'CUT_DATE' => $tanggal,
-                        'REASON' => $request->deskripsi[$id] ?? null,
-                        'CREATED_AT' => now(),
-                        'USER_ID' => Auth::user()->id
-                    ]);
+            foreach ($bill as $item) {
+                foreach ($request->potongan as $id => $value) {
+                    $nominal = str_replace('.', '', $value);
+                    if ($nominal > 0) {
+                        $tanggal = Carbon::createFromFormat(
+                            "d-m-Y",
+                            $request->tanggal[$id]);
+                        ScctbillCut::create([
+                            'AA' => $item->AA,
+                            'BILLNM' => $item->BILLNM,
+                            'BTA' => $item->BTA,
+                            'BILLCD' => $item->BILLCD,
+                            'BILLAM' => $item->BILLAM,
+                            'BILL_CUT' => $nominal,
+                            'CUT_DATE' => $tanggal,
+                            'REASON' => $request->deskripsi[$id] ?? null,
+                            'CREATED_AT' => now(),
+                            'USER_ID' => Auth::user()->id
+                        ]);
+                    }
                 }
             }
+
             DB::commit();
             return response()->json(["message" => "Data potongan disimpan!"], 200);
         } catch (\Exception $e) {
