@@ -412,7 +412,7 @@ PotonganTagihanController extends Controller
                 default => "",
             };
 
-            $billCutQuery = ScctbillCut::select(['CUT_DATE', 'BILL_CUT', 'REASON'])
+            $billCutQuery = ScctbillCut::select(['ID', 'CUT_DATE', 'BILL_CUT', 'REASON'])
                 ->where('AA', $item->AA)
                 ->orderBy('CUT_DATE', 'ASC')
                 ->get();
@@ -600,6 +600,24 @@ PotonganTagihanController extends Controller
             return response()->json(['tagihans' => $tagihans]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Tagihan Tidak Ditemukan!'], 422);
+        }
+    }
+
+    public function destroy($id)
+    {
+        $bill = scctbill::where('AA', $id)->first();
+        if (!$bill) {
+            return response()->json(['message' => 'tagihan tidak ditemukan'], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+            ScctBillCut::where('AA', $id)->delete();
+            DB::commit();
+
+            return response()->json(["message" => "Data potongan tagihan dihapus!"], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Potongan tagihan gagal dihapus!'], 422);
         }
     }
 }
