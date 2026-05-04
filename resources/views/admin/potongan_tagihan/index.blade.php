@@ -161,6 +161,10 @@
                     </div>
                     <div class="row">
                         <div class="d-flex justify-content-center flex-column flex-md-row justify-content-md-end gap-4">
+                            <button type="button" class="btn btn-danger text-nowrap" id="btn-hapus">
+                                <span class="ri-delete-bin-2-line me-2"></span>
+                                Hapus
+                            </button>
                             <button type="button" class="btn btn-facebook text-nowrap" id="cetak-kuitansi">
                                 <span class="ri-info-card-line me-2"></span>
                                 Cetak Kuitansi
@@ -712,6 +716,60 @@
                 e.preventDefault();
                 generateKuitansi();
             });
+
+            document.getElementById('btn-hapus').addEventListener('click', function (e) {
+                e.preventDefault();
+
+                let data = DT[`${dtOptions.tableId}`].rows({selected: true}).data();
+
+                if (!data[0] || !data[0]['AA'] || data[0]['AA'].length === 0) {
+                    warningAlert('silahkan pilih tagihan yang akan dipotong!')
+                    return;
+                }
+
+                let url = '{{route('admin.potongan-tagihan.destroy', ':id')}}'
+                url = url.replace(':id', data[0]['AA'])
+
+                const request = new Request(url, {
+                        method: "DELETE",
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': "application/json"
+                        },
+                    });
+
+                fetch(request)
+                    .then(async response => {
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            throw {status: response.status, message: data.message || response.statusText};
+                        }
+                        return data;
+                    })
+                    .then(data => {
+                        dataReload(dtOptions.tableId);
+                        successAlert(data.message);
+                    })
+                    .catch(error => {
+                        if (error.status === 422) {
+                            const errors = error.error || error.errors;
+                            errorAlert(error.message);
+                            if (errors) {
+                                processErrors(errors)
+                            }
+                        } else {
+                            const errorMessages = {
+                                401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                                403: 'Anda tidak memiliki izin untuk mengakses halaman ini 😖',
+                                404: 'Halaman yang dituju tidak ditemukan 🧐',
+                                405: 'Metode tidak valid 🧐 <br>silahkan muat ulang halaman dan coba lagi!',
+                                419: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',
+                                429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
+                            };
+                            errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
+                        }
+                    });
+            })
 
             // document.getElementById('cetak-kuitansi-2000').addEventListener('click', function (e) {
             //     e.preventDefault();
