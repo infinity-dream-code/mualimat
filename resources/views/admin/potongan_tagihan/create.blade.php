@@ -207,8 +207,8 @@
                                         </div>
                                     </td>
                                     <td>
-                                    <input type="text" name="tanggal[]" placeholder="Tanggal"
-                                              class="potongan-input form-control input-tanggal">
+                                        <input type="text" name="tanggal[]" placeholder="Tanggal"
+                                               class="potongan-input form-control input-tanggal">
                                     </td>
                                     <td>
                                     <textarea type="text" name="deskripsi[]" placeholder="Deskripsi"
@@ -254,7 +254,7 @@
             fixedHeader: false,
             pageLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
-            select: true,
+            select: 'multi',
         };
 
         function handleAutoAppend(e, tableId, inputClass) {
@@ -279,7 +279,7 @@
 
         function resetDynamicTable(tableId) {
             const tableBody = document.querySelector(`#${tableId} tbody`);
-            if(!tableBody) return;
+            if (!tableBody) return;
             const rows = tableBody.querySelectorAll('tr');
             rows.forEach((row, index) => {
                 if (index !== 0) {
@@ -430,14 +430,19 @@
                     return;
                 }
 
-                if(!validTanggal) {
+                if (!validTanggal) {
                     e.preventDefault();
                     warningAlert('Silahkan isi tanggal potongan tagihan!');
                     return;
                 }
 
                 const formData = new FormData();
-                formData.append('item_id', data[0]['AA']);
+                data = data.pluck('AA')
+                    .toArray();
+
+                data.forEach(id => {
+                    formData.append('item_id[]', id);
+                });
 
                 for (const [key, value] of potongan.entries()) {
                     formData.append(key, value);
