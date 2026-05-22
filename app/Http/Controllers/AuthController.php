@@ -3,17 +3,18 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
 class AuthController extends Controller
 {
     public function index()
     {
-        if (session()->has('user')) {
-            return redirect()->route('admin.index');
-        }else{
-            return redirect('login');
+        if (Auth::check()) {
+            return redirect()->route("admin.index");
         }
+
+        return redirect("login");
     }
 
     public function login(Request $request)

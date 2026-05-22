@@ -3,8 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Log\UserLog;
-use App\Models\User;
+use App\Models\CyberKey;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,9 +19,9 @@ class LoginController extends Controller
     protected function validator(array $data)
     {
         return Validator::make($data, [
-            $this->username() => "required|string",
+            "username" => "required|string",
             "password" => "required|string",
-            "cf-turnstile-response" => "required|string", // This enforces CAPTCHA validation
+            "cf-turnstile-response" => "required|string",
         ]);
     }
 
@@ -58,17 +57,22 @@ class LoginController extends Controller
         //     ]);
         // }
 
-        // Continue with login attempt
-        $authenticated = $this->guard()->attempt(
-            $this->credentials($request),
-            $request->filled("remember"),
-        );
+        $user = CyberKey::query()
+            ->where("users", $request->input("username"))
+            ->first();
 
-        //        if ($authenticated) {
-        //            UserLog::createLog('login_menu', 'user_login',null, $request);
-        //        }
+        if (
+            !$user ||
+            empty($user->password) ||
+            strtolower(md5((string) $request->input("password"))) !==
+                strtolower((string) $user->password)
+        ) {
+            return false;
+        }
 
-        return $authenticated;
+        $this->guard()->login($user);
+
+        return true;
     }
 
     /**
@@ -76,17 +80,9 @@ class LoginController extends Controller
      *
      * @var string
      */
-    protected function redirectTo()
+    protected function redirectTo(): string
     {
-        // Check user role and return the appropriate redirect path
-        if (auth()->user()->hasRole("siswa")) {
-            return "/siswa";
-        } elseif (auth()->user()->hasRole("admin")) {
-            return "/admin";
-        } elseif (auth()->user()->hasRole("super-admin")) {
-            return "/admin";
-        }
-        return "/logout";
+        return "/admin";
     }
 
     /**
@@ -107,14 +103,17 @@ class LoginController extends Controller
         ]);
     }
 
-    public function username()
+    public function username(): string
     {
-        $login = request()->input("username");
-        $field = filter_var($login, FILTER_VALIDATE_EMAIL)
-            ? "email"
-            : "username";
-        request()->merge([$field => $login]);
-        return $field;
+        return "users";
+    }
+
+    protected function credentials(Request $request): array
+    {
+        return [
+            "users" => $request->input("username"),
+            "password" => $request->input("password"),
+        ];
     }
 
     public function reloadCaptcha()
