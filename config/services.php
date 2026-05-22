@@ -32,13 +32,14 @@ return [
     ],
 
     "turnstile" => [
+        "enabled" => env("TURNSTILE_ENABLED", true),
         "site_key" => env(
-            config("app.env") === "local"
+            env("APP_ENV", "production") === "local"
                 ? "TURNSTILE_SITE_KEY_LOCAL"
                 : "TURNSTILE_SITE_KEY_PROD",
         ),
         "secret_key" => env(
-            config("app.env") === "local"
+            env("APP_ENV", "production") === "local"
                 ? "TURNSTILE_SECRET_KEY_LOCAL"
                 : "TURNSTILE_SECRET_KEY_PROD",
         ),

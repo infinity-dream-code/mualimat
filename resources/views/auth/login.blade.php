@@ -83,6 +83,15 @@
                         @endif
                         <form id="formAuthentication" class="mb-3" action="{{route('login')}}" method="POST">
                             @csrf
+                            @if ($errors->any())
+                                <div class="alert alert-danger py-2 mb-3" role="alert">
+                                    <ul class="mb-0 ps-3">
+                                        @foreach ($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
                             <div class="mb-3">
                                 <div class="input-group input-group-merge">
                                     <span class="input-group-text"><i class="ri-user-line"></i></span>
@@ -124,12 +133,14 @@
                                 </div>
                                 @enderror
                             </div>
+                            @if(filled(config('services.turnstile.site_key')) && config('services.turnstile.enabled', true) && !in_array(request()->getHost(), ['localhost', '127.0.0.1'], true))
                             <div class="mb-3 text-center">
                                 <div class="cf-turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}" data-language="id"></div>
-                                   @error('turnstile')
-                                       <div class="text-danger small mt-2">{{ $message }}</div>
-                                   @enderror
+                                @error('turnstile')
+                                    <div class="text-danger small mt-2">{{ $message }}</div>
+                                @enderror
                             </div>
+                            @endif
                             <div class="mb-3 d-flex justify-content-start">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="remember" id="remember-me"/>

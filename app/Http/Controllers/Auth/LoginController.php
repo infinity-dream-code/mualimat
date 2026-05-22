@@ -8,9 +8,9 @@ use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Http;
 
 class LoginController extends Controller
 {
@@ -18,14 +18,62 @@ class LoginController extends Controller
 
     protected function validator(array $data)
     {
-        return Validator::make($data, [
+        $rules = [
             "username" => "required|string",
             "password" => "required|string",
-            "cf-turnstile-response" => "required|string",
-        ]);
+        ];
+
+        if ($this->shouldVerifyTurnstile()) {
+            $rules["cf-turnstile-response"] = "required|string";
+        }
+
+        return Validator::make($data, $rules);
     }
 
     protected function attemptLogin(Request $request)
+    {
+        if ($this->shouldVerifyTurnstile()) {
+            $this->verifyTurnstile($request);
+        }
+
+        $username = trim((string) $request->input("username"));
+        $password = (string) $request->input("password");
+
+        $user = CyberKey::query()->where("users", $username)->first();
+
+        if (!$user) {
+            throw ValidationException::withMessages([
+                "username" => [
+                    "Username tidak ditemukan. Periksa kembali username Anda.",
+                ],
+            ]);
+        }
+
+        if (empty($user->password)) {
+            throw ValidationException::withMessages([
+                "password" => [
+                    "Akun ini belum memiliki password. Hubungi administrator.",
+                ],
+            ]);
+        }
+
+        if (
+            strtolower(md5($password)) !==
+            strtolower(trim((string) $user->password))
+        ) {
+            throw ValidationException::withMessages([
+                "password" => [
+                    "Password salah. Periksa kembali password Anda.",
+                ],
+            ]);
+        }
+
+        $this->guard()->login($user);
+
+        return true;
+    }
+
+    protected function verifyTurnstile(Request $request): void
     {
         $response = Http::asForm()->post(
             "https://challenges.cloudflare.com/turnstile/v0/siteverify",
@@ -36,60 +84,43 @@ class LoginController extends Controller
             ],
         );
 
-        $success = $response->json("success") ?? false;
-
-        if (!$success) {
+        if (!($response->json("success") ?? false)) {
             throw ValidationException::withMessages([
-                "turnstile" => __(
-                    "Gagal melakukan verifikasi Captcha, silahkan coba lagi.",
-                ),
+                "turnstile" => [
+                    "Verifikasi captcha gagal. Centang captcha lalu coba lagi.",
+                ],
             ]);
         }
+    }
 
-        // $captchaData = [
-        //     "captcha" => $request->input("captcha"), // Your CAPTCHA input field name
-        // ];
+    protected function shouldVerifyTurnstile(): bool
+    {
+        if (!config("services.turnstile.enabled", true)) {
+            return false;
+        }
 
-        // if (!captcha_check($captchaData["captcha"])) {
-        //     throw ValidationException::withMessages([
-        //         //                'captcha' => [Lang::get('validation.captcha')],
-        //         "captcha" => ["captcha salah, silahkan periksa kembali"],
-        //     ]);
-        // }
+        if (!filled(config("services.turnstile.secret_key"))) {
+            return false;
+        }
 
-        $user = CyberKey::query()
-            ->where("users", $request->input("username"))
-            ->first();
+        $host = request()->getHost();
 
         if (
-            !$user ||
-            empty($user->password) ||
-            strtolower(md5((string) $request->input("password"))) !==
-                strtolower((string) $user->password)
+            in_array($host, ["localhost", "127.0.0.1"], true) ||
+            str_ends_with($host, ".test") ||
+            str_ends_with($host, ".local")
         ) {
             return false;
         }
 
-        $this->guard()->login($user);
-
         return true;
     }
 
-    /**
-     * Where to redirect users after login.
-     *
-     * @var string
-     */
     protected function redirectTo(): string
     {
         return "/admin";
     }
 
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
     public function __construct()
     {
         $this->middleware("guest")->except("logout");
@@ -98,8 +129,9 @@ class LoginController extends Controller
     protected function sendFailedLoginResponse(Request $request)
     {
         throw ValidationException::withMessages([
-            "password" => ["password anda salah, silahkan periksa kembali"],
-            "username" => ["username anda salah, silahkan periksa kembali"],
+            "username" => [
+                "Username atau password salah. Periksa kembali data login Anda.",
+            ],
         ]);
     }
 
@@ -131,31 +163,4 @@ class LoginController extends Controller
 
         return redirect("/");
     }
-
-    //    public function loginWithToken(Request $request)
-    //    {
-    //        $token = $request->query('token');
-    //
-    //        if (!$token) {
-    //            return response()->json(['error' => 'Token is required'], 400);
-    //        }
-    //
-    //        $user = User::where('login_token', $token)->first();
-    //
-    //        if (!$user) {
-    //            return response()->json(['error' => 'Invalid token or user not found'], 401);
-    //        }
-    //
-    //        if (!$user->hasRole('siswa')) {
-    //            return redirect('/unauthorized')->with('error', 'You do not have the necessary role.');
-    //        }
-    //
-    //        Auth::login($user);
-    //
-    //        // Optionally, invalidate or regenerate the token
-    //        // $user->login_token = Str::random(60);
-    //        // $user->save();
-    //
-    //        return redirect()->route('siswa.index');
-    //    }
 }
