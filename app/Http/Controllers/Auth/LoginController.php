@@ -9,14 +9,13 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
     use AuthenticatesUsers;
 
-    protected function validator(array $data)
+    protected function validateLogin(Request $request): void
     {
         $rules = [
             "username" => "required|string",
@@ -27,7 +26,12 @@ class LoginController extends Controller
             $rules["cf-turnstile-response"] = "required|string";
         }
 
-        return Validator::make($data, $rules);
+        $request->validate($rules, [
+            "username.required" => "Silakan isi username.",
+            "password.required" => "Silakan isi password.",
+            "cf-turnstile-response.required" =>
+                "Silakan selesaikan verifikasi captcha.",
+        ]);
     }
 
     protected function attemptLogin(Request $request)
@@ -137,15 +141,7 @@ class LoginController extends Controller
 
     public function username(): string
     {
-        return "users";
-    }
-
-    protected function credentials(Request $request): array
-    {
-        return [
-            "users" => $request->input("username"),
-            "password" => $request->input("password"),
-        ];
+        return "username";
     }
 
     public function reloadCaptcha()
