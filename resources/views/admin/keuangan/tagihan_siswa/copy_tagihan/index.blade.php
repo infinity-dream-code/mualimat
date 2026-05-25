@@ -1,26 +1,273 @@
 @extends('layouts.admin_new')
+@section('title', $dataTitle ?? $mainTitle ?? $title ?? '')
 
-@section('title', 'Copy Tagihan')
+@section('style')
+    <link rel="stylesheet" href="{{ asset('main/libs/select2/select2.css') }}">
+    <link rel="stylesheet" href="{{ asset('main/libs/select2/select2-bootstrap.css') }}">
+@endsection
 
 @section('content')
-    <div class="container-fluid flex-grow-1 container-p-y">
-        <h4 class="py-3 mb-4">
-            <span class="text-muted fw-light">{{ $title }} / {{ $mainTitle }} /</span> {{ $dataTitle }}
-        </h4>
+    <h3 class="page-heading d-flex text-gray-900 fw-bold flex-column justify-content-center my-0">
+        @if(isset($dataTitle) && isset($mainTitle) && $mainTitle != $dataTitle)
+            {{ $mainTitle . ' - ' . $dataTitle }}
+        @else
+            {{ $mainTitle ?? $title ?? '' }}
+        @endif
+    </h3>
+    <ul class="breadcrumb breadcrumb-style2">
+        <li class="breadcrumb-item">
+            <a href="{{ route('admin.index') }}" class="text-hover-primary">Beranda</a>
+        </li>
+        @if(isset($title))
+            <li class="breadcrumb-item">{{ $title }}</li>
+        @endif
+        @if(isset($mainTitle))
+            <li class="breadcrumb-item">{{ $mainTitle }}</li>
+        @endif
+        @if(isset($dataTitle) && isset($mainTitle) && $mainTitle != $dataTitle)
+            <li class="breadcrumb-item active">{{ $dataTitle }}</li>
+        @endif
+    </ul>
 
-        <div class="card">
-            <div class="card-body text-center py-5">
-                <div class="my-5">
-                    <i class="ri-tools-line" style="font-size: 64px; color: var(--bs-primary);"></i>
-                    <h4 class="mt-4 mb-2">Copy Tagihan</h4>
-                    <p class="text-muted mb-0">
-                        Halaman ini sedang dalam tahap pengembangan.
-                    </p>
-                    <p class="text-muted">
-                        Fitur <strong>Copy Tagihan</strong> akan segera tersedia.
-                    </p>
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">{{ $dataTitle ?? $mainTitle ?? $title }}</h5>
+        </div>
+        <div class="card-body">
+            <form id="copy-tagihan-form" autocomplete="off">
+                <div class="row mb-3">
+                    <label for="thn_aka" class="col-sm-3 col-form-label form-label">Tahun Pelajaran</label>
+                    <div class="col-sm-9">
+                        <select class="form-select" id="thn_aka" name="thn_aka" data-control="select2"
+                                data-placeholder="Pilih Tahun Pelajaran">
+                            <option value="">Pilih Tahun Pelajaran</option>
+                            @isset($thn_aka)
+                                @foreach($thn_aka as $item)
+                                    <option value="{{ $item->thn_aka }}">{{ $item->thn_aka }}</option>
+                                @endforeach
+                            @endisset
+                        </select>
+                    </div>
                 </div>
-            </div>
+
+                <div class="row mb-3">
+                    <label for="kelas" class="col-sm-3 col-form-label form-label">Kelas</label>
+                    <div class="col-sm-9">
+                        <select class="form-select" id="kelas" name="kelas" data-control="select2"
+                                data-placeholder="Pilih Kelas">
+                            <option value="">Pilih Kelas</option>
+                            @isset($kelas)
+                                @foreach($kelas as $item)
+                                    <option value="{{ $item->id }}">
+                                        {{ $item->unit }} - {{ $item->jenjang }} {{ $item->kelas }}
+                                    </option>
+                                @endforeach
+                            @endisset
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <label for="tagihan_lama" class="col-sm-3 col-form-label form-label">Tagihan Lama</label>
+                    <div class="col-sm-9">
+                        <select class="form-select" id="tagihan_lama" name="tagihan_lama" data-control="select2"
+                                data-placeholder="Pilih Tagihan Lama">
+                            <option value="">Pilih Tagihan Lama</option>
+                            @isset($tagihan)
+                                @foreach($tagihan as $item)
+                                    <option value="{{ $item->urut }}" data-name="{{ $item->tagihan }}">
+                                        {{ $item->tagihan }}
+                                    </option>
+                                @endforeach
+                            @endisset
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <label for="tagihan_baru" class="col-sm-3 col-form-label form-label">Tagihan Baru</label>
+                    <div class="col-sm-9">
+                        <select class="form-select" id="tagihan_baru" name="tagihan_baru" data-control="select2"
+                                data-placeholder="Pilih Tagihan Baru">
+                            <option value="">Pilih Tagihan Baru</option>
+                            @isset($tagihan)
+                                @foreach($tagihan as $item)
+                                    <option value="{{ $item->urut }}" data-name="{{ $item->tagihan }}">
+                                        {{ $item->tagihan }}
+                                    </option>
+                                @endforeach
+                            @endisset
+                        </select>
+                        <small class="text-muted">
+                            Periode (BILLAC) baru otomatis dihitung dari Tahun Pelajaran + nama bulan pada Tagihan Baru.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <label for="jenis" class="col-sm-3 col-form-label form-label">Jenis Tagihan</label>
+                    <div class="col-sm-9">
+                        <select class="form-select" id="jenis" name="jenis" data-control="select2">
+                            <option value="belum" selected>Belum Dibayar</option>
+                            <option value="sudah">Sudah Dibayar</option>
+                            <option value="semua">Semua</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <label for="nis" class="col-sm-3 col-form-label form-label">NIS (Opsional)</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control" id="nis" name="nis"
+                               placeholder="Kosongkan untuk seluruh siswa di kelas">
+                        <small class="text-muted">
+                            Kosongkan untuk menyalin tagihan seluruh siswa di kelas. Isi NIS / No. Pendaftaran untuk membatasi ke satu siswa.
+                        </small>
+                    </div>
+                </div>
+
+                <div id="preview-box" class="alert alert-info d-none">
+                    <h6 class="mb-2 fw-bold">Pratinjau</h6>
+                    <ul class="mb-0" id="preview-list"></ul>
+                </div>
+
+                <div class="d-flex justify-content-end gap-3 mt-4">
+                    <button type="reset" class="btn btn-secondary">
+                        <span class="ri-reset-left-line me-2"></span>Reset
+                    </button>
+                    <button type="button" class="btn btn-info" id="btn-preview">
+                        <span class="ri-eye-line me-2"></span>Pratinjau
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="ri-file-copy-line me-2"></span>Salin Tagihan
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
+@endsection
+
+@section('script')
+    <script src="{{ asset('main/libs/select2/select2.js') }}"></script>
+    <script src="{{ asset('main/libs/select2/id.min.js') }}"></script>
+    <script>
+        const previewUrl = @json(route('admin.keuangan.tagihan-siswa.copy-tagihan.preview'));
+        const copyUrl = @json(route('admin.keuangan.tagihan-siswa.copy-tagihan.execute'));
+        const csrfToken = '{{ csrf_token() }}';
+
+        function formatCurrency(n) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0
+            }).format(n || 0);
+        }
+
+        function formatPeriode(p) {
+            if (!p || p.length !== 6) return p;
+            return `${p.substring(0, 4)} / ${p.substring(4, 6)}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const select2 = $(`[data-control='select2']`);
+            select2.each(function () {
+                const $this = $(this);
+                $this.wrap('<div class="position-relative"></div>').select2({
+                    placeholder: $this.data('placeholder') || 'Select value',
+                    dropdownParent: $this.parent(),
+                    minimumResultsForSearch: 0,
+                });
+            });
+
+            const form = document.getElementById('copy-tagihan-form');
+            const previewBox = document.getElementById('preview-box');
+            const previewList = document.getElementById('preview-list');
+
+            function gatherFormData() {
+                const fd = new FormData(form);
+                fd.append('_token', csrfToken);
+                return fd;
+            }
+
+            function showPreview(data) {
+                previewList.innerHTML = `
+                    <li>Tagihan Lama: <strong>${data.tagihan_lama ?? '-'}</strong></li>
+                    <li>Tagihan Baru: <strong>${data.tagihan_baru ?? '-'}</strong></li>
+                    <li>Periode Baru (BILLAC): <strong>${data.periode_baru ?? '-'}</strong> (${formatPeriode(data.periode_baru)})</li>
+                    <li>Jumlah Siswa: <strong>${data.total_siswa ?? 0}</strong></li>
+                    <li>Jumlah Tagihan akan disalin: <strong>${data.total_tagihan ?? 0}</strong></li>
+                    <li>Total Nominal: <strong>${formatCurrency(data.total_nominal)}</strong></li>
+                `;
+                previewBox.classList.remove('d-none');
+            }
+
+            document.getElementById('btn-preview').addEventListener('click', function () {
+                previewBox.classList.add('d-none');
+                fetch(previewUrl, {
+                    method: 'POST',
+                    headers: {'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json'},
+                    body: gatherFormData(),
+                })
+                    .then(async (res) => {
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok) throw new Error(data.message || 'Gagal pratinjau');
+                        return data;
+                    })
+                    .then((data) => {
+                        showPreview(data);
+                    })
+                    .catch((e) => {
+                        if (typeof errorAlert === 'function') errorAlert(e.message);
+                        else alert(e.message);
+                    });
+            });
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const confirmFn = window.Swal
+                    ? () => window.Swal.fire({
+                        title: 'Salin Tagihan?',
+                        text: 'Pastikan filter sudah benar. Tagihan baru akan dibuat untuk siswa yang cocok.',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ya, salin',
+                        cancelButtonText: 'Batal',
+                    }).then(r => r.isConfirmed)
+                    : () => Promise.resolve(confirm('Salin tagihan untuk siswa yang cocok?'));
+
+                confirmFn().then((ok) => {
+                    if (!ok) return;
+                    if (typeof loadingAlert === 'function') {
+                        loadingAlert('Menyalin tagihan, mohon tunggu...');
+                    }
+
+                    fetch(copyUrl, {
+                        method: 'POST',
+                        headers: {'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json'},
+                        body: gatherFormData(),
+                    })
+                        .then(async (res) => {
+                            const data = await res.json().catch(() => ({}));
+                            if (!res.ok) throw new Error(data.message || 'Gagal menyalin tagihan');
+                            return data;
+                        })
+                        .then((data) => {
+                            if (typeof successAlert === 'function') successAlert(data.message);
+                            else alert(data.message);
+                        })
+                        .catch((e) => {
+                            if (typeof errorAlert === 'function') errorAlert(e.message);
+                            else alert(e.message);
+                        });
+                });
+            });
+
+            form.addEventListener('reset', function () {
+                previewBox.classList.add('d-none');
+                setTimeout(() => {
+                    $(`[data-control='select2']`).each(function () {
+                        $(this).val('').trigger('change');
+                    });
+                }, 0);
+            });
+        });
+    </script>
 @endsection

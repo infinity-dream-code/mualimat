@@ -178,9 +178,12 @@ Route::prefix("admin")
                     });
                 });
 
-                Route::prefix("copy-tagihan")->name("copy-tagihan.")->group(function () {
-                    Route::get("/", [\App\Http\Controllers\Admin\Keuangan\TagihanSiswa\CopyTagihanController::class, "index"])->name("index");
-                });
+                Route::controller(\App\Http\Controllers\Admin\Keuangan\TagihanSiswa\CopyTagihanController::class)
+                    ->prefix("copy-tagihan")->name("copy-tagihan.")->group(function () {
+                        Route::get("/", "index")->name("index");
+                        Route::post("preview", "preview")->name("preview");
+                        Route::post("execute", "copy")->name("execute");
+                    });
             });
 
             Route::prefix("penerimaan-siswa")->name("penerimaan-siswa.")->group(function () {
