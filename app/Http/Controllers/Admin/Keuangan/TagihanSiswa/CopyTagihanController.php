@@ -272,7 +272,10 @@ class CopyTagihanController extends Controller
             }
         }
 
-        if (!$bulanNum) return null;
+        // 3. Fallback terakhir: bulan saat ini (sistem)
+        if (!$bulanNum) {
+            $bulanNum = now()->format('m');
+        }
 
         $clean = str_replace([' ', '-'], '/', trim($thnAka));
         $parts = explode('/', $clean);
