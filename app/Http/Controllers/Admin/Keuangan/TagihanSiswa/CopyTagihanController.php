@@ -222,6 +222,7 @@ class CopyTagihanController extends Controller
             'tagihan_baru' => ['required'],
             'jenis' => ['required', 'in:belum,sudah,semua'],
             'nis' => ['nullable', 'string'],
+            'bta_filter' => ['nullable', 'string'],
         ], [
             'required' => ':attribute wajib diisi.',
             'in' => 'Jenis tagihan tidak valid.',
@@ -232,6 +233,7 @@ class CopyTagihanController extends Controller
             'tagihan_baru' => 'Tagihan Baru',
             'jenis' => 'Jenis Tagihan',
             'nis' => 'NIS',
+            'bta_filter' => 'Filter BTA',
         ]);
     }
 
@@ -293,8 +295,11 @@ class CopyTagihanController extends Controller
         if ($custIds->isEmpty()) return collect([]);
 
         $billQuery = scctbill::whereIn('CUSTID', $custIds)
-            ->where('BILLNM', $tagihanLamaNm)
-            ->where('BTA', $request->thn_aka);
+            ->where('BILLNM', $tagihanLamaNm);
+
+        if (!blank($request->bta_filter)) {
+            $billQuery->where('BTA', trim((string) $request->bta_filter));
+        }
 
         if ($request->jenis === 'belum') {
             $billQuery->where('PAIDST', 0);
@@ -312,8 +317,11 @@ class CopyTagihanController extends Controller
         $query = scctbill::query()
             ->join('scctcust', 'scctcust.CUSTID', '=', 'scctbill.CUSTID')
             ->where('scctbill.BILLNM', $tagihanLamaNm)
-            ->where('scctbill.BTA', $request->thn_aka)
             ->where('scctcust.CODE03', $request->kelas);
+
+        if (!blank($request->bta_filter)) {
+            $query->where('scctbill.BTA', trim((string) $request->bta_filter));
+        }
 
         if (!blank($request->nis)) {
             $nis = trim((string) $request->nis);
@@ -335,6 +343,8 @@ class CopyTagihanController extends Controller
             ->select([
                 'scctbill.AA',
                 'scctbill.CUSTID',
+                'scctbill.BILLCD',
+                'scctbill.BILLAC',
                 'scctbill.BILLNM',
                 'scctbill.BILLAM',
                 'scctbill.BTA',

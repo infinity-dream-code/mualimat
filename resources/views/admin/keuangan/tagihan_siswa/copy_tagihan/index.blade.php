@@ -36,7 +36,7 @@
         <div class="card-body">
             <form id="copy-tagihan-form" autocomplete="off">
                 <div class="row mb-3">
-                    <label for="thn_aka" class="col-sm-3 col-form-label form-label">Tahun Pelajaran</label>
+                    <label for="thn_aka" class="col-sm-3 col-form-label form-label">Tahun Pelajaran (Tujuan)</label>
                     <div class="col-sm-9">
                         <select class="form-select" id="thn_aka" name="thn_aka" data-control="select2"
                                 data-placeholder="Pilih Tahun Pelajaran">
@@ -47,6 +47,9 @@
                                 @endforeach
                             @endisset
                         </select>
+                        <small class="text-muted">
+                            Dipakai untuk menghitung BILLAC baru dan mengisi BTA tagihan hasil copy.
+                        </small>
                     </div>
                 </div>
 
@@ -122,6 +125,17 @@
                                placeholder="Kosongkan untuk seluruh siswa di kelas">
                         <small class="text-muted">
                             Kosongkan untuk menyalin tagihan seluruh siswa di kelas. Isi NIS / No. Pendaftaran untuk membatasi ke satu siswa.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <label for="bta_filter" class="col-sm-3 col-form-label form-label">Filter BTA Tagihan Lama (Opsional)</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control" id="bta_filter" name="bta_filter"
+                               placeholder="Contoh: 2024/2025. Kosongkan untuk tidak menyaring tahun.">
+                        <small class="text-muted">
+                            Pencarian tagihan lama defaultnya hanya pakai Kelas + Nama Tagihan Lama (BTA tidak difilter karena data lama kadang kosong). Isi field ini hanya jika ingin menyaring berdasarkan kolom BTA di scctbill.
                         </small>
                     </div>
                 </div>
