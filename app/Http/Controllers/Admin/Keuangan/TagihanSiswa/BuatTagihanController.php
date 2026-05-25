@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class BuatTagihanController extends Controller
 {
@@ -95,7 +96,8 @@ class BuatTagihanController extends Controller
     public function getSiswa(Request $request)
     {
         $kelasId = $request->kelas != 'all' ? $request->kelas ?? null : null;
-        $thn_aka = $request->angkatan != 'all' ? $request->angkatan ?? null : null;
+        $thn_aka = $request->angkatan != 'all' ? trim((string) ($request->angkatan ?? '')) : '';
+        $thn_aka = $thn_aka === '' ? null : $thn_aka;
 
         $nis = null;
         $nama = null;
@@ -111,12 +113,11 @@ class BuatTagihanController extends Controller
             'scctcust.NUM2ND as nomor_pendaftaran',
             'scctcust.nmcust as nama',
             'scctcust.CODE02',
+            'scctcust.CODE03',
             'scctcust.DESC02',
             'scctcust.DESC03',
             'scctcust.DESC04 as angkatan',
         ];
-
-        $kelasModel = $kelasId ? mst_kelas::where('id', $kelasId)->first() : null;
 
         $query = scctcust::query()
             ->when($this->unitScope, fn ($q) => $q->where('scctcust.CODE02', $this->unitScope));
@@ -129,13 +130,45 @@ class BuatTagihanController extends Controller
                 });
             })
             ->when($nama, fn ($q, $nama) => $q->where('scctcust.nmcust', 'like', $nama));
-        } elseif ($kelasModel) {
-            $query->where('scctcust.CODE03', '=', $kelasModel->id)
-                ->when($thn_aka, fn ($q, $t) => $q->where('scctcust.DESC04', '=', $t))
+        } elseif ($kelasId) {
+            $query->where('scctcust.CODE03', '=', $kelasId)
+                ->when($thn_aka, function ($q) use ($thn_aka) {
+                    $normalized = str_replace([' ', '-'], ['', '/'], trim($thn_aka));
+                    $q->whereRaw(
+                        'REPLACE(REPLACE(TRIM(scctcust.DESC04), " ", ""), "-", "/") = ?',
+                        [$normalized]
+                    );
+                })
                 ->when($nis, fn ($q, $n) => $q->where('scctcust.nocust', 'like', $n))
                 ->when($nama, fn ($q, $n) => $q->where('scctcust.nmcust', 'like', $n));
         } else {
             return response()->json(['data' => []]);
+        }
+
+        if ($request->boolean('debug')) {
+            $debugQuery = (clone $query)->select($select);
+            $sql = $debugQuery->toSql();
+            $bindings = $debugQuery->getBindings();
+            $sample = scctcust::query()
+                ->when($this->unitScope, fn ($q) => $q->where('scctcust.CODE02', $this->unitScope))
+                ->select('CODE02', 'CODE03', 'DESC02', 'DESC03', 'DESC04', DB::raw('COUNT(*) as n'))
+                ->groupBy('CODE02', 'CODE03', 'DESC02', 'DESC03', 'DESC04')
+                ->orderBy('DESC04', 'desc')
+                ->limit(30)
+                ->get();
+            return response()->json([
+                'input' => [
+                    'kelas' => $kelasId,
+                    'angkatan' => $thn_aka,
+                    'unitScope' => $this->unitScope,
+                    'cari_siswa' => $request->cari_siswa,
+                    'siswa_only' => $request->siswa_only,
+                ],
+                'sql' => $sql,
+                'bindings' => $bindings,
+                'sample' => $sample,
+                'kelas_in_mst_kelas' => mst_kelas::where('id', $kelasId)->first(),
+            ]);
         }
 
         $siswa = $query->select($select)
@@ -149,6 +182,7 @@ class BuatTagihanController extends Controller
                     'nomor_pendaftaran' => $item->NUM2ND,
                     'nama' => $item->nama,
                     'CODE02' => $item->CODE02,
+                    'CODE03' => $item->CODE03,
                     'kelas' => trim(($item->DESC02 ?? '') . ' ' . ($item->DESC03 ?? '')),
                     'jenjang' => $item->DESC02,
                     'angkatan' => $item->angkatan,

@@ -35,6 +35,15 @@ Route::prefix("admin")
         Route::get("/", [AdminController::class, "index"])->name("index");
 
         Route::prefix("master-data")->name("master-data.")->group(function () {
+            Route::get("get-logo", function (\Illuminate\Http\Request $request) {
+                $path = public_path("logo.png");
+                if (!file_exists($path)) {
+                    return response()->json(["data" => null], 404);
+                }
+                $data = "data:image/png;base64," . base64_encode(file_get_contents($path));
+                return response()->json(["data" => $data]);
+            })->name("get-logo");
+
             Route::prefix("master-kelas")
                 ->name("master-kelas.")
                 ->controller(\App\Http\Controllers\Admin\MasterData\MasterKelasController::class)
