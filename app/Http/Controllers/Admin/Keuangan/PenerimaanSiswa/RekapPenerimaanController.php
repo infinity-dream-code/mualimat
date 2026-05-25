@@ -356,9 +356,7 @@ class RekapPenerimaanController extends Controller
                                 $value = $filter[2] ?? null;
                                 if (!blank($value)) {
                                     $query->where(function ($q) use ($value) {
-                                        $q->whereRaw('TRIM(CAST(scctcust.CODE02 AS CHAR)) = ?', [trim((string) $value)])
-                                            ->orWhereRaw('UPPER(TRIM(scctcust.DESC01)) = UPPER(?)', [trim((string) $value)])
-                                            ->orWhereRaw('TRIM(CAST(scctcust.CODE02 AS CHAR)) = ?', [trim((string) $value)]);
+                                        $q->whereRaw('TRIM(CAST(scctcust.CODE02 AS CHAR)) = ?', [trim((string) $value)]);
                                     });
                                 }
                                 continue;
@@ -642,9 +640,7 @@ class RekapPenerimaanController extends Controller
                             $value = $filter[2] ?? null;
                             if (!blank($value)) {
                                 $query->where(function ($q) use ($value) {
-                                    $q->whereRaw('TRIM(CAST(scctcust.CODE02 AS CHAR)) = ?', [trim((string) $value)])
-                                        ->orWhereRaw('UPPER(TRIM(scctcust.DESC01)) = UPPER(?)', [trim((string) $value)])
-                                        ->orWhereRaw('TRIM(CAST(scctcust.CODE02 AS CHAR)) = ?', [trim((string) $value)]);
+                                    $q->whereRaw('TRIM(CAST(scctcust.CODE02 AS CHAR)) = ?', [trim((string) $value)]);
                                 });
                             }
                             continue;

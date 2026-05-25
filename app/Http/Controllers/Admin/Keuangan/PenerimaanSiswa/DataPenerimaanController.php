@@ -253,8 +253,7 @@ class DataPenerimaanController extends Controller
                 $sekolah = trim((string)data_get($request->input('filter', []), 'sekolah'));
                 $query->where(function ($sub) use ($sekolah) {
                     $sub->where('scctcust.CODE02', '=', $sekolah)
-                        ->orWhere('scctcust.CODE02', 'like', "%{$sekolah}%")
-                        ->orWhere('scctcust.DESC01', 'like', "%{$sekolah}%");
+                        ->orWhere('scctcust.CODE02', 'like', "%{$sekolah}%");
                 });
             });
 
@@ -375,7 +374,7 @@ class DataPenerimaanController extends Controller
                                 'kelas' => 'scctcust.DESC02',
                                 'nama' => 'scctcust.NMCUST',
                                 'nis' => 'scctcust.NOCUST',
-                                'sekolah' => 'scctcust.DESC01',
+                                'sekolah' => 'scctcust.CODE02',
                                 'angkatan' => 'scctcust.DESC04',
                                 'periode_mulai', 'periode_akhir' => 'scctbill.BILLAC',
                                 default => null
@@ -536,11 +535,11 @@ class DataPenerimaanController extends Controller
                     }
                 })
                 ->when($this->sekolah, function ($q) {
-                    $q->where('b.CODE02', $this->sekolah);
+                    $q->where('d.CODE02', $this->sekolah);
                 })
                 ->when(!blank($filter['sekolah'] ?? null) && strtolower((string)$filter['sekolah']) !== 'all', function ($q) use ($filter) {
                     $sekolah = trim((string)$filter['sekolah']);
-                    $q->where('b.CODE02', $sekolah);
+                    $q->where('d.CODE02', $sekolah);
                 })
                 ->when(!blank($filter['kelas'] ?? null) && strtolower((string)$filter['kelas']) !== 'all', function ($q) use ($filter) {
                     $kelas = trim((string)$filter['kelas']);

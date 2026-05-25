@@ -414,9 +414,7 @@ class RekapTagihanController extends Controller
                             $value = $filter[2] ?? null;
                             if (!blank($value)) {
                                 $query->where(function ($q) use ($value) {
-                                    $q->where('scctcust.CODE02', '=', $value)
-                                        ->orWhere('scctcust.CODE02', '=', $value)
-                                        ->orWhere('scctcust.DESC01', '=', $value);
+                                    $q->where('scctcust.CODE02', '=', $value);
                                 });
                             }
                             continue;
@@ -452,7 +450,6 @@ class RekapTagihanController extends Controller
             'scctbill.FUrutan as Urutan',
             'scctcust.CODE02',
             'scctcust.DESC01',
-            'scctcust.CODE02',
             'scctcust.DESC02',
             'scctcust.DESC03',
             'scctcust.DESC04',
