@@ -130,22 +130,21 @@ class DataSiswaController extends Controller
         $defaultColumn = 'scctcust.nocust';
         $defaultOrder = 'asc';
 
-        if ($request->has('order')) {
+        $columnSortOrder = $defaultOrder;
+        $columnName = $defaultColumn;
+
+        if ($request->has('order') && !empty($columnName_arr)) {
             $columnIndex_arr = $request->get('order');
-            $columnIndex = $columnIndex_arr[0]['column'];
-            $columnSortOrder = $columnIndex_arr[0]['dir'];
-        } else {
-            $columnIndex = $defaultColumn;
-            $columnSortOrder = $defaultOrder;
+            $columnIndex = (int) ($columnIndex_arr[0]['column'] ?? 0);
+            $columnSortOrder = $columnIndex_arr[0]['dir'] ?? $defaultOrder;
+            $requestedColumn = $columnName_arr[$columnIndex]['data'] ?? null;
+            $nonSortable = ['no', 'edit_siswa', 'reset', 'set_status', null, ''];
+            if ($requestedColumn && !in_array($requestedColumn, $nonSortable, true)) {
+                $columnName = 'scctcust.' . $requestedColumn;
+            }
         }
 
-        $columnName = $columnName_arr[$columnIndex]['data'];
-        $searchValue = $search_arr['value'];
-
-        if (!$columnName || $columnName == 'no') {
-            $columnName = $defaultColumn;
-            $columnSortOrder = $defaultOrder;
-        }
+        $searchValue = $search_arr['value'] ?? '';
 
         $filters = [];
         $filterQuery = null;

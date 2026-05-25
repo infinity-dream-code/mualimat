@@ -29,4 +29,11 @@ class scctcust extends Model
         $nova = str_pad($nis, 10, "0", STR_PAD_LEFT);
         return "$prefix$nova";
     }
+
+    public static function showVA($nis): string
+    {
+        return self::showVAMTS($nis);
+    }
+
+    protected $guarded = [];
 }
