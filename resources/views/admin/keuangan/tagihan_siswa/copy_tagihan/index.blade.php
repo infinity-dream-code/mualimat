@@ -108,6 +108,31 @@
                 </div>
 
                 <div class="row mb-3">
+                    <label for="bulan" class="col-sm-3 col-form-label form-label">Bulan Periode</label>
+                    <div class="col-sm-9">
+                        <select class="form-select" id="bulan" name="bulan" data-control="select2"
+                                data-placeholder="Auto dari nama Tagihan Baru">
+                            <option value="">Auto (deteksi dari nama Tagihan Baru)</option>
+                            <option value="01">01 - Januari</option>
+                            <option value="02">02 - Februari</option>
+                            <option value="03">03 - Maret</option>
+                            <option value="04">04 - April</option>
+                            <option value="05">05 - Mei</option>
+                            <option value="06">06 - Juni</option>
+                            <option value="07">07 - Juli</option>
+                            <option value="08">08 - Agustus</option>
+                            <option value="09">09 - September</option>
+                            <option value="10">10 - Oktober</option>
+                            <option value="11">11 - November</option>
+                            <option value="12">12 - Desember</option>
+                        </select>
+                        <small class="text-muted">
+                            Pilih bulan manual jika nama Tagihan Baru tidak mengandung nama bulan (mis. "DAUROH", "SERAGAM"). Mis. Mei + Tahun 2025/2026 → BILLAC <strong>202605</strong>.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
                     <label for="jenis" class="col-sm-3 col-form-label form-label">Jenis Tagihan</label>
                     <div class="col-sm-9">
                         <select class="form-select" id="jenis" name="jenis" data-control="select2">

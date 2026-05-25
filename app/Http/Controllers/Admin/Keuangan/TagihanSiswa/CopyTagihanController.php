@@ -75,11 +75,11 @@ class CopyTagihanController extends Controller
 
         $tagihanLamaNm = $this->resolveTagihanName($request->tagihan_lama);
         $tagihanBaruNm = $this->resolveTagihanName($request->tagihan_baru);
-        $newBillac = $this->computeBillac($request->thn_aka, $tagihanBaruNm);
+        $newBillac = $this->computeBillac($request->thn_aka, $tagihanBaruNm, $request->input('bulan'));
 
         if (!$newBillac) {
             return response()->json([
-                'message' => 'Tidak dapat menentukan periode (BILLAC) dari nama tagihan baru. Nama tagihan harus mengandung salah satu bulan (JANUARI..DESEMBER).',
+                'message' => 'Tidak dapat menentukan periode (BILLAC). Pilih "Bulan Periode" secara manual karena nama Tagihan Baru tidak mengandung nama bulan.',
             ], 422);
         }
 
@@ -117,11 +117,11 @@ class CopyTagihanController extends Controller
 
         $tagihanLamaNm = $this->resolveTagihanName($request->tagihan_lama);
         $tagihanBaruNm = $this->resolveTagihanName($request->tagihan_baru);
-        $newBillac = $this->computeBillac($request->thn_aka, $tagihanBaruNm);
+        $newBillac = $this->computeBillac($request->thn_aka, $tagihanBaruNm, $request->input('bulan'));
 
         if (!$newBillac) {
             return response()->json([
-                'message' => 'Tidak dapat menentukan periode (BILLAC) dari nama tagihan baru. Nama tagihan harus mengandung salah satu bulan (JANUARI..DESEMBER).',
+                'message' => 'Tidak dapat menentukan periode (BILLAC). Pilih "Bulan Periode" secara manual karena nama Tagihan Baru tidak mengandung nama bulan.',
             ], 422);
         }
 
@@ -223,6 +223,7 @@ class CopyTagihanController extends Controller
             'jenis' => ['required', 'in:belum,sudah,semua'],
             'nis' => ['nullable', 'string'],
             'bta_filter' => ['nullable', 'string'],
+            'bulan' => ['nullable', 'string'],
         ], [
             'required' => ':attribute wajib diisi.',
             'in' => 'Jenis tagihan tidak valid.',
@@ -234,6 +235,7 @@ class CopyTagihanController extends Controller
             'jenis' => 'Jenis Tagihan',
             'nis' => 'NIS',
             'bta_filter' => 'Filter BTA',
+            'bulan' => 'Bulan Periode',
         ]);
     }
 
@@ -247,18 +249,29 @@ class CopyTagihanController extends Controller
         return $row?->tagihan;
     }
 
-    private function computeBillac(string $thnAka, ?string $namaTagihan): ?string
+    private function computeBillac(string $thnAka, ?string $namaTagihan, ?string $bulanOverride = null): ?string
     {
-        if (!$namaTagihan) return null;
-
-        $upper = strtoupper($namaTagihan);
         $bulanNum = null;
-        foreach (self::MONTH_MAP as $name => $num) {
-            if (str_contains($upper, $name)) {
-                $bulanNum = $num;
-                break;
+
+        // 1. Manual override dari form ("01".."12")
+        if (!blank($bulanOverride)) {
+            $b = str_pad((string) $bulanOverride, 2, '0', STR_PAD_LEFT);
+            if (preg_match('/^(0[1-9]|1[0-2])$/', $b)) {
+                $bulanNum = $b;
             }
         }
+
+        // 2. Fallback: deteksi dari nama Tagihan Baru
+        if (!$bulanNum && $namaTagihan) {
+            $upper = strtoupper($namaTagihan);
+            foreach (self::MONTH_MAP as $name => $num) {
+                if (str_contains($upper, $name)) {
+                    $bulanNum = $num;
+                    break;
+                }
+            }
+        }
+
         if (!$bulanNum) return null;
 
         $clean = str_replace([' ', '-'], '/', trim($thnAka));
