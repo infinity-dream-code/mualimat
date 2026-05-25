@@ -163,6 +163,37 @@
                 </li>
             </ul>
         </li>
+        <li class="menu-item {{ Request::is(['admin/manual-input*']) ? 'active open' : '' }}">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon ri ri-edit-2-line"></i>
+                <div data-i18n="Manual Input">Manual Input</div>
+            </a>
+            <ul class="menu-sub">
+                <li class="menu-item {{ Request::is(['admin/manual-input/edit-manual*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.manual-input.edit-manual.index') }}" class="menu-link">
+                        <div data-i18n="Edit Manual">Edit Manual</div>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        <li class="menu-item {{ Request::is(['admin/rekap-data*']) ? 'active open' : '' }}">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon ri ri-file-list-3-line"></i>
+                <div data-i18n="Rekap Data">Rekap Data</div>
+            </a>
+            <ul class="menu-sub">
+                <li class="menu-item {{ Request::is(['admin/rekap-data/cek-pelunasan*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.rekap-data.cek-pelunasan.index') }}" class="menu-link">
+                        <div data-i18n="Cek Pelunasan">Cek Pelunasan</div>
+                    </a>
+                </li>
+                <li class="menu-item {{ Request::is(['admin/rekap-data/cek-lunas-siswa*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.rekap-data.cek-lunas-siswa.index') }}" class="menu-link">
+                        <div data-i18n="Cek Lunas Siswa">Cek Lunas Siswa</div>
+                    </a>
+                </li>
+            </ul>
+        </li>
         <li class="menu-item {{ Request::is([
             'admin/data-tagihan',
             'admin/data-penerimaan',

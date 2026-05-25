@@ -704,7 +704,7 @@ class RekapPenerimaanController extends Controller
                     DB::raw('COALESCE(u_akun.NamaAkun, scctbill.BILLNM) as NamaAkun'),
                     'scctcust.CODE02',
                     'scctcust.DESC03',
-                    'scctcust.GetWisma',
+                    DB::raw('NULL as GetWisma'),
                     DB::raw('SUM(a.BILLAM) as BILLAM'),
                 ])
                 ->groupBy([
@@ -714,7 +714,6 @@ class RekapPenerimaanController extends Controller
                     'scctbill.BILLNM',
                     'scctcust.CODE02',
                     'scctcust.DESC03',
-                    'scctcust.GetWisma',
                 ])
                 ->orderBy('scctbill.BTA')
                 ->orderBy('a.KodePost')

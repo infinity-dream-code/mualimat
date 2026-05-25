@@ -230,7 +230,7 @@ class DataPenerimaanController extends Controller
             'scctcust.DESC03',
             'scctcust.NUM2ND',
             'scctcust.GENUS',
-            'scctcust.GENUS1',
+            DB::raw('NULL as GENUS1'),
         ]));
 
         $query = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
@@ -564,7 +564,7 @@ class DataPenerimaanController extends Controller
                     'd.NOCUST',
                     'd.NMCUST',
                     'b.AA',
-                    'd.GetWisma',
+                    DB::raw('NULL as GetWisma'),
                     'b.FIDBANK',
                     'c.NamaAkun',
                     DB::raw("DATE_FORMAT(b.PAIDDT, '%Y-%m-%d %H:%i:%s') as PAIDDT"),
@@ -582,7 +582,6 @@ class DataPenerimaanController extends Controller
                     'd.NOCUST',
                     'd.NMCUST',
                     'd.NUM2ND',
-                    'd.GetWisma',
                     'b.AA',
                     'b.FIDBANK',
                     'c.NamaAkun',

@@ -531,7 +531,7 @@ class ManualPembayaranController extends Controller
                 'scctcust.DESC03',
                 'scctcust.DESC04',
                 'scctcust.GENUS',
-                'scctcust.GENUS1',
+                DB::raw('NULL as GENUS1'),
             ]));
 
             $siswa = scctcust::where('CUSTID', $cust)->select($select)->first();

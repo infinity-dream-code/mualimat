@@ -223,9 +223,17 @@ Route::prefix("admin")
                     });
                 Route::resource("saldo-virtual-account", \App\Http\Controllers\Admin\Keuangan\Saldo\SaldoVirtualAccountController::class)->names("saldo-virtual-account");
 
-                Route::prefix("saldo-virtual-saku")->name("saldo-virtual-saku.")->group(function () {
-                    Route::get("/", [\App\Http\Controllers\Admin\Keuangan\Saldo\SaldoVirtualSakuController::class, "index"])->name("index");
-                });
+                Route::controller(\App\Http\Controllers\Admin\Keuangan\Saldo\SaldoVirtualSakuController::class)
+                    ->prefix("saldo-virtual-saku")->name("saldo-virtual-saku.")->group(function () {
+                        Route::get("get-data", "getData")->name("get-data");
+                        Route::get("get-column", "getColumn")->name("get-column");
+                        Route::get("get-saldo", "getSaldo")->name("get-saldo");
+                        Route::prefix("transaksi")->name("transaksi.")->group(function () {
+                            Route::get("get-data", "getDataTran")->name("get-data");
+                            Route::get("get-column", "getColumnTran")->name("get-column");
+                        });
+                    });
+                Route::resource("saldo-virtual-saku", \App\Http\Controllers\Admin\Keuangan\Saldo\SaldoVirtualSakuController::class)->names("saldo-virtual-saku");
             });
 
             Route::prefix("hapus-tagihan")->name("hapus-tagihan.")->group(function () {
@@ -235,6 +243,34 @@ Route::prefix("admin")
                     Route::post("hapus-jamak", "bulkDestroy")->name("hapus-jamak");
                     Route::resource("", \App\Http\Controllers\Admin\Keuangan\HapusTagihanController::class)->parameters(["" => "id"]);
                 });
+            });
+        });
+
+        Route::prefix("manual-input")->name("manual-input.")->group(function () {
+            Route::controller(\App\Http\Controllers\Admin\ManualInput\EditManualController::class)
+                ->prefix("edit-manual")->name("edit-manual.")->group(function () {
+                    Route::get("get-tagihan", "getTagihan")->name("get-tagihan");
+                    Route::get("get-detail-taighan", "getDetailTagihan")->name("get-detail-tagihan");
+                    Route::put("edit-tagihan", "editTagihan")->name("edit-tagihan");
+                    Route::post("copy-tagihan", "copyTagihan")->name("copy-tagihan");
+                    Route::resource("", \App\Http\Controllers\Admin\ManualInput\EditManualController::class)->parameters(["" => "id"]);
+                });
+        });
+
+        Route::prefix("rekap-data")->name("rekap-data.")->group(function () {
+            Route::prefix("cek-pelunasan")->name("cek-pelunasan.")->controller(\App\Http\Controllers\Admin\RekapData\CekPelunasanController::class)->group(function () {
+                Route::get("get-data", "getData")->name("get-data");
+                Route::get("get-column", "getColumn")->name("get-column");
+                Route::get("cetak-kartu-siswa", "cetakKartuSiswa")->name("cetak-kartu-siswa");
+                Route::resource("", \App\Http\Controllers\Admin\RekapData\CekPelunasanController::class)->parameters(["" => "id"]);
+            });
+
+            Route::prefix("cek-lunas-siswa")->name("cek-lunas-siswa.")->controller(\App\Http\Controllers\Admin\RekapData\CekLunasSiswaController::class)->group(function () {
+                Route::get("get-data", "getData")->name("get-data");
+                Route::get("get-column", "getColumn")->name("get-column");
+                Route::get("cetak-kartu-siswa", "cetakKartuSiswa")->name("cetak-kartu-siswa");
+                Route::get("cetak-pelaporan", "cetakPelaporan")->name("cetak-pelaporan");
+                Route::resource("", \App\Http\Controllers\Admin\RekapData\CekLunasSiswaController::class)->parameters(["" => "id"]);
             });
         });
 
