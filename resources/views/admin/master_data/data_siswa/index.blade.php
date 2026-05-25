@@ -127,20 +127,11 @@
                         </div>
                         <div class="row mb-4">
                             <label class="col-sm-2 col-form-label" for="filter[ayah]">
-                                Nama Ayah
+                                Nama Orang Tua
                             </label>
                             <div class="col-sm-10">
                                 <input class="form-control" id="filter[ayah]" name="filter[ayah]"
-                                       placeholder="Masukkan Nama Ayah">
-                            </div>
-                        </div>
-                        <div class="row mb-4">
-                            <label class="col-sm-2 col-form-label" for="filter[ibu]">
-                                Nama Ibu
-                            </label>
-                            <div class="col-sm-10">
-                                <input class="form-control" id="filter[ibu]" name="filter[ibu]"
-                                       placeholder="Masukkan Nama Ibu">
+                                       placeholder="Masukkan Nama Orang Tua">
                             </div>
                         </div>
                     </div>
@@ -226,41 +217,26 @@
                                 <input type="text" readonly class="form-control form-control-sm input-locked"
                                        id="edit_siswa-desc04" name="angkatan">
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Jenis Kelamin / Gender</label>
                                 <input type="text" class="form-control form-control-sm"
                                        id="edit_siswa-code04" name="gender">
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Internal / Eksternal</label>
-                                <input type="text" class="form-control form-control-sm"
-                                       id="edit_siswa-eksint" name="eksint">
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label">Alamat</label>
-                                <textarea class="form-control form-control-sm" id="edit_siswa-alamat" name="alamat" rows="2"></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Nama Ayah</label>
+                            <div class="col-md-4">
+                                <label class="form-label">Orang Tua</label>
                                 <input type="text" class="form-control form-control-sm"
                                        id="edit_siswa-genus" name="ayah">
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Nama Ibu</label>
-                                <input type="text" class="form-control form-control-sm"
-                                       id="edit_siswa-genus1" name="ibu">
-                            </div>
                             <div class="col-md-4">
-                                <label class="form-label">Nomor Telpon</label>
+                                <label class="form-label">No WA</label>
                                 <input type="text" class="form-control form-control-sm"
-                                       id="edit_siswa-genuscontact" name="nomor_telpon">
+                                       id="edit_siswa-nowa" name="no_wa">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Asrama</label>
-                                <input type="text" class="form-control form-control-sm"
-                                       id="edit_siswa-getwisma" name="asrama">
+                            <div class="col-md-9">
+                                <label class="form-label">Alamat</label>
+                                <textarea class="form-control form-control-sm" id="edit_siswa-alamat" name="alamat" rows="2"></textarea>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label">Status</label>
                                 <select class="form-select form-select-sm" id="edit_siswa-stcust" name="stcust">
                                     <option value="1">Aktif</option>
@@ -644,12 +620,10 @@
 
                 // Mapping eksplisit agar field tetap terisi walau nama key backend berbeda.
                 setValue('#form-edit-siswa [name="nis"]', pickValue(rowData.nis, rowData.nocust, rowData.NOCUST));
-                setValue('#form-edit-siswa [name="no_pendaftaran"]', pickValue(rowData.no_pendaftaran, rowData.num2nd, rowData.NUM2ND));
+                setValue('#form-edit-siswa [name="no_pendaftaran"]', pickValue(rowData.no_pendaftaran, rowData.NUM2ND, rowData.num2nd));
                 setValue('#form-edit-siswa [name="nama"]', pickValue(rowData.nama, rowData.nmcust, rowData.NMCUST));
                 setValue('#form-edit-siswa [name="ayah"]', pickValue(rowData.ayah, rowData.genus, rowData.GENUS));
-                setValue('#form-edit-siswa [name="ibu"]', pickValue(rowData.ibu, rowData.genus1, rowData.GENUS1));
-                setValue('#form-edit-siswa [name="nomor_telpon"]', pickValue(rowData.nomor_telpon, rowData.genuscontact, rowData.GENUSContact));
-                setValue('#form-edit-siswa [name="asrama"]', pickValue(rowData.asrama, rowData.getwisma, rowData.GetWisma));
+                setValue('#form-edit-siswa [name="no_wa"]', pickValue(rowData.no_wa, rowData.NO_WA));
                 setValue('#form-edit-siswa [name="stcust"]', pickValue(rowData.stcust, rowData.STCUST, 0));
                 setValue('#form-edit-siswa [name="unit"]', pickValue(rowData.code02, rowData.CODE02));
                 setValue('#form-edit-siswa [name="kelas"]', pickValue(rowData.desc02, rowData.DESC02));
@@ -657,7 +631,6 @@
                 setValue('#form-edit-siswa [name="angkatan"]', pickValue(rowData.angkatan, rowData.desc04, rowData.DESC04));
                 setValue('#form-edit-siswa [name="gender"]', pickValue(rowData.gender, rowData.code04, rowData.CODE04));
                 setValue('#form-edit-siswa [name="alamat"]', pickValue(rowData.alamat, rowData.desc05, rowData.DESC05));
-                setValue('#form-edit-siswa [name="eksint"]', pickValue(rowData.eksint, rowData.eksternalinternal, rowData.EksternalInternal));
                 setValue('#form-edit-siswa [name="item_id"]', rowData.item_id ?? '');
             }
 
