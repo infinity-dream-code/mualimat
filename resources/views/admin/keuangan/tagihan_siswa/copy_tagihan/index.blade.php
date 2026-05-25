@@ -141,11 +141,6 @@
                 </div>
 
                 <div id="preview-box" class="d-none">
-                    <div class="alert alert-info">
-                        <h6 class="mb-2 fw-bold">Pratinjau</h6>
-                        <ul class="mb-0" id="preview-summary"></ul>
-                    </div>
-
                     <div class="table-responsive mb-3">
                         <table class="table table-sm table-bordered table-hover align-middle" id="preview-table">
                             <thead class="table-light">
@@ -220,7 +215,6 @@
 
             const form = document.getElementById('copy-tagihan-form');
             const previewBox = document.getElementById('preview-box');
-            const previewSummary = document.getElementById('preview-summary');
             const previewTbody = document.querySelector('#preview-table tbody');
             const previewTotal = document.getElementById('preview-total-nominal');
 
@@ -237,15 +231,6 @@
             }
 
             function showPreview(data) {
-                previewSummary.innerHTML = `
-                    <li>Tagihan Lama: <strong>${escapeHtml(data.tagihan_lama ?? '-')}</strong></li>
-                    <li>Tagihan Baru: <strong>${escapeHtml(data.tagihan_baru ?? '-')}</strong></li>
-                    <li>Periode Baru (BILLAC): <strong>${escapeHtml(data.periode_baru ?? '-')}</strong> (${formatPeriode(data.periode_baru)})</li>
-                    <li>Jumlah Siswa: <strong>${data.total_siswa ?? 0}</strong></li>
-                    <li>Jumlah Tagihan akan disalin: <strong>${data.total_tagihan ?? 0}</strong></li>
-                    <li>Total Nominal: <strong>${formatCurrency(data.total_nominal)}</strong></li>
-                `;
-
                 const rows = Array.isArray(data.rows) ? data.rows : [];
                 if (rows.length === 0) {
                     previewTbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">Tidak ada tagihan yang cocok dengan filter.</td></tr>`;
