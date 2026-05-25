@@ -126,9 +126,36 @@
                     </div>
                 </div>
 
-                <div id="preview-box" class="alert alert-info d-none">
-                    <h6 class="mb-2 fw-bold">Pratinjau</h6>
-                    <ul class="mb-0" id="preview-list"></ul>
+                <div id="preview-box" class="d-none">
+                    <div class="alert alert-info">
+                        <h6 class="mb-2 fw-bold">Pratinjau</h6>
+                        <ul class="mb-0" id="preview-summary"></ul>
+                    </div>
+
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-bordered table-hover align-middle" id="preview-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-center" style="width: 50px;">#</th>
+                                    <th>NIS</th>
+                                    <th>Nama</th>
+                                    <th>Kelas</th>
+                                    <th>Nama Tagihan</th>
+                                    <th class="text-end">Jumlah</th>
+                                    <th>Thn Akademik</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="5" class="text-end">Total</th>
+                                    <th class="text-end" id="preview-total-nominal">Rp 0</th>
+                                    <th colspan="2"></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="d-flex justify-content-end gap-3 mt-4">
@@ -179,7 +206,9 @@
 
             const form = document.getElementById('copy-tagihan-form');
             const previewBox = document.getElementById('preview-box');
-            const previewList = document.getElementById('preview-list');
+            const previewSummary = document.getElementById('preview-summary');
+            const previewTbody = document.querySelector('#preview-table tbody');
+            const previewTotal = document.getElementById('preview-total-nominal');
 
             function gatherFormData() {
                 const fd = new FormData(form);
@@ -187,15 +216,45 @@
                 return fd;
             }
 
+            function escapeHtml(s) {
+                return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                })[c]);
+            }
+
             function showPreview(data) {
-                previewList.innerHTML = `
-                    <li>Tagihan Lama: <strong>${data.tagihan_lama ?? '-'}</strong></li>
-                    <li>Tagihan Baru: <strong>${data.tagihan_baru ?? '-'}</strong></li>
-                    <li>Periode Baru (BILLAC): <strong>${data.periode_baru ?? '-'}</strong> (${formatPeriode(data.periode_baru)})</li>
+                previewSummary.innerHTML = `
+                    <li>Tagihan Lama: <strong>${escapeHtml(data.tagihan_lama ?? '-')}</strong></li>
+                    <li>Tagihan Baru: <strong>${escapeHtml(data.tagihan_baru ?? '-')}</strong></li>
+                    <li>Periode Baru (BILLAC): <strong>${escapeHtml(data.periode_baru ?? '-')}</strong> (${formatPeriode(data.periode_baru)})</li>
                     <li>Jumlah Siswa: <strong>${data.total_siswa ?? 0}</strong></li>
                     <li>Jumlah Tagihan akan disalin: <strong>${data.total_tagihan ?? 0}</strong></li>
                     <li>Total Nominal: <strong>${formatCurrency(data.total_nominal)}</strong></li>
                 `;
+
+                const rows = Array.isArray(data.rows) ? data.rows : [];
+                if (rows.length === 0) {
+                    previewTbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">Tidak ada tagihan yang cocok dengan filter.</td></tr>`;
+                } else {
+                    previewTbody.innerHTML = rows.map((r, i) => {
+                        const statusBadge = r.paidst == 1
+                            ? '<span class="badge bg-success">Lunas</span>'
+                            : '<span class="badge bg-warning">Belum</span>';
+                        return `
+                            <tr>
+                                <td class="text-center">${i + 1}</td>
+                                <td>${escapeHtml(r.nis ?? '')}</td>
+                                <td>${escapeHtml(r.nama ?? '')}</td>
+                                <td>${escapeHtml(r.kelas ?? '')}</td>
+                                <td>${escapeHtml(r.nama_tagihan ?? '')}</td>
+                                <td class="text-end">${formatCurrency(r.billam)}</td>
+                                <td>${escapeHtml(r.bta ?? '')}</td>
+                                <td class="text-center">${statusBadge}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+                previewTotal.textContent = formatCurrency(data.total_nominal);
                 previewBox.classList.remove('d-none');
             }
 

@@ -83,15 +83,28 @@ class CopyTagihanController extends Controller
             ], 422);
         }
 
-        $bills = $this->collectBills($request, $tagihanLamaNm);
+        $rows = $this->collectBillsWithSiswa($request, $tagihanLamaNm);
+
+        $list = $rows->map(function ($r) {
+            return [
+                'nis' => $r->NOCUST,
+                'nama' => $r->NMCUST,
+                'kelas' => trim(($r->DESC02 ?? '') . ' ' . ($r->DESC03 ?? '')),
+                'nama_tagihan' => $r->BILLNM,
+                'billam' => (int) $r->BILLAM,
+                'bta' => $r->BTA,
+                'paidst' => (int) $r->PAIDST,
+            ];
+        })->values();
 
         return response()->json([
             'tagihan_lama' => $tagihanLamaNm,
             'tagihan_baru' => $tagihanBaruNm,
             'periode_baru' => $newBillac,
-            'total_siswa' => $bills->pluck('CUSTID')->unique()->count(),
-            'total_tagihan' => $bills->count(),
-            'total_nominal' => (int) $bills->sum('BILLAM'),
+            'total_siswa' => $list->pluck('nis')->unique()->count(),
+            'total_tagihan' => $list->count(),
+            'total_nominal' => (int) $list->sum('billam'),
+            'rows' => $list,
         ]);
     }
 
@@ -290,5 +303,49 @@ class CopyTagihanController extends Controller
         }
 
         return $billQuery->get();
+    }
+
+    private function collectBillsWithSiswa(Request $request, ?string $tagihanLamaNm)
+    {
+        if (!$tagihanLamaNm) return collect([]);
+
+        $query = scctbill::query()
+            ->join('scctcust', 'scctcust.CUSTID', '=', 'scctbill.CUSTID')
+            ->where('scctbill.BILLNM', $tagihanLamaNm)
+            ->where('scctbill.BTA', $request->thn_aka)
+            ->where('scctcust.CODE03', $request->kelas);
+
+        if (!blank($request->nis)) {
+            $nis = trim((string) $request->nis);
+            $query->where(function ($q) use ($nis) {
+                $q->where('scctcust.NOCUST', 'like', "%{$nis}%")
+                    ->orWhere('scctcust.NUM2ND', 'like', "%{$nis}%");
+            });
+        }
+        if ($this->unitScope) {
+            $query->where('scctcust.CODE02', $this->unitScope);
+        }
+        if ($request->jenis === 'belum') {
+            $query->where('scctbill.PAIDST', 0);
+        } elseif ($request->jenis === 'sudah') {
+            $query->where('scctbill.PAIDST', 1);
+        }
+
+        return $query
+            ->select([
+                'scctbill.AA',
+                'scctbill.CUSTID',
+                'scctbill.BILLNM',
+                'scctbill.BILLAM',
+                'scctbill.BTA',
+                'scctbill.PAIDST',
+                'scctcust.NOCUST',
+                'scctcust.NMCUST',
+                'scctcust.NUM2ND',
+                'scctcust.DESC02',
+                'scctcust.DESC03',
+            ])
+            ->orderBy('scctcust.NMCUST')
+            ->get();
     }
 }
