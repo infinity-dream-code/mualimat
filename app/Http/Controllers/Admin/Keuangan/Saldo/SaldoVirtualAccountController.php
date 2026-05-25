@@ -28,7 +28,7 @@ class SaldoVirtualAccountController extends Controller
 
     private array $allowedFilters = [
         'kelas' => 'scctcust.DESC02',
-        'sekolah' => 'scctcust.CODE01',
+        'sekolah' => 'scctcust.CODE02',
         'siswa' => 'scctcust.nmcust',
         'angkatan' => 'scctcust.DESC04',
     ];
@@ -202,7 +202,7 @@ class SaldoVirtualAccountController extends Controller
                 if (strtolower($val) != 'all' && $val !== null && $val !== '') {
                     $colName = match ($key) {
                         'kelas' => 'scctcust.DESC02',
-                        'sekolah' => 'scctcust.CODE01',
+                        'sekolah' => 'scctcust.CODE02',
                         'siswa' => 'scctcust.nmcust',
                         'angkatan' => 'scctcust.DESC04',
                         'saldo_positif' => '_saldo_positif',
@@ -225,7 +225,7 @@ class SaldoVirtualAccountController extends Controller
             }
 
             if ($this->sekolah !== null) {
-                $filters[] = ['scctcust.CODE01', '=', $this->sekolah];
+                $filters[] = ['scctcust.CODE02', '=', $this->sekolah];
             }
 
             if (!empty($filters)) {
@@ -248,7 +248,7 @@ class SaldoVirtualAccountController extends Controller
                 };
             }
         } elseif ($this->sekolah !== null) {
-            $filters[] = ['scctcust.CODE01', '=', $this->sekolah];
+            $filters[] = ['scctcust.CODE02', '=', $this->sekolah];
             $filterQuery = function ($query) use ($filters) {
                 foreach ($filters as $filter) {
                     if (count($filter) === 3) {
@@ -302,7 +302,7 @@ class SaldoVirtualAccountController extends Controller
 
         $totalRecords = Cache::remember("scctcust_total_count_{$this->sekolah}", 600, function () {
             return scctcust::when($this->sekolah, function ($query) {
-                $query->where('CODE01', $this->sekolah);
+                $query->where('CODE02', $this->sekolah);
             })->count('CUSTID');
         });
 

@@ -414,7 +414,7 @@ class RekapTagihanController extends Controller
                             $value = $filter[2] ?? null;
                             if (!blank($value)) {
                                 $query->where(function ($q) use ($value) {
-                                    $q->where('scctcust.CODE01', '=', $value)
+                                    $q->where('scctcust.CODE02', '=', $value)
                                         ->orWhere('scctcust.CODE02', '=', $value)
                                         ->orWhere('scctcust.DESC01', '=', $value);
                                 });
@@ -450,7 +450,7 @@ class RekapTagihanController extends Controller
             'scctbill.FIDBANK',
             'scctbill.FUrutan',
             'scctbill.FUrutan as Urutan',
-            'scctcust.CODE01',
+            'scctcust.CODE02',
             'scctcust.DESC01',
             'scctcust.CODE02',
             'scctcust.DESC02',

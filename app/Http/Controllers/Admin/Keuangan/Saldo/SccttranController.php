@@ -101,7 +101,7 @@ class SccttranController extends Controller
                         'kelas' => 'scctcust.CODE03',
                         'nama' => 'scctcust.NMCUST',
                         'nis' => 'scctcust.NOCUST',
-                        'sekolah' => 'scctcust.CODE01',
+                        'sekolah' => 'scctcust.CODE02',
                         'angkatan' => 'scctcust.DESC04',
                         default => null
                     };

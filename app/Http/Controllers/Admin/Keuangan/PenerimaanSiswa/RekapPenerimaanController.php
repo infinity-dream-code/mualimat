@@ -37,7 +37,7 @@ class RekapPenerimaanController extends Controller
         'nama_tagihan' => 'scctbill.BILLNM',
         'bank' => 'scctbill.FIDBANK',
         'kelas' => 'scctcust.DESC02',
-        'sekolah' => 'scctcust.CODE01',
+        'sekolah' => 'scctcust.CODE02',
         'siswa' => 'scctcust.nmcust',
         'custid' => 'scctcust.CUSTID',
     ];
@@ -284,7 +284,7 @@ class RekapPenerimaanController extends Controller
                             'post' => 'scctbill_detail.KodePost',
                             'nama_tagihan' => 'scctbill.BILLNM',
                             'bank' => 'scctbill.FIDBANK',
-                            'unit' => 'scctcust.CODE01',
+                            'unit' => 'scctcust.CODE02',
                             'kelas' => 'scctcust.DESC02',
                             'siswa' => 'scctcust.nocust',
                             'custid' => 'scctbill.CUSTID',
@@ -356,7 +356,7 @@ class RekapPenerimaanController extends Controller
                                 $value = $filter[2] ?? null;
                                 if (!blank($value)) {
                                     $query->where(function ($q) use ($value) {
-                                        $q->whereRaw('TRIM(CAST(scctcust.CODE01 AS CHAR)) = ?', [trim((string) $value)])
+                                        $q->whereRaw('TRIM(CAST(scctcust.CODE02 AS CHAR)) = ?', [trim((string) $value)])
                                             ->orWhereRaw('UPPER(TRIM(scctcust.DESC01)) = UPPER(?)', [trim((string) $value)])
                                             ->orWhereRaw('TRIM(CAST(scctcust.CODE02 AS CHAR)) = ?', [trim((string) $value)]);
                                     });
@@ -369,7 +369,7 @@ class RekapPenerimaanController extends Controller
                                     $query->where(function ($q) use ($kelasPairs) {
                                         foreach ($kelasPairs as $kelasPair) {
                                             $q->orWhere(function ($kelasQuery) use ($kelasPair) {
-                                                $kelasQuery->where('scctcust.CODE01', '=', $kelasPair['CODE01'])
+                                                $kelasQuery->where('scctcust.CODE02', '=', $kelasPair['CODE01'])
                                                     ->where('scctcust.DESC02', '=', $kelasPair['DESC02'])
                                                     ->where('scctcust.CODE03', '=', $kelasPair['CODE03']);
                                             });
@@ -538,7 +538,7 @@ class RekapPenerimaanController extends Controller
                         'post' => 'scctbill_detail.KodePost',
                         'nama_tagihan' => 'scctbill.BILLNM',
                         'bank' => 'scctbill.FIDBANK',
-                        'unit' => 'scctcust.CODE01',
+                        'unit' => 'scctcust.CODE02',
                         'kelas' => 'scctcust.DESC02',
                         'siswa' => 'scctcust.nocust',
                         'custid' => 'scctbill.CUSTID',
@@ -642,7 +642,7 @@ class RekapPenerimaanController extends Controller
                             $value = $filter[2] ?? null;
                             if (!blank($value)) {
                                 $query->where(function ($q) use ($value) {
-                                    $q->whereRaw('TRIM(CAST(scctcust.CODE01 AS CHAR)) = ?', [trim((string) $value)])
+                                    $q->whereRaw('TRIM(CAST(scctcust.CODE02 AS CHAR)) = ?', [trim((string) $value)])
                                         ->orWhereRaw('UPPER(TRIM(scctcust.DESC01)) = UPPER(?)', [trim((string) $value)])
                                         ->orWhereRaw('TRIM(CAST(scctcust.CODE02 AS CHAR)) = ?', [trim((string) $value)]);
                                 });
@@ -671,7 +671,7 @@ class RekapPenerimaanController extends Controller
                                 $query->where(function ($q) use ($kelasPairs) {
                                     foreach ($kelasPairs as $kelasPair) {
                                         $q->orWhere(function ($kelasQuery) use ($kelasPair) {
-                                            $kelasQuery->where('scctcust.CODE01', '=', $kelasPair['CODE01'])
+                                            $kelasQuery->where('scctcust.CODE02', '=', $kelasPair['CODE01'])
                                                 ->where('scctcust.DESC02', '=', $kelasPair['DESC02'])
                                                 ->where('scctcust.CODE03', '=', $kelasPair['CODE03']);
                                         });

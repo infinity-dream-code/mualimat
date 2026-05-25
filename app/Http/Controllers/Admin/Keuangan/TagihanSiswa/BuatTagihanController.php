@@ -24,14 +24,14 @@ class BuatTagihanController extends Controller
     private string $dataTitle = 'Buat Tagihan';
     private string $showTitle = 'Buat Tagihan';
 
-    private ?string $sekolah = null;
+    private ?string $unitScope = null;
 
     public function __construct()
     {
         $this->middleware(function ($request, $next) {
             if (Auth::check()) {
                 $user = Auth::user();
-                $this->sekolah = $user->sekolah;
+                $this->unitScope = $user->unit;
             }
             return $next($request);
         });
@@ -44,11 +44,9 @@ class BuatTagihanController extends Controller
         $data['dataTitle'] = $this->dataTitle;
         $data['showTitle'] = $this->showTitle;
 
-
         $data['thn_aka'] = mst_thn_aka::orderBy('thn_aka', 'desc')->get();
-//        dd($data['thn_aka']);
-        $data['kelas'] = mst_kelas::when($this->sekolah, function ($query) {
-            $query->where("unit", $this->sekolah);
+        $data['kelas'] = mst_kelas::when($this->unitScope, function ($query) {
+            $query->where("unit", $this->unitScope);
         })
             ->orderByRaw("CASE WHEN kelas REGEXP '^[0-9]+$' THEN 0 ELSE 1 END, kelas")
             ->get();
@@ -78,72 +76,12 @@ class BuatTagihanController extends Controller
 
     public function getData(Request $request)
     {
-        $draw = $request->get('draw');
-        $start = $request->get("start");
-        $rowperpage = $request->get("length");
-
-        $columnName_arr = $request->get('columns');
-        $search_arr = $request->get('search');
-
-        $defaultColumn = 'created_at';
-        $defaultOrder = 'desc';
-
-        if ($request->has('order')) {
-            $columnIndex_arr = $request->get('order');
-            $columnIndex = $columnIndex_arr[0]['column'];
-            $columnSortOrder = $columnIndex_arr[0]['dir'];
-        } else {
-            $columnIndex = $defaultColumn;
-            $columnSortOrder = $defaultOrder;
-        }
-
-        $columnName = $columnName_arr[$columnIndex]['data'];
-        $searchValue = $search_arr['value'];
-
-        if (!$columnName || $columnName == 'no') {
-            $columnName = $defaultColumn;
-            $columnSortOrder = $defaultOrder;
-        }
-
-        // Total records
-        $totalRecords = mst_post::select('count(*) as allcount')->count();
-        $totalRecordswithFilter = mst_post::select('count(*) as allcount')
-            ->count();
-
-        $records = mst_post::orderBy($columnName, $columnSortOrder)
-            ->select('*')
-            ->get()
-            ->map(function ($item) {
-                $item->item_id = $item->id;
-                unset($item->id);
-                return $item;
-            });
-
-        $data_arr = array();
-        $numberStart = $start + 1;
-        foreach ($records as $record) {
-            $data_arr[] = array(
-                'item_id' => $record->item_id,
-                "no" => $numberStart,
-                'kode' => $record->kode,
-                'id_thn_aka' => $record->id_thn_aka,
-                'nama_post' => $record->nama_post,
-                'nama_tagihan' => $record->nama_post,
-                'nomor_rekening' => $record->nomor_rekening,
-                'nominal' => $record->nominal,
-                'edit' => true,
-                'delete' => true,
-            );
-
-            $numberStart++;
-        }
-        $response = array(
-            "draw" => intval($draw),
-            "recordsTotal" => $totalRecords,
-            "recordsFiltered" => $totalRecordswithFilter,
-            "data" => $data_arr,
-        );
-        return response()->json($response);
+        return response()->json([
+            "draw" => intval($request->get('draw')),
+            "recordsTotal" => 0,
+            "recordsFiltered" => 0,
+            "data" => [],
+        ]);
     }
 
     public function getColumnSiswa()
@@ -156,67 +94,68 @@ class BuatTagihanController extends Controller
 
     public function getSiswa(Request $request)
     {
-        $kelas = $request->kelas != 'all' ? $request->kelas ?? null : null;
+        $kelasId = $request->kelas != 'all' ? $request->kelas ?? null : null;
         $thn_aka = $request->angkatan != 'all' ? $request->angkatan ?? null : null;
-//        $thn_aka = null;
 
         $nis = null;
         $nama = null;
         if (isset($request->cari_siswa) && $request->cari_siswa) {
-            is_numeric($request->cari_siswa) ? $nis = '%' . $request->cari_siswa . '%' : $nama = '%' . $request->cari_siswa . '%';
+            is_numeric($request->cari_siswa)
+                ? $nis = '%' . $request->cari_siswa . '%'
+                : $nama = '%' . $request->cari_siswa . '%';
         }
-        $siswa = [];
-        $kelas = mst_kelas::where('id', '=', $kelas)->first();
 
-        $whereAny = [
-            'scctcust.NMCUST as nama',
-            'scctcust.NOCUST as nis',
+        $select = [
+            'scctcust.CUSTID',
+            'scctcust.nocust as nis',
+            'scctcust.NUM2ND as nomor_pendaftaran',
+            'scctcust.nmcust as nama',
+            'scctcust.CODE02',
+            'scctcust.DESC02',
+            'scctcust.DESC03',
+            'scctcust.DESC04 as angkatan',
         ];
 
-        $select = array_unique(array_merge($whereAny, [
-            'scctcust.CUSTID',
-            'scctcust.NUM2ND as nomor_pendaftaran',
-            'scctcust.CODE02',
-            'scctcust.DESC02 as kelas',
-            'scctcust.DESC03 as jenjang',
-            'scctcust.DESC04 as angkatan',
-        ]));
+        $kelasModel = $kelasId ? mst_kelas::where('id', $kelasId)->first() : null;
+
+        $query = scctcust::query()
+            ->when($this->unitScope, fn ($q) => $q->where('scctcust.CODE02', $this->unitScope));
 
         if ($request->siswa_only == true) {
-            $siswa = scctcust::when($nis, function ($query, $nis) {
-                return $query->orWhere('scctcust.NOCUST', 'like', $nis)
-                    ->orWhere('scctcust.NUM2ND', 'like', $nis);
+            $query->when($nis, function ($q, $nis) {
+                return $q->where(function ($q2) use ($nis) {
+                    $q2->where('scctcust.nocust', 'like', $nis)
+                        ->orWhere('scctcust.NUM2ND', 'like', $nis);
+                });
             })
-                ->select($select)
-                ->orderBy('scctcust.NOCUST', 'asc')
-                ->get()
-                ->toArray();
-        } else if ($kelas) {
-            $siswa = scctcust::when($kelas, function ($query, $kelas) {
-                return $query->where('scctcust.CODE02', '=', $kelas->unit)
-                    ->where('scctcust.DESC03', '=', $kelas->kelas)
-                    ->where('scctcust.DESC02', '=', $kelas->jenjang);
-            })
-                ->when($thn_aka, function ($query, $thn_aka) {
-                    return $query->where('scctcust.DESC04', '=', $thn_aka);
-                })
-                ->when($nis, function ($query, $nis) {
-                    return $query->where('scctcust.NOCUST', 'like', $nis);
-                })
-                ->when($nama, function ($query, $nama) {
-                    return $query->where('scctcust.NMCUST', 'like', $nama);
-                })
-                ->select($select)
-                ->orderBy('scctcust.NOCUST', 'asc')
-                ->get()
-                ->toArray();
+            ->when($nama, fn ($q, $nama) => $q->where('scctcust.nmcust', 'like', $nama));
+        } elseif ($kelasModel) {
+            $query->where('scctcust.CODE03', '=', $kelasModel->id)
+                ->when($thn_aka, fn ($q, $t) => $q->where('scctcust.DESC04', '=', $t))
+                ->when($nis, fn ($q, $n) => $q->where('scctcust.nocust', 'like', $n))
+                ->when($nama, fn ($q, $n) => $q->where('scctcust.nmcust', 'like', $n));
+        } else {
+            return response()->json(['data' => []]);
         }
 
-        $response = array(
-            "data" => $siswa,
-        );
+        $siswa = $query->select($select)
+            ->orderBy('scctcust.nocust', 'asc')
+            ->limit(500)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'CUSTID' => $item->CUSTID,
+                    'nis' => $item->nis,
+                    'nomor_pendaftaran' => $item->NUM2ND,
+                    'nama' => $item->nama,
+                    'CODE02' => $item->CODE02,
+                    'kelas' => trim(($item->DESC02 ?? '') . ' ' . ($item->DESC03 ?? '')),
+                    'jenjang' => $item->DESC02,
+                    'angkatan' => $item->angkatan,
+                ];
+            });
 
-        return response()->json($response);
+        return response()->json(['data' => $siswa]);
     }
 
     public function getMasterHarga(Request $request)

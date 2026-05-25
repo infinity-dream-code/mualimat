@@ -34,7 +34,7 @@ class DataTagihanController extends Controller
         'tahun_akademik' => 'scctbill.BTA',
         'post' => 'scctbill.BILLNM',
         'kelas' => 'scctcust.DESC02',
-        'sekolah' => 'scctcust.CODE01',
+        'sekolah' => 'scctcust.CODE02',
         'siswa' => 'scctcust.nmcust',
         'custid' => 'scctcust.CUSTID',
     ];
@@ -121,7 +121,10 @@ class DataTagihanController extends Controller
             ->where('thn_aka', '!=', null)
             ->orderBy('thn_aka', 'desc')->get();
         $data['sekolah'] = mst_sekolah::when($this->sekolah, function ($query) {
-            $query->where("id", $this->sekolah);
+            $query->where(function ($q) {
+                $q->where("CODE01", $this->sekolah)
+                    ->orWhere("DESC01", $this->sekolah);
+            });
         })->get();
         $data['kelas'] = mst_kelas::when($this->sekolah, function ($query) {
             $query->where("unit", $this->sekolah);
@@ -273,13 +276,8 @@ class DataTagihanController extends Controller
                     }
                 };
 
-                // Unit user bisa tersimpan sebagai kode (CODE02) atau nama sekolah (DESC01).
                 if ($this->sekolah !== null && $this->sekolah !== '') {
-                    $filters[] = [
-                        'whereRaw',
-                        '(scctcust.CODE02 = ? OR scctcust.DESC01 = ?)',
-                        [$this->sekolah, $this->sekolah]
-                    ];
+                    $filters[] = ['scctcust.CODE02', '=', $this->sekolah];
                 }
 
                 if (!empty($filters)) {
@@ -433,7 +431,7 @@ class DataTagihanController extends Controller
 
         if ($this->sekolah !== null) {
             $filter = array_merge($filter, [
-                'scctcust.CODE01' => $this->sekolah,
+                'scctcust.CODE02' => $this->sekolah,
             ]);
         }
 

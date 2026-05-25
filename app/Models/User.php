@@ -53,4 +53,19 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Role::class);
     }
+
+    public function getSekolahAttribute()
+    {
+        return $this->attributes['unit'] ?? null;
+    }
+
+    public static function getTandaTanganBase64(): ?string
+    {
+        return null;
+    }
+
+    public static function getLogoSekolahBase64(): ?string
+    {
+        return null;
+    }
 }
