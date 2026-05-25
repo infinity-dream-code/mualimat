@@ -525,14 +525,14 @@ class ManualPembayaranController extends Controller
                 'scctcust.NUM2ND',
             ];
 
-            $select = array_unique(array_merge($whereAny, [
+            $select = array_merge($whereAny, [
                 'scctcust.CODE02',
                 'scctcust.DESC02',
                 'scctcust.DESC03',
                 'scctcust.DESC04',
                 'scctcust.GENUS',
                 DB::raw('NULL as GENUS1'),
-            ]));
+            ]);
 
             $siswa = scctcust::where('CUSTID', $cust)->select($select)->first();
 

@@ -216,7 +216,8 @@ class DataPenerimaanController extends Controller
         $whereAny = ['scctcust.nmcust',
             'scctcust.nocust',];
 
-        $select = array_unique(array_merge($whereAny, ['scctbill.AA',
+        $select = array_merge($whereAny, [
+            'scctbill.AA',
             'scctbill.CUSTID',
             'scctbill.BILLNM',
             'scctbill.BILLAM',
@@ -231,7 +232,7 @@ class DataPenerimaanController extends Controller
             'scctcust.NUM2ND',
             'scctcust.GENUS',
             DB::raw('NULL as GENUS1'),
-        ]));
+        ]);
 
         $query = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
             ->where('scctbill.PAIDST', 1)
