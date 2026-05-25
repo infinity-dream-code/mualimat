@@ -38,6 +38,7 @@ class ValidationMessage extends Model
             "dari_kelas" => "Kelas asal",
             "thn_aka" => "Tahun Akademik/Pelajaran",
             "client_name_wa" => "Nama Client WA",
+            "no_wa" => "No WA",
         ];
     }
 

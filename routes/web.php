@@ -34,6 +34,88 @@ Route::prefix("admin")
     ->group(function () {
         Route::get("/", [AdminController::class, "index"])->name("index");
 
+        Route::prefix("master-data")->name("master-data.")->group(function () {
+            Route::prefix("master-kelas")
+                ->name("master-kelas.")
+                ->controller(\App\Http\Controllers\Admin\MasterData\MasterKelasController::class)
+                ->group(function () {
+                    Route::get("get-data", "getData")->name("get-data");
+                    Route::get("get-column", "getColumn")->name("get-column");
+                    Route::resource("", \App\Http\Controllers\Admin\MasterData\MasterKelasController::class)->parameters(["" => "id"]);
+                });
+
+            Route::prefix("tahun-pelajaran")
+                ->name("tahun-pelajaran.")
+                ->controller(\App\Http\Controllers\Admin\MasterData\TahunPelajaranController::class)
+                ->group(function () {
+                    Route::get("get-data", "getData")->name("get-data");
+                    Route::get("get-column", "getColumn")->name("get-column");
+                });
+            Route::resource("tahun-pelajaran", \App\Http\Controllers\Admin\MasterData\TahunPelajaranController::class)->names("tahun-pelajaran");
+
+            Route::prefix("export-import-data")
+                ->name("export-import-data.")
+                ->controller(\App\Http\Controllers\Admin\MasterData\ExportImportDataController::class)
+                ->group(function () {
+                    Route::get("get-data", "getData")->name("get-data");
+                    Route::get("get-column", "getColumn")->name("get-column");
+                    Route::post("validate-data", "validateData")->name("validate-data");
+                    Route::get("clear-data", "clearData")->name("clear-data");
+                    Route::resource("", \App\Http\Controllers\Admin\MasterData\ExportImportDataController::class)->parameters(["" => "id"]);
+                });
+
+            Route::prefix("data-siswa")
+                ->name("data-siswa.")
+                ->controller(\App\Http\Controllers\Admin\MasterData\DataSiswaController::class)
+                ->group(function () {
+                    Route::get("get-data", "getData")->name("get-data");
+                    Route::get("get-column", "getColumn")->name("get-column");
+                    Route::get("get-siswa", "getSiswa")->name("get-siswa");
+                    Route::get("get-siswa-select2", "getSiswaSelect2")->name("get-siswa-select2");
+                    Route::post("reset-login-android/{id}", "ResetLoginAndroid")->name("reset-login-android");
+                    Route::post("set-status-siswa/{id}", "setStatusSiswa")->name("set-status-siswa");
+                });
+            Route::resource("data-siswa", \App\Http\Controllers\Admin\MasterData\DataSiswaController::class)->names("data-siswa");
+
+            Route::prefix("setting-data-wa")
+                ->name("setting-data-wa.")
+                ->controller(\App\Http\Controllers\Admin\MasterData\SettingDataWaController::class)
+                ->group(function () {
+                    Route::get("get-data", "getData")->name("get-data");
+                    Route::get("get-column", "getColumn")->name("get-column");
+                    Route::post("validate-data", "validateData")->name("validate-data");
+                    Route::get("clear-data", "clearData")->name("clear-data");
+                    Route::resource("", \App\Http\Controllers\Admin\MasterData\SettingDataWaController::class)->parameters(["" => "id"]);
+                });
+
+            Route::prefix("master-post")
+                ->name("master-post.")
+                ->controller(\App\Http\Controllers\Admin\MasterData\MasterPostController::class)
+                ->group(function () {
+                    Route::get("get-data", "getData")->name("get-data");
+                    Route::get("get-column", "getColumn")->name("get-column");
+                    Route::resource("", \App\Http\Controllers\Admin\MasterData\MasterPostController::class)->parameters(["" => "id"]);
+                });
+
+            Route::prefix("beban-post")
+                ->name("beban-post.")
+                ->controller(\App\Http\Controllers\Admin\MasterData\BebanPostController::class)
+                ->group(function () {
+                    Route::get("get-data", "getData")->name("get-data");
+                    Route::get("get-column", "getColumn")->name("get-column");
+                    Route::resource("", \App\Http\Controllers\Admin\MasterData\BebanPostController::class)->parameters(["" => "id"]);
+                });
+
+            Route::prefix("pindah-kelas")
+                ->name("pindah-kelas.")
+                ->controller(\App\Http\Controllers\Admin\MasterData\PindahKelasController::class)
+                ->group(function () {
+                    Route::get("get-data", "getData")->name("get-data");
+                    Route::get("get-column", "getColumn")->name("get-column");
+                    Route::resource("", \App\Http\Controllers\Admin\MasterData\PindahKelasController::class)->parameters(["" => "id"]);
+                });
+        });
+
         Route::prefix("data-tagihan")
             ->name("data-tagihan.")
             ->group(function () {

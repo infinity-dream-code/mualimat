@@ -15,4 +15,9 @@ class mst_tagihan extends Model
     public $timestamps = false;
 
     public $incrementing = false;
+
+    protected $fillable = [
+        "tagihan",
+        "kode",
+    ];
 }

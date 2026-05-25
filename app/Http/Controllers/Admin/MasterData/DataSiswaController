@@ -1,0 +1,593 @@
+<?php
+
+namespace App\Http\Controllers\Admin\MasterData;
+
+use App\Http\Controllers\Controller;
+use App\Models\MasterData\mst_sekolah;
+use App\Models\scctcust;
+use App\Models\ValidationMessage;
+use App\Support\FilterHandler;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+
+class DataSiswaController extends Controller
+{
+    private string $title = 'Master Data';
+    private string $mainTitle = 'Data Siswa';
+    private string $dataTitle = 'Data Siswa';
+    private ?string $sekolah = null;
+    private array $allowedFilters = [
+        'kelas' => 'scctcust.DESC02',
+        'sekolah' => 'scctcust.CODE01',
+        'siswa' => 'scctcust.nmcust',
+        'angkatan' => 'scctcust.DESC04',
+        'ayah' => 'scctcust.GENUS',
+        'ibu' => 'scctcust.GENUS1',
+    ];
+
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (Auth::check()) {
+                $user = Auth::user();
+                $this->sekolah = $user->sekolah;
+            }
+            return $next($request);
+        });
+    }
+
+    public function index()
+    {
+        $data['title'] = $this->title;
+        $data['mainTitle'] = $this->mainTitle;
+        $data['dataTitle'] = $this->dataTitle;
+        $data['columnsUrl'] = route('admin.master-data.data-siswa.get-column');
+        $data['datasUrl'] = route('admin.master-data.data-siswa.get-data');
+        $data['thn_aka'] = \App\Models\MasterData\mst_thn_aka::getMstThnAkaAttributes();
+        $data['sekolah'] = mst_sekolah::when($this->sekolah, function ($query) {
+            $query->where(function ($q) {
+                $q->where("CODE01", $this->sekolah);
+            });
+        })->get();
+
+        $data['kelas'] = \App\Models\MasterData\mst_kelas::getMstKelasAttributes();
+
+        return view('admin.master_data.data_siswa.index', $data);
+    }
+
+    public function getColumn()
+    {
+        return [
+            ['data' => null, 'name' => 'no', 'className' => 'text-center', 'columnType' => 'row', 'exportable' => true],
+            ['data' => 'NOCUST', 'name' => 'NIS', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'NOVA', 'name' => 'NO VA', 'exportable' => true],
+            ['data' => 'NMCUST', 'name' => 'NAMA', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'NUM2ND', 'name' => 'No Pendaftaran', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'CODE02', 'name' => 'Unit', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'DESC02', 'name' => 'Kelas', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'DESC03', 'name' => 'Jenjang', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'DESC04', 'name' => 'Angkatan', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'CODE04', 'name' => 'Gender', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'DESC05', 'name' => 'Alamat', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'EksternalInternal', 'name' => 'Internal / Eksternal', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'GENUS', 'name' => 'Ayah', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'GENUS1', 'name' => 'Ibu', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'GENUSContact', 'name' => 'Nomor Telpon', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'GetWisma', 'name' => 'Asrama', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            ['data' => 'STCUST', 'name' => 'Status (1/0)', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            [
+                'data' => 'edit_siswa',
+                'name' => 'Edit Data',
+                'dataVal' => false,
+                'columnType' => 'button',
+                'className' => 'text-center',
+                'button' => 'modal',
+                "buttonLink" => "#modal-edit-siswa",
+                'buttonText' => 'Edit',
+                'buttonClass' => 'btn btn-sm btn-info button-edit-siswa',
+                'buttonIcon' => 'ri-edit-line me-2'
+            ],
+            [
+                'data' => 'reset',
+                'name' => 'Reset Login',
+                'dataVal' => false,
+                'columnType' => 'button',
+                'className' => 'text-center',
+                'button' => 'modal',
+                "buttonLink" => "#modal-reset-login-android",
+                'buttonText' => 'Reset Login Android',
+                'buttonClass' => 'btn btn-sm btn-whatsapp button-reset-login-android',
+                'buttonIcon' => 'ri-android-line me-2'
+            ],
+            [
+                'data' => 'set_status',
+                'name' => 'Edit Status',
+                'dataVal' => false,
+                'columnType' => 'button',
+                'className' => 'text-center',
+                'button' => 'modal',
+                "buttonLink" => "#modal-edit-status-siswa",
+                'buttonText' => 'Edit Status',
+                'buttonClass' => 'btn btn-sm btn-warning button-set-status-siswa',
+                'buttonIcon' => 'ri-edit-box-line me-2'
+            ],
+        ];
+    }
+
+    public function getData(Request $request)
+    {
+        $draw = $request->get('draw');
+        $start = $request->get('start');
+        $rowperpage = $request->get('length');
+
+        $columnName_arr = $request->get('columns');
+        $search_arr = $request->get('search');
+
+        $defaultColumn = 'scctcust.nocust';
+        $defaultOrder = 'asc';
+
+        if ($request->has('order')) {
+            $columnIndex_arr = $request->get('order');
+            $columnIndex = $columnIndex_arr[0]['column'];
+            $columnSortOrder = $columnIndex_arr[0]['dir'];
+        } else {
+            $columnIndex = $defaultColumn;
+            $columnSortOrder = $defaultOrder;
+        }
+
+        $columnName = $columnName_arr[$columnIndex]['data'];
+        $searchValue = $search_arr['value'];
+
+        if (!$columnName || $columnName == 'no') {
+            $columnName = $defaultColumn;
+            $columnSortOrder = $defaultOrder;
+        }
+
+        $filters = [];
+        $filterQuery = null;
+
+        $filter = FilterHandler::resolveFilters($request->input('filter'), $this->allowedFilters);
+        if (!is_array($filter)) {
+            $filter = [];
+        }
+
+        if ($this->sekolah !== null) {
+            $filter = array_merge($filter, [
+                'scctcust.CODE01' => $this->sekolah,
+            ]);
+        }
+
+        if ($filter) {
+            foreach ($filter as $key => $val) {
+                switch ($key) {
+                    case 'scctcust.DESC02':
+                        $val = explode("~~", $val);
+                        if (count($val) == 3) {
+                            $filters[] = ['scctcust.CODE02', '=', $val[0]];
+                            $filters[] = ['scctcust.DESC02', '=', $val[1]];
+                            $filters[] = ['scctcust.DESC03', '=', $val[2]];
+                        }
+                        break;
+                    case 'scctcust.CODE02':
+                        $filters[] = ["scctcust.CODE02", "=", $val];
+                        break;
+                    case 'scctcust.nmcust':
+                        $val = is_numeric($val) ? $val : '%' . $val . '%';
+                        $colName = is_numeric($val) ? 'scctcust.NOCUST' : $key;
+                        ($colName) && $filters[] = [$colName, 'like', $val];
+                        break;
+                    case 'scctcust.GENUS':
+                    case 'scctcust.GENUS1':
+                        $filters[] = [$key, 'like', '%' . $val . '%'];
+                        break;
+                    default:
+                        ($key) && $filters[] = [$key, '=', $val];
+                        break;
+                }
+            }
+
+            if (!empty($filters)) {
+                $filterQuery = function ($query) use ($filters) {
+                    foreach ($filters as $filter) {
+                        if (($filter[0] ?? null) === 'whereRaw') {
+                            $query->whereRaw($filter[1], $filter[2] ?? []);
+                            continue;
+                        }
+                        if (count($filter) === 3) {
+                            $query->where($filter[0], $filter[1], $filter[2]);
+                        } elseif (count($filter) === 4) {
+                            if ($filter[3] == 'whereBetween') {
+                                $query->whereBetween($filter[0], [$filter[1], $filter[2]]);
+                            } else {
+                                $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
+                            }
+                        }
+                    }
+                };
+            }
+        }
+
+        $whereAny = [
+            'scctcust.NMCUST',
+            'scctcust.NOCUST',
+            'scctcust.NUM2ND',
+            'scctcust.GENUS',
+            'scctcust.GENUS1',
+            'scctcust.GENUSContact',
+            'scctcust.GetWisma',
+            'scctcust.CODE04',
+            'scctcust.DESC05',
+            'scctcust.EksternalInternal',
+        ];
+
+        $select = array_unique(array_merge($whereAny, [
+            'scctcust.CUSTID',
+            'scctcust.CODE02',
+            'scctcust.DESC02',
+            'scctcust.DESC03',
+            'scctcust.DESC04',
+            'scctcust.STCUST',
+            'scctcust.GENUS',
+            'scctcust.GENUS1',
+            'scctcust.GENUSContact',
+            'scctcust.GetWisma',
+            'scctcust.CODE04',
+            'scctcust.DESC05',
+            'scctcust.EksternalInternal',
+
+        ]));
+
+        $totalRecords = Cache::remember('scctcust_total_count', 600, function () {
+            return scctcust::select('count(*) as allcount')->count();
+        });
+
+        $query = scctcust::where(function ($query) use ($filterQuery) {
+            if ($filterQuery) {
+                $filterQuery($query);
+            }
+        })
+            ->when(!blank($searchValue), function ($query) use ($whereAny, $searchValue) {
+                $query->where(function ($q) use ($whereAny, $searchValue) {
+                    $sanitizeSearch = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $searchValue);
+                    foreach ($whereAny as $column) {
+                        $q->orWhere($column, 'like', '%' . $sanitizeSearch . '%');
+                    }
+                });
+            });
+
+
+        $totalRecordswithFilter = $query->count();
+
+        // Fetch records
+        $records = $query->orderBy($columnName, $columnSortOrder)
+            ->select($select)
+            ->skip($start)
+            ->take($rowperpage)
+            ->get()
+            ->map(function ($item) {
+                $item->item_id = $item->CUSTID;
+                $item->NOVA = ($item->NOCUST && $item->NOCUST != '-') ? scctcust::showVA($item->NOCUST) : null;
+                if (!$item->NOCUST || $item->NOCUST == '-') $item->NOCUST = null;
+                if (!$item->NUM2ND || $item->NUM2ND == '-') $item->NUM2ND = null;
+                if (!$item->GENUS || $item->GENUS == '-') $item->GENUS = null;
+                if (!$item->GENUS1 || $item->GENUS1 == '-') $item->GENUS1 = null;
+                if (!$item->GENUSContact || $item->GENUSContact == '-') $item->GENUSContact = null;
+                if (!$item->GetWisma || $item->GetWisma == '-') $item->GetWisma = null;
+                if (!$item->CODE04 || $item->CODE04 == '-') $item->CODE04 = null;
+                if (!$item->DESC05 || $item->DESC05 == '-') $item->DESC05 = null;
+                if (!$item->EksternalInternal || $item->EksternalInternal == '-') $item->EksternalInternal = null;
+
+                // Alias key untuk kebutuhan modal edit agar mapping frontend konsisten.
+                $item->nis = $item->NOCUST;
+                $item->no_pendaftaran = $item->NUM2ND;
+                $item->nama = $item->NMCUST;
+                $item->ayah = $item->GENUS;
+                $item->ibu = $item->GENUS1;
+                $item->nomor_telpon = $item->GENUSContact;
+                $item->asrama = $item->GetWisma;
+                $item->angkatan = $item->DESC04;
+                $item->gender = $item->CODE04;
+                $item->alamat = $item->DESC05;
+                $item->eksint = $item->EksternalInternal;
+
+                $item->edit_siswa = true;
+                $item->reset = true;
+                $item->set_status = true;
+                unset($item->CUSTID);
+                return $item;
+            })->toArray();
+
+        $response = array(
+            'draw' => intval($draw),
+            'recordsTotal' => $totalRecords,
+            'recordsFiltered' => $totalRecordswithFilter,
+            'data' => $records,
+        );
+        return response()->json($response);
+    }
+
+    public function getSiswaSelect2(Request $request)
+    {
+        $nis = $nodaftar = $nama = false;
+
+        if (!empty($request->term)) {
+            if (is_numeric($request->term)) {
+                $nis = '%' . $request->term . '%';
+                $nodaftar = '%' . $request->term . '%';
+            } else {
+                $nama = '%' . $request->term . '%';
+            }
+        }
+
+        if ($request->nis) {
+            $nodaftar = false;
+        } elseif ($request->nodaftar && !empty($request->term) && ctype_digit((string) $request->term)) {
+            // Manual No. Pendaftaran: angka hanya cocokkan NUM2ND, bukan NIS (NOCUST).
+            $nis = false;
+        }
+
+
+        $whereAny = [
+            'scctcust.NMCUST',
+            'scctcust.NOCUST',
+        ];
+
+        $select = array_unique(array_merge($whereAny, [
+            'scctcust.CUSTID',
+            'scctcust.NUM2ND',
+            'scctcust.CODE02',
+            'scctcust.DESC02',
+            'scctcust.DESC03',
+            'scctcust.DESC04',
+            'scctcust.GENUS',
+            'scctcust.GENUS1',
+        ]));
+
+        if (!$nis && !$nama && !$nodaftar) {
+            $siswa = [];
+        } else {
+            $siswa = scctcust::when($this->sekolah, function ($query) {
+                $query->where("scctcust.CODE01", $this->sekolah);
+            })
+                ->when($nis && $nodaftar, function ($query) use ($nodaftar, $nis) {
+                    $query->where(function ($q) use ($nodaftar, $nis) {
+                        $q->orWhere('scctcust.NOCUST', 'like', $nis);
+                        $q->orWhere('scctcust.NUM2ND', 'like', $nodaftar);
+                    });
+                })
+                ->when($nis && !$nodaftar, function ($query) use ($nis) {
+                    return $query->where('scctcust.NOCUST', 'like', $nis);
+                })->when($nodaftar && !$nis, function ($query) use ($nodaftar) {
+                    return $query->where('scctcust.NUM2ND', 'like', $nodaftar);
+                })
+                ->when($nama, function ($query) use ($nama) {
+                    return $query->where('scctcust.NMCUST', 'like', $nama);
+                })->select($select)
+                ->orderBy('scctcust.NMCUST', 'asc')
+                ->get()
+                ->map(function ($item) use ($request) {
+                    $item->id = $item->CUSTID;
+                    if (!$item->NOCUST || $item->NOCUST == '-') $nis = null;
+                    if (!$item->NUM2ND || $item->NUM2ND == '-') $nodaf = null;
+
+                    $nocust = $item->NOCUST === null || $item->NOCUST === '' || $item->NOCUST === '-' || !$item->NOCUST ? false : $item->NOCUST;
+
+                    if ($request->nodaftar) {
+                        $nomorPend = ($item->NUM2ND && $item->NUM2ND !== '-') ? $item->NUM2ND : '-';
+                        $item->text = 'No. Pend : ' . $nomorPend . ' - ' . $item->NMCUST . ' | ' . $item->CODE02 . ' - ' . $item->DESC02 . ' - ' . $item->DESC03 . ' - ' . $item->DESC04;
+                    } else {
+                        $item->text = ($nocust ? 'NIS : ' . $item->NOCUST : 'No. Pend : ' . $item->NUM2ND) . ' - ' . $item->NMCUST . ' | ' . $item->CODE02 . ' - ' . $item->DESC02 . ' - ' . $item->DESC03 . ' - ' . $item->DESC04;
+                    }
+                    return $item;
+                })
+                ->toArray();
+        }
+
+        return response()->json($siswa);
+    }
+
+    public function getSiswa(Request $request)
+    {
+        $kelas = $request->kelas != 'all' ? $request->kelas ?? null : null;
+        $thn_aka = $request->angkatan != 'all' ? $request->angkatan ?? null : null;
+
+        $nis = $nodaftar = $nama = null;
+
+        $cariSiswa = $request->siswa;
+        if (!empty($cariSiswa)) {
+            if (is_numeric($cariSiswa)) {
+                if ($request->nis) {
+                    $nis = '%' . $cariSiswa . '%';
+                } else if ($request->nodaftar) {
+                    $nodaftar = '%' . $cariSiswa . '%';
+                }
+            } else {
+                $nama = '%' . $cariSiswa . '%';
+            }
+        }
+
+        $whereAny = [
+            'scctcust.NMCUST as nama',
+            'scctcust.NOCUST as nis',
+            'scctcust.NUM2ND as no_daftar',
+        ];
+
+        $select = array_unique(array_merge($whereAny, [
+            'scctcust.CUSTID',
+            'scctcust.CODE02 as unit',
+            'scctcust.DESC02 as kelompok',
+            'scctcust.DESC03 as kelas',
+            'scctcust.DESC04 as thn_aka',
+        ]));
+
+        $siswa = [];
+
+        if ($nis || $nama || $nodaftar || $kelas || $thn_aka) {
+            $siswa = scctcust::when($this->sekolah, function ($query) {
+                $query->where("scctcust.CODE01", $this->sekolah);
+            })
+                ->when($kelas, function ($query, $kelas) {
+                    return $query->where('scctcust.CODE03', 'like', $kelas);
+                })->when($nis, function ($query, $nis) {
+                    return $query->where('scctcust.NOCUST', 'like', $nis);
+                })->when($nodaftar, function ($query, $nodaftar) {
+                    return $query->where('scctcust.NUM2ND', 'like', $nodaftar);
+                })->when($nama, function ($query, $nama) {
+                    return $query->where('scctcust.NMCUST', 'like', $nama);
+                })->select($select)
+                ->orderBy('scctcust.NMCUST', 'asc')
+                ->get()
+                ->map(function ($item) {
+                    $item->id = $item->CUSTID;
+                    unset($item->CUSTID);
+                    return $item;
+                })
+                ->toArray();
+        }
+
+        return response()->json($siswa);
+    }
+
+    public function ResetLoginAndroid($id, Request $request)
+    {
+        $siswa = scctcust::where('CUSTID', $id)->first();
+        if (!$siswa) return response()->json(['message' => 'Siswa tidak ditemukan!'], 422);
+        if (!$siswa->NOCUST || empty($siswa->NOCUST) || $siswa->NOCUST == '-') return response()->json(['message' => 'Siswa tidak memiliki NIS!'], 422);
+        try {
+            DB::beginTransaction();
+            DB::select("CALL AndroidLogonFixer(?)", [$siswa->NOCUST]);
+            DB::commit();
+            return response()->json(['message' => 'Login Android Direset!'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Gagal Mereset Login Android!', 'error' => $e], 422);
+        }
+    }
+
+    public function setStatusSiswa($id, Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'stcust' => ['required', 'in:0,1'],
+        ], ValidationMessage::messages(),
+            ValidationMessage::attributes());
+
+        if ($validator->fails()) {
+            $message = $validator->errors()->first();
+            if ($validator->errors()->count() > 1) {
+                $message = "{$message} Dan beberapa error lainnya";
+            }
+
+            return response()->json(
+                [
+                    "message" => $message,
+                    "errors" => $validator->errors(),
+                ],
+                422
+            );
+        }
+        $status = $request->stcust;
+
+        $siswa = scctcust::where('CUSTID', $id)->first();
+        if (!$siswa) return response()->json(['message' => 'Siswa tidak ditemukan!'], 422);
+        try {
+            DB::beginTransaction();
+            $siswa->update(['STCUST' => $status ?? 0]);
+            DB::commit();
+            $statusString = ($status == 1 ? "Aktif" : "NonAktif");
+            return response()->json(['message' => "Status siswa {$siswa->NMCUST} menjadi {$statusString}!"], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Gagal Mengubah Status Siswa!', 'error' => $e], 422);
+        }
+    }
+
+    public function update(Request $request, string $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'ayah' => ['nullable', 'string', 'max:255'],
+            'ibu' => ['nullable', 'string', 'max:255'],
+            'nomor_telpon' => ['nullable', 'string', 'max:50'],
+            'asrama' => ['nullable', 'string', 'max:255'],
+            'stcust' => ['nullable', 'in:0,1'],
+            'gender' => ['nullable', 'string', 'max:50'],
+            'alamat' => ['nullable', 'string', 'max:255'],
+            'eksint' => ['nullable', 'string', 'max:100'],
+            'unit' => ['nullable', 'string', 'max:50'],
+            'kelas' => ['nullable', 'string', 'max:100'],
+            'kelompok' => ['nullable', 'string', 'max:100'],
+            'angkatan' => ['nullable', 'string', 'max:20'],
+            'nis' => ['nullable', 'string', 'max:50'],
+            'nama' => ['nullable', 'string', 'max:255'],
+            'no_pendaftaran' => ['nullable', 'string', 'max:50'],
+        ], ValidationMessage::messages(), ValidationMessage::attributes());
+
+        if ($validator->fails()) {
+            $message = $validator->errors()->first();
+            if ($validator->errors()->count() > 1) {
+                $message = "{$message} Dan beberapa error lainnya";
+            }
+
+            return response()->json([
+                "message" => $message,
+                "errors" => $validator->errors(),
+            ], 422);
+        }
+
+        $siswa = scctcust::when($this->sekolah, function ($query) {
+            $query->where('CODE01', $this->sekolah);
+        })->where('CUSTID', $id)->first();
+
+        if (!$siswa) {
+            return response()->json(['message' => 'Siswa tidak ditemukan!'], 422);
+        }
+
+        // Backend guard: field ini wajib immutable meski request dimanipulasi.
+        if ($request->filled('nis') && trim((string) $request->nis) !== trim((string) $siswa->NOCUST)) {
+            return response()->json(['message' => 'NIS tidak boleh diubah.'], 422);
+        }
+        if ($request->filled('nama') && trim((string) $request->nama) !== trim((string) $siswa->NMCUST)) {
+            return response()->json(['message' => 'Nama siswa tidak boleh diubah.'], 422);
+        }
+        if ($request->filled('no_pendaftaran') && trim((string) $request->no_pendaftaran) !== trim((string) ($siswa->NUM2ND ?? ''))) {
+            return response()->json(['message' => 'No. pendaftaran tidak boleh diubah.'], 422);
+        }
+        if ($request->filled('unit') && trim((string) $request->unit) !== trim((string) ($siswa->CODE02 ?? ''))) {
+            return response()->json(['message' => 'Unit tidak boleh diubah.'], 422);
+        }
+        if ($request->filled('kelas') && trim((string) $request->kelas) !== trim((string) ($siswa->DESC02 ?? ''))) {
+            return response()->json(['message' => 'Kelas tidak boleh diubah.'], 422);
+        }
+        if ($request->filled('kelompok') && trim((string) $request->kelompok) !== trim((string) ($siswa->DESC03 ?? ''))) {
+            return response()->json(['message' => 'Kelompok tidak boleh diubah.'], 422);
+        }
+        if ($request->filled('angkatan') && trim((string) $request->angkatan) !== trim((string) ($siswa->DESC04 ?? ''))) {
+            return response()->json(['message' => 'Tahun angkatan tidak boleh diubah.'], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $payload = [
+                'GENUS' => $request->input('ayah') ?: null,
+                'GENUS1' => $request->input('ibu') ?: null,
+                'GENUSContact' => $request->input('nomor_telpon') ?: null,
+                'GetWisma' => $request->input('asrama') ?: null,
+                'CODE04' => $request->input('gender') ?: null,
+                'DESC05' => $request->input('alamat') ?: null,
+                'EksternalInternal' => $request->input('eksint') ?: null,
+                'STCUST' => $request->filled('stcust') ? (int) $request->input('stcust') : (int) ($siswa->STCUST ?? 0),
+            ];
+
+            $siswa->update($payload);
+
+            DB::commit();
+            return response()->json(['message' => 'Data siswa berhasil diperbarui.'], 200);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Gagal memperbarui data siswa.', 'error' => $e->getMessage()], 422);
+        }
+    }
+}

@@ -31,6 +31,54 @@
                 <div data-i18n="Beranda">Beranda</div>
             </a>
         </li>
+        <li class="menu-item {{ Request::is(['admin/master-data*']) ? 'active open' : '' }}">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon ri ri-database-2-line"></i>
+                <div data-i18n="Master Data">Master Data</div>
+            </a>
+            <ul class="menu-sub">
+                <li class="menu-item {{ Request::is(['admin/master-data/master-kelas*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.master-data.master-kelas.index') }}" class="menu-link">
+                        <div data-i18n="Master Kelas">Master Kelas</div>
+                    </a>
+                </li>
+                <li class="menu-item {{ Request::is(['admin/master-data/tahun-pelajaran*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.master-data.tahun-pelajaran.index') }}" class="menu-link">
+                        <div data-i18n="Tahun Akademik">Tahun Akademik</div>
+                    </a>
+                </li>
+                <li class="menu-item {{ Request::is(['admin/master-data/export-import-data*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.master-data.export-import-data.index') }}" class="menu-link">
+                        <div data-i18n="Export Import Data">Export Import Data</div>
+                    </a>
+                </li>
+                <li class="menu-item {{ Request::is(['admin/master-data/data-siswa*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.master-data.data-siswa.index') }}" class="menu-link">
+                        <div data-i18n="Data Siswa">Data Siswa</div>
+                    </a>
+                </li>
+                <li class="menu-item {{ Request::is(['admin/master-data/setting-data-wa*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.master-data.setting-data-wa.index') }}" class="menu-link">
+                        <div data-i18n="Setting Data WA">Setting Data WA</div>
+                    </a>
+                </li>
+                <li class="menu-item {{ Request::is(['admin/master-data/master-post*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.master-data.master-post.index') }}" class="menu-link">
+                        <div data-i18n="Master Post">Master Post</div>
+                    </a>
+                </li>
+                <li class="menu-item {{ Request::is(['admin/master-data/beban-post*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.master-data.beban-post.index') }}" class="menu-link">
+                        <div data-i18n="Beban Post">Beban Post</div>
+                    </a>
+                </li>
+                <li class="menu-item {{ Request::is(['admin/master-data/pindah-kelas*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.master-data.pindah-kelas.index') }}" class="menu-link">
+                        <div data-i18n="Pindah Kelas">Pindah Kelas</div>
+                    </a>
+                </li>
+            </ul>
+        </li>
         <li class="menu-item {{ Request::is([
             'admin/data-tagihan',
             'admin/data-penerimaan',

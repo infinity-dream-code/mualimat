@@ -141,6 +141,31 @@
     <div class="row">
         <div class="col-12 col-md-6 mb-6">
             <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="card-title m-0">SPP Dibayar Bulanan</h5>
+                        <small class="text-body">Rekap Januari - Desember</small>
+                    </div>
+                    <form method="GET" action="{{ route('admin.index') }}" class="d-flex align-items-center gap-2">
+                        <label for="tahun" class="mb-0 text-body">Tahun</label>
+                        <select id="tahun" name="tahun" class="form-select form-select-sm" onchange="this.form.submit()">
+                            @forelse($tahun_tahun as $tahun)
+                                <option value="{{ $tahun }}" {{ (int) $tahun_dipilih === (int) $tahun ? 'selected' : '' }}>
+                                    {{ $tahun }}
+                                </option>
+                            @empty
+                                <option value="{{ now()->year }}">{{ now()->year }}</option>
+                            @endforelse
+                        </select>
+                    </form>
+                </div>
+                <div class="card-body">
+                    <div id="tagihan_dibayar_bulanan"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 mb-6">
+            <div class="card h-100">
                 <div class="card-header">
                     <h5 class="card-title m-0">Pembayaran Baru</h5>
                 </div>
@@ -243,8 +268,9 @@
     <script type="module">
         @php
             $maxCountTaighanDibayar = 10;
+            $maxCountTagihanDibayarBulanan = 10;
         @endphp
-        const data = [
+        const dataHarian = [
             @foreach($chartTagihanDibayar as $item)
                 @php
                     $maxCountTaighanDibayar = max($maxCountTaighanDibayar, $item['count'] ?? 0);
@@ -252,22 +278,35 @@
                 {{$item['count']??0}},
             @endforeach
         ];
-        const categories = [
+        const categoriesHarian = [
             @foreach($chartTagihanDibayar as $item)
                 '{{$item['date']??'-'}}',
             @endforeach
         ];
+        const dataBulanan = [
+            @foreach($chartTagihanDibayarBulanan as $item)
+                @php
+                    $maxCountTagihanDibayarBulanan = max($maxCountTagihanDibayarBulanan, $item['count'] ?? 0);
+                @endphp
+                {{$item['count']??0}},
+            @endforeach
+        ];
+        const categoriesBulanan = [
+            @foreach($chartTagihanDibayarBulanan as $item)
+                '{{$item['date']??'-'}}',
+            @endforeach
+        ];
 
-        const reversedData = data.reverse();
-        const reversedCategories = categories.reverse();
+        const reversedDataHarian = [...dataHarian].reverse();
+        const reversedCategoriesHarian = [...categoriesHarian].reverse();
 
-        const tagihanBaru = document.querySelector('#tagihan_dibayar'),
-            tagihanBaruConfig = {
+        const tagihanDibayarHarian = document.querySelector('#tagihan_dibayar'),
+            tagihanDibayarHarianConfig = {
                 series: [
                     {
                         name: 'Tagihan Dibayar',
                         type: 'column',
-                        data: reversedData
+                        data: reversedDataHarian
                     },
                 ],
                 chart: {
@@ -325,7 +364,7 @@
                 },
                 xaxis: {
                     tickAmount: 10,
-                    categories: reversedCategories,
+                    categories: reversedCategoriesHarian,
                     labels: {
                         style: {
                             colors: labelColor,
@@ -417,9 +456,108 @@
                     }
                 ]
             };
-        if (typeof tagihanBaru !== undefined && tagihanBaru !== null) {
-            const shipment = new ApexCharts(tagihanBaru, tagihanBaruConfig);
-            shipment.render();
+        if (typeof tagihanDibayarHarian !== undefined && tagihanDibayarHarian !== null) {
+            const chartHarian = new ApexCharts(tagihanDibayarHarian, tagihanDibayarHarianConfig);
+            chartHarian.render();
+        }
+
+        const tagihanDibayarBulanan = document.querySelector('#tagihan_dibayar_bulanan'),
+            tagihanDibayarBulananConfig = {
+                series: [
+                    {
+                        name: 'SPP Dibayar',
+                        type: 'column',
+                        data: dataBulanan
+                    }
+                ],
+                chart: {
+                    height: 270,
+                    type: 'bar',
+                    stacked: false,
+                    parentHeightOffset: 0,
+                    toolbar: {
+                        show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                legend: {
+                    show: true,
+                    position: 'bottom',
+                    markers: {
+                        width: 8,
+                        height: 8,
+                        offsetX: -3
+                    },
+                    height: 40,
+                    offsetY: 10,
+                    itemMargin: {
+                        horizontal: 10,
+                        vertical: 0
+                    },
+                    fontSize: '15px',
+                    fontFamily: 'Inter',
+                    fontWeight: 400,
+                    labels: {
+                        colors: headingColor,
+                        useSeriesColors: false
+                    },
+                    offsetY: 10
+                },
+                grid: {
+                    strokeDashArray: 8
+                },
+                colors: [chartColors.line.series1],
+                fill: {
+                    opacity: [1, 1]
+                },
+                plotOptions: {
+                    bar: {
+                        columnWidth: '45%',
+                        startingShape: 'rounded',
+                        endingShape: 'rounded',
+                        borderRadius: 4
+                    }
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                xaxis: {
+                    tickAmount: 12,
+                    categories: categoriesBulanan,
+                    labels: {
+                        style: {
+                            colors: labelColor,
+                            fontSize: '13px',
+                            fontFamily: 'Inter',
+                            fontWeight: 400
+                        }
+                    },
+                    axisBorder: {
+                        show: false
+                    },
+                    axisTicks: {
+                        show: false
+                    }
+                },
+                yaxis: {
+                    tickAmount: 4,
+                    min: 0,
+                    max: {{$maxCountTagihanDibayarBulanan + 10}},
+                    labels: {
+                        style: {
+                            colors: labelColor,
+                            fontSize: '13px',
+                            fontFamily: 'Inter',
+                            fontWeight: 400
+                        }
+                    }
+                }
+            };
+        if (typeof tagihanDibayarBulanan !== undefined && tagihanDibayarBulanan !== null) {
+            const chartBulanan = new ApexCharts(tagihanDibayarBulanan, tagihanDibayarBulananConfig);
+            chartBulanan.render();
         }
     </script>
 @endsection

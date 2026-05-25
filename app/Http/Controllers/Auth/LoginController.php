@@ -45,31 +45,15 @@ class LoginController extends Controller
 
         $user = CyberKey::query()->where("users", $username)->first();
 
-        if (!$user) {
-            throw ValidationException::withMessages([
-                "username" => [
-                    "Username tidak ditemukan. Periksa kembali username Anda.",
-                ],
-            ]);
+        if (!$user || empty($user->password)) {
+            $this->throwInvalidCredentials();
         }
 
-        if (empty($user->password)) {
-            throw ValidationException::withMessages([
-                "password" => [
-                    "Akun ini belum memiliki password. Hubungi administrator.",
-                ],
-            ]);
-        }
+        $storedPassword = strtolower(trim((string) $user->password));
+        $inputHash = strtolower(md5($password));
 
-        if (
-            strtolower(md5($password)) !==
-            strtolower(trim((string) $user->password))
-        ) {
-            throw ValidationException::withMessages([
-                "password" => [
-                    "Password salah. Periksa kembali password Anda.",
-                ],
-            ]);
+        if ($inputHash !== $storedPassword) {
+            $this->throwInvalidCredentials();
         }
 
         $this->guard()->login($user);
@@ -130,7 +114,12 @@ class LoginController extends Controller
         $this->middleware("guest")->except("logout");
     }
 
-    protected function sendFailedLoginResponse(Request $request)
+    protected function sendFailedLoginResponse(Request $request): void
+    {
+        $this->throwInvalidCredentials();
+    }
+
+    protected function throwInvalidCredentials(): void
     {
         throw ValidationException::withMessages([
             "username" => [
