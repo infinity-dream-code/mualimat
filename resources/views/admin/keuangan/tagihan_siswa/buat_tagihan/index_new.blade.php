@@ -673,12 +673,8 @@
                 refreshDataTable();
                 refreshDataTableMasterHarga();
 
-                if (angkatan && kelas && thn_aka) {
-                    getSiswa(angkatan, jenjang, kelas, cariSiswa)
-                    getMasterHarga(angkatan, kelas)
-                } else {
-                    warningAlert(`Pastikan telah memilih Tahun Pelajaran, Angkatan dan kelas`)
-                }
+                getSiswa(angkatan, jenjang, kelas, cariSiswa)
+                getMasterHarga(angkatan, kelas)
             });
 
             $(document).on('keypress', '.formattedNumber', function (e) {

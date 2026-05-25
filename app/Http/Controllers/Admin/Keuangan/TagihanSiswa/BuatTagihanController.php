@@ -122,6 +122,11 @@ class BuatTagihanController extends Controller
         $query = scctcust::query()
             ->when($this->unitScope, fn ($q) => $q->where('scctcust.CODE02', $this->unitScope));
 
+        $hasAnyFilter = $kelasId || $thn_aka || $nis || $nama;
+        if (!$hasAnyFilter) {
+            return response()->json(['data' => []]);
+        }
+
         if ($request->siswa_only == true) {
             $query->when($nis, function ($q, $nis) {
                 return $q->where(function ($q2) use ($nis) {
@@ -130,8 +135,8 @@ class BuatTagihanController extends Controller
                 });
             })
             ->when($nama, fn ($q, $nama) => $q->where('scctcust.nmcust', 'like', $nama));
-        } elseif ($kelasId) {
-            $query->where('scctcust.CODE03', '=', $kelasId)
+        } else {
+            $query->when($kelasId, fn ($q, $id) => $q->where('scctcust.CODE03', '=', $id))
                 ->when($thn_aka, function ($q) use ($thn_aka) {
                     $normalized = str_replace([' ', '-'], ['', '/'], trim($thn_aka));
                     $q->whereRaw(
@@ -139,10 +144,13 @@ class BuatTagihanController extends Controller
                         [$normalized]
                     );
                 })
-                ->when($nis, fn ($q, $n) => $q->where('scctcust.nocust', 'like', $n))
+                ->when($nis, function ($q, $n) {
+                    $q->where(function ($q2) use ($n) {
+                        $q2->where('scctcust.nocust', 'like', $n)
+                            ->orWhere('scctcust.NUM2ND', 'like', $n);
+                    });
+                })
                 ->when($nama, fn ($q, $n) => $q->where('scctcust.nmcust', 'like', $n));
-        } else {
-            return response()->json(['data' => []]);
         }
 
         if ($request->boolean('debug')) {
