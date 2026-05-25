@@ -322,15 +322,16 @@ class DataSiswaController extends Controller
             ->when($nama, fn ($q) => $q->where("nmcust", "like", $nama))
             ->orderBy("nmcust", "asc")
             ->limit(200)
-            ->get(["CUSTID", "nocust", "nmcust", "CODE02", "DESC02", "DESC03", "DESC04"])
+            ->get(["CUSTID", "nocust", "NUM2ND", "nmcust", "CODE02", "DESC02", "DESC03", "DESC04"])
             ->map(function ($item) {
                 return [
                     "id" => $item->CUSTID,
                     "nis" => $item->nocust,
+                    "no_daftar" => $item->NUM2ND,
                     "nama" => $item->nmcust,
                     "unit" => $item->CODE02,
                     "kelompok" => $item->DESC02,
-                    "kelas" => $item->DESC03,
+                    "kelas" => trim(($item->DESC02 ?? "") . " " . ($item->DESC03 ?? "")),
                     "thn_aka" => $item->DESC04,
                 ];
             });

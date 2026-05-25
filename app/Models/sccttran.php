@@ -2,18 +2,30 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class sccttran extends Model
 {
     protected $connection = "DATA_MYSQL";
 
-    protected $table = 'sccttran';
+    protected $table = "sccttran";
 
-    protected $primaryKey = 'AA';
+    protected $primaryKey = "urut";
 
     public $timestamps = false;
 
     public $incrementing = false;
+
+    protected $fillable = [
+        "CUSTID",
+        "METODE",
+        "TRXDATE",
+        "NOREFF",
+        "FIDBANK",
+        "KDCHANNEL",
+        "DEBET",
+        "KREDIT",
+        "REFFBANK",
+        "TRANSNO",
+    ];
 }

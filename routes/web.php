@@ -116,6 +116,119 @@ Route::prefix("admin")
                 });
         });
 
+        Route::prefix("keuangan")->name("keuangan.")->group(function () {
+            Route::controller(\App\Http\Controllers\Admin\Keuangan\ManualPembayaranController::class)
+                ->prefix("manual-pembayaran")->name("manual-pembayaran.")->group(function () {
+                    Route::get("get-data", "getData")->name("get-data");
+                    Route::get("get-column", "getColumn")->name("get-column");
+                    Route::get("get-tagihan", "getTagihan")->name("get-tagihan");
+                    Route::get("cetak-tagihan", "cetakTagihan")->name("cetak-tagihan");
+                    Route::get("cetak-tagihan-dibayar", "cetakPembayaran")->name("cetak-tagihan-dibayar");
+                    Route::resource("", \App\Http\Controllers\Admin\Keuangan\ManualPembayaranController::class)->parameters(["" => "id"]);
+                });
+
+            Route::prefix("tagihan-siswa")->name("tagihan-siswa.")->group(function () {
+                Route::prefix("buat-tagihan")->name("buat-tagihan.")->group(function () {
+                    Route::controller(\App\Http\Controllers\Admin\Keuangan\TagihanSiswa\BuatTagihanController::class)->group(function () {
+                        Route::get("get-data", "getData")->name("get-data");
+                        Route::get("get-siswa", "getSiswa")->name("get-siswa");
+                        Route::get("get-master-harga", "getMasterHarga")->name("get-master-harga");
+                        Route::get("get-column", "getColumn")->name("get-column");
+                        Route::resource("", \App\Http\Controllers\Admin\Keuangan\TagihanSiswa\BuatTagihanController::class)->parameters(["" => "id"]);
+                    });
+                });
+
+                Route::prefix("data-tagihan")->name("data-tagihan.")->group(function () {
+                    Route::controller(\App\Http\Controllers\Admin\Keuangan\TagihanSiswa\DataTagihanController::class)->group(function () {
+                        Route::get("get-data", "getData")->name("get-data");
+                        Route::get("get-column", "getColumn")->name("get-column");
+                        Route::get("cetak-rekap", "cetak")->name("cetak-rekap");
+                        Route::post("ubah-urutan/{id}", "ubahUrutan")->name("ubah-urutan");
+                        Route::get("cetak-kartu-siswa", "cetakKartuSiswa")->name("cetak-kartu-siswa");
+                        Route::resource("", \App\Http\Controllers\Admin\Keuangan\TagihanSiswa\DataTagihanController::class)->parameters(["" => "id"]);
+                    });
+                });
+
+                Route::prefix("upload-tagihan-excel")->name("upload-tagihan-excel.")->group(function () {
+                    Route::controller(\App\Http\Controllers\Admin\Keuangan\TagihanSiswa\UploadTagihanExcelController::class)->group(function () {
+                        Route::get("get-data", "getData")->name("get-data");
+                        Route::get("get-column", "getColumn")->name("get-column");
+                        Route::post("validate-excel", "validateExcel")->name("validate-excel");
+                        Route::resource("", \App\Http\Controllers\Admin\Keuangan\TagihanSiswa\UploadTagihanExcelController::class)->parameters(["" => "id"]);
+                    });
+                });
+
+                Route::prefix("rekap-tagihan")->name("rekap-tagihan.")->group(function () {
+                    Route::controller(\App\Http\Controllers\Admin\Keuangan\TagihanSiswa\RekapTagihanController::class)->group(function () {
+                        Route::get("get-data", "getData")->name("get-data");
+                        Route::get("get-column", "getColumn")->name("get-column");
+                        Route::get("cetak-rekap", "cetakRekap")->name("cetak-rekap");
+                        Route::get("cetak-per-nis", "cetakPerNis")->name("cetak-per-nis");
+                        Route::get("cetak-kartu-siswa", "cetakKartuSiswa")->name("cetak-kartu-siswa");
+                        Route::resource("", \App\Http\Controllers\Admin\Keuangan\TagihanSiswa\RekapTagihanController::class)->parameters(["" => "id"]);
+                    });
+                });
+
+                Route::prefix("copy-tagihan")->name("copy-tagihan.")->group(function () {
+                    Route::get("/", [\App\Http\Controllers\Admin\Keuangan\TagihanSiswa\CopyTagihanController::class, "index"])->name("index");
+                });
+            });
+
+            Route::prefix("penerimaan-siswa")->name("penerimaan-siswa.")->group(function () {
+                Route::prefix("data-penerimaan")->name("data-penerimaan.")->group(function () {
+                    Route::controller(\App\Http\Controllers\Admin\Keuangan\PenerimaanSiswa\DataPenerimaanController::class)->group(function () {
+                        Route::get("get-data", "getData")->name("get-data");
+                        Route::get("get-column", "getColumn")->name("get-column");
+                        Route::get("cetak-rekap", "cetak")->name("cetak-rekap");
+                        Route::get("cetak-rekap-new", "cetakNew")->name("cetak-rekap-new");
+                        Route::get("cetak-kartu-siswa", "cetakKartuSiswa")->name("cetak-kartu-siswa");
+                        Route::get("cetak-tagihan-dibayar", "cetakPembayaran")->name("cetak-tagihan-dibayar");
+                        Route::resource("", \App\Http\Controllers\Admin\Keuangan\PenerimaanSiswa\DataPenerimaanController::class)->parameters(["" => "id"]);
+                    });
+                });
+
+                Route::prefix("rekap-penerimaan")->name("rekap-penerimaan.")->group(function () {
+                    Route::controller(\App\Http\Controllers\Admin\Keuangan\PenerimaanSiswa\RekapPenerimaanController::class)->group(function () {
+                        Route::get("get-data", "getData")->name("get-data");
+                        Route::get("get-column", "getColumn")->name("get-column");
+                        Route::get("cetak-rekap", "cetakRekapPenerimaan")->name("cetak-rekap");
+                        Route::get("cetak-tagihan-dibayar", "cetakPembayaran")->name("cetak-tagihan-dibayar");
+                        Route::get("cetak-kartu-siswa", "cetakKartuSiswa")->name("cetak-kartu-siswa");
+                        Route::get("cetak-per-nis", "cetakPerNis")->name("cetak-per-nis");
+                        Route::resource("", \App\Http\Controllers\Admin\Keuangan\PenerimaanSiswa\RekapPenerimaanController::class)->parameters(["" => "id"]);
+                    });
+                });
+            });
+
+            Route::prefix("saldo")->name("saldo.")->group(function () {
+                Route::controller(\App\Http\Controllers\Admin\Keuangan\Saldo\SaldoVirtualAccountController::class)
+                    ->prefix("saldo-virtual-account")->name("saldo-virtual-account.")->group(function () {
+                        Route::get("get-data", "getData")->name("get-data");
+                        Route::get("get-column", "getColumn")->name("get-column");
+                        Route::get("get-saldo", "getSaldo")->name("get-saldo");
+                        Route::post("tarik", "tarik")->name("tarik");
+                        Route::prefix("transaksi")->name("transaksi.")->group(function () {
+                            Route::get("get-data", "getDataTran")->name("get-data");
+                            Route::get("get-column", "getColumnTran")->name("get-column");
+                        });
+                    });
+                Route::resource("saldo-virtual-account", \App\Http\Controllers\Admin\Keuangan\Saldo\SaldoVirtualAccountController::class)->names("saldo-virtual-account");
+
+                Route::prefix("saldo-virtual-saku")->name("saldo-virtual-saku.")->group(function () {
+                    Route::get("/", [\App\Http\Controllers\Admin\Keuangan\Saldo\SaldoVirtualSakuController::class, "index"])->name("index");
+                });
+            });
+
+            Route::prefix("hapus-tagihan")->name("hapus-tagihan.")->group(function () {
+                Route::controller(\App\Http\Controllers\Admin\Keuangan\HapusTagihanController::class)->group(function () {
+                    Route::get("get-data", "getData")->name("get-data");
+                    Route::get("get-column", "getColumn")->name("get-column");
+                    Route::post("hapus-jamak", "bulkDestroy")->name("hapus-jamak");
+                    Route::resource("", \App\Http\Controllers\Admin\Keuangan\HapusTagihanController::class)->parameters(["" => "id"]);
+                });
+            });
+        });
+
         Route::prefix("data-tagihan")
             ->name("data-tagihan.")
             ->group(function () {
