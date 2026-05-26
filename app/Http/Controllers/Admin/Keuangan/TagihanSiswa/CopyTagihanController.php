@@ -261,7 +261,7 @@ class CopyTagihanController extends Controller
             }
         }
 
-        // 2. Fallback: deteksi dari nama Tagihan Baru
+        // 2. Deteksi dari nama Tagihan Baru
         if (!$bulanNum && $namaTagihan) {
             $upper = strtoupper($namaTagihan);
             foreach (self::MONTH_MAP as $name => $num) {
@@ -272,11 +272,12 @@ class CopyTagihanController extends Controller
             }
         }
 
-        // 3. Fallback terakhir: bulan saat ini (sistem)
+        // 3. Fallback total: pakai tahun + bulan sistem sekarang langsung
         if (!$bulanNum) {
-            $bulanNum = now()->format('m');
+            return now()->format('Ym');
         }
 
+        // Hitung tahun dari Tahun Pelajaran berdasarkan bulan yang ditemukan
         $clean = str_replace([' ', '-'], '/', trim($thnAka));
         $parts = explode('/', $clean);
         if (count($parts) !== 2) return null;

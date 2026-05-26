@@ -129,17 +129,6 @@
                     </div>
                 </div>
 
-                <div class="row mb-3">
-                    <label for="bta_filter" class="col-sm-3 col-form-label form-label">Filter BTA Tagihan Lama (Opsional)</label>
-                    <div class="col-sm-9">
-                        <input type="text" class="form-control" id="bta_filter" name="bta_filter"
-                               placeholder="Contoh: 2024/2025. Kosongkan untuk tidak menyaring tahun.">
-                        <small class="text-muted">
-                            Pencarian tagihan lama defaultnya hanya pakai Kelas + Nama Tagihan Lama (BTA tidak difilter karena data lama kadang kosong). Isi field ini hanya jika ingin menyaring berdasarkan kolom BTA di scctbill.
-                        </small>
-                    </div>
-                </div>
-
                 <div id="preview-box" class="d-none">
                     <div class="table-responsive mb-3">
                         <table class="table table-sm table-bordered table-hover align-middle" id="preview-table">
