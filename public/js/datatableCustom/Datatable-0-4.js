@@ -863,7 +863,7 @@ async function dataTableCreate(options) {
             const duplicateColumns = api.settings()[0].aoColumns
                 .map((col, idx) => ({
                     idx,
-                    duplicate: !col.duplicate === true
+                    duplicate: col.duplicate === true,
                 }))
                 .filter(c => c.duplicate);
 

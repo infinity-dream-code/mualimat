@@ -964,12 +964,20 @@
 
         document.getElementById('cetak-per-nis').addEventListener('click', function (e) {
             e.preventDefault();
+            const selected = DT[`${dtOptions.tableId}`].rows({selected: true}).data();
+            if (!selected[0]) {
+                warningAlert('Silahkan pilih baris siswa pada tabel terlebih dahulu!');
+                return;
+            }
+
+            loadingAlert('Membuat rekap per NIS...');
             let url = '{{route('admin.keuangan.tagihan-siswa.rekap-tagihan.cetak-per-nis')}}';
             const form = new FormData(document.getElementById('filter-form'));
             const params = new URLSearchParams();
             for (const [key, value] of form.entries()) {
                 params.append(key, value);
             }
+            params.append('custid', selected[0].CUSTID ?? selected[0].custid ?? '');
 
             const fullUrl = `${url}?${params.toString()}`;
             const request = new Request(
@@ -983,11 +991,14 @@
 
             fetch(request)
                 .then(async res => {
-                    if (!res.ok) {
-                        const errorBody = await res.json().catch(() => ({}));
+                    const contentType = res.headers.get('content-type') || '';
+                    if (!res.ok || contentType.includes('application/json')) {
+                        const errorBody = contentType.includes('application/json')
+                            ? await res.json().catch(() => ({}))
+                            : {};
                         throw {
                             status: res.status,
-                            message: errorBody.message || 'Terjadi kesalahan',
+                            message: errorBody.message || 'Gagal membuat rekap per NIS',
                             error: errorBody.error,
                             errors: errorBody.errors
                         };
@@ -995,17 +1006,14 @@
                     return res.blob();
                 })
                 .then(blob => {
-                    const url = URL.createObjectURL(blob);
-                    window.open(url, '_blank');
-                    successAlert('Sukses, Rekap per NIS terbuka pada tab baru');
+                    const blobUrl = URL.createObjectURL(blob);
+                    window.open(blobUrl, '_blank');
+                    Swal.close();
+                    successAlert('Sukses, rekap per NIS terbuka pada tab baru');
                 })
                 .catch(error => {
-                    if (error.status === 422) {
-                        const errors = error.error || error.errors;
-                        errorAlert(error.message);
-                        if (errors) {
-                            processErrors(errors)
-                        }
+                    if (error.status === 422 || error.message) {
+                        errorAlert(error.message || 'Gagal membuat rekap per NIS');
                     } else {
                         const errorMessages = {
                             401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',

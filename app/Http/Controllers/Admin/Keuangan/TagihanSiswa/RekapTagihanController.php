@@ -207,56 +207,91 @@ class RekapTagihanController extends Controller
 
     public function cetakPerNis(Request $request)
     {
-        $custid = null;
-        if ($request->filled('custid')) {
-            try {
-                $custid = Crypt::decrypt($request->input('custid'));
-            } catch (DecryptException $e) {
-                return response()->json(['message' => 'Siswa tidak ditemukan'], 422);
+        try {
+            $custid = null;
+            if ($request->filled('custid')) {
+                try {
+                    $custid = Crypt::decrypt($request->input('custid'));
+                } catch (DecryptException $e) {
+                    return response()->json(['message' => 'Siswa tidak ditemukan'], 422);
+                }
             }
-        }
 
-        $filter = $request->input('filter', []);
-        if ($custid !== null) {
+            if ($custid === null) {
+                return response()->json(['message' => 'Silahkan pilih baris siswa pada tabel terlebih dahulu'], 422);
+            }
+
+            $filter = $request->input('filter', []);
             $filter['custid'] = $custid;
-        }
-        $request->merge([
-            'filter' => $filter,
-            'draw' => 2,
-            'start' => 0,
-            'length' => 'poll',
-        ]);
 
-        $records = $this->getData($request);
-        $records = json_decode(json_encode($records), true);
-        $records = $records['original']['data'] ?? [];
-        if (empty($records)) {
-            return response()->json(['message' => 'Tagihan Tidak Ditemukan'], 422);
-        }
-
-        $postColCount = PerNisMatrixPdf::countPostColumns($records);
-        $paper = PerNisMatrixPdf::paperSize($postColCount);
-        $orientation = PerNisMatrixPdf::paperOrientation($postColCount);
-
-        $pdf = Pdf::loadView('cetak.per-nis-matrix', [
-            'tagihans' => $records,
-            'reportTitle' => 'REKAP TAGIHAN - CETAK PER NIS',
-            'useNamaAkunHeader' => true,
-        ])
-            ->setOptions([
-                'isHtml5ParserEnabled' => true,
-                'isPhpEnabled' => true,
-                'dpi' => 96,
-                'defaultFont' => 'DejaVu Serif',
+            $request->merge([
+                'filter' => $filter,
+                'draw' => 2,
+                'start' => 0,
+                'length' => 'poll',
             ]);
 
-        if (is_array($paper)) {
-            $pdf->setPaper($paper);
-        } else {
-            $pdf->setPaper($paper, $orientation);
-        }
+            $response = $this->getData($request);
+            $payload = json_decode(json_encode($response), true);
+            $records = $this->normalizePerNisRecords($payload['original']['data'] ?? []);
 
-        return $pdf->download('cetak-per-nis.pdf');
+            if (empty($records)) {
+                return response()->json(['message' => 'Tagihan tidak ditemukan untuk siswa yang dipilih'], 422);
+            }
+
+            $postColCount = PerNisMatrixPdf::countPostColumns($records);
+            $paper = PerNisMatrixPdf::paperSize($postColCount);
+            $orientation = PerNisMatrixPdf::paperOrientation($postColCount);
+
+            $pdf = Pdf::loadView('cetak.per-nis-matrix', [
+                'tagihans' => $records,
+                'reportTitle' => 'REKAP TAGIHAN - CETAK PER NIS',
+                'useNamaAkunHeader' => true,
+            ])
+                ->setOptions([
+                    'isHtml5ParserEnabled' => true,
+                    'isPhpEnabled' => true,
+                    'dpi' => 96,
+                    'defaultFont' => 'DejaVu Serif',
+                ]);
+
+            if (is_array($paper)) {
+                $pdf->setPaper($paper);
+            } else {
+                $pdf->setPaper($paper, $orientation);
+            }
+
+            return $pdf->download('cetak-per-nis.pdf');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Tidak dapat mencetak rekap per NIS.<br>Silahkan coba lagi atau hubungi administrator.',
+                'error' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    private function normalizePerNisRecords(array $records): array
+    {
+        return collect($records)->map(function ($row) {
+            $row = is_array($row) ? $row : (array) $row;
+            $get = static fn (string $key) => $row[$key] ?? $row[strtolower($key)] ?? null;
+
+            return [
+                'CUSTID' => $get('CUSTID'),
+                'NOCUST' => $get('NOCUST'),
+                'NUM2ND' => $get('NUM2ND'),
+                'NMCUST' => $get('NMCUST'),
+                'DESC02' => $get('DESC02'),
+                'DESC03' => $get('DESC03'),
+                'BILLAC' => $get('BILLAC'),
+                'BILLNM' => $get('BILLNM'),
+                'BILLAM' => (float) ($get('BILLAM') ?? 0),
+                'BTA' => $get('BTA'),
+                'FUrutan' => $get('FUrutan') ?? $get('Urutan'),
+                'KodePost' => $get('KodePost') ?? $get('KodeAkun') ?? '-',
+                'NamaAkun' => $get('NamaAkun') ?? $get('BILLNM') ?? '-',
+            ];
+        })->values()->all();
     }
 
     public function getData(Request $request)

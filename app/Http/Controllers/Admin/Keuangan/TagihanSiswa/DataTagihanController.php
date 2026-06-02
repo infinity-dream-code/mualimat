@@ -35,6 +35,7 @@ class DataTagihanController extends Controller
         'post' => 'scctbill.BILLNM',
         'kelas' => 'scctcust.DESC02',
         'sekolah' => 'scctcust.CODE02',
+        'angkatan' => 'scctcust.DESC04',
         'siswa' => 'scctcust.nmcust',
         'custid' => 'scctcust.CUSTID',
     ];
@@ -87,6 +88,7 @@ class DataTagihanController extends Controller
                 'buttonLink' => '#modal-delete',
                 'buttonIcon' => 'ri-arrow-up-line me-2',
                 'exportable' => false,
+                'duplicate' => false,
             ],
             [
                 'data' => 'turun',
@@ -100,6 +102,7 @@ class DataTagihanController extends Controller
                 'buttonLink' => '#modal-delete',
                 'buttonIcon' => 'ri-arrow-down-line me-2',
                 'exportable' => false,
+                'duplicate' => false,
             ],
             [
                 'data' => 'delete',
@@ -111,7 +114,9 @@ class DataTagihanController extends Controller
                 'buttonText' => 'Hapus',
                 'buttonClass' => 'btn btn-sm btn-danger btn-hapus',
                 'buttonLink' => '#modal-delete',
-                'buttonIcon' => 'ri-delete-bin-line me-2'
+                'buttonIcon' => 'ri-delete-bin-line me-2',
+                'exportable' => false,
+                'duplicate' => false,
             ],
         ];
     }
@@ -539,6 +544,9 @@ class DataTagihanController extends Controller
                     case 'scctcust.CODE02':
                         $filters[] = ["scctcust.CODE02", "=", $val];
                         break;
+                    case 'scctcust.DESC04':
+                        $filters[] = ['scctcust.DESC04', '=', $val];
+                        break;
                     default:
                         ($key) && $filters[] = [$key, '=', $val];
                         break;
@@ -586,7 +594,6 @@ class DataTagihanController extends Controller
             'scctbill.PAIDDT',
             'scctbill.BTA',
             'scctbill.FIDBANK',
-            'scctbill.FUrutan',
             'scctcust.CODE02',
             'scctcust.NUM2ND',
             'scctbill.CUSTID',
@@ -595,7 +602,9 @@ class DataTagihanController extends Controller
 
         $query = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
             ->select($select)
+            ->selectRaw('CAST(COALESCE(scctbill.FUrutan, 0) AS SIGNED) AS FUrutan')
             ->where('scctbill.PAIDST', 0)
+            ->where('scctcust.STCUST', 1)
             ->where('scctbill.FSTSBolehBayar', 1)
             ->when(!blank($searchValue), function ($query) use ($whereAny, $searchValue) {
                 $query->where(function ($q) use ($whereAny, $searchValue) {
