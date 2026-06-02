@@ -67,7 +67,14 @@ class DataTagihanController extends Controller
             ['data' => 'BILLNM', 'name' => 'Nama Tagihan', 'searchable' => true, 'orderable' => true, 'exportable' => true],
             ['data' => 'BILLAM', 'name' => 'Tagihan', 'searchable' => true, 'orderable' => true, 'columnType' => 'currency', 'className' => 'text-end', 'exportable' => true],
             ['data' => 'BTA', 'name' => 'Tahun AKA', 'searchable' => true, 'orderable' => true, 'exportable' => true],
-            ['data' => 'FUrutan', 'name' => 'Urutan', 'searchable' => true, 'orderable' => true, 'exportable' => true],
+            [
+                'data' => 'FUrutan',
+                'name' => 'Urutan',
+                'searchable' => true,
+                'orderable' => true,
+                'exportable' => true,
+                'duplicate' => false,
+            ],
             [
                 'data' => 'naik',
                 'name' => 'Naik',
@@ -579,6 +586,7 @@ class DataTagihanController extends Controller
             'scctbill.PAIDDT',
             'scctbill.BTA',
             'scctbill.FIDBANK',
+            'scctbill.FUrutan',
             'scctcust.CODE02',
             'scctcust.NUM2ND',
             'scctbill.CUSTID',
@@ -587,7 +595,6 @@ class DataTagihanController extends Controller
 
         $query = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
             ->select($select)
-            ->selectRaw('CAST(COALESCE(scctbill.FUrutan, 0) AS UNSIGNED) AS FUrutan')
             ->where('scctbill.PAIDST', 0)
             ->where('scctbill.FSTSBolehBayar', 1)
             ->when(!blank($searchValue), function ($query) use ($whereAny, $searchValue) {
@@ -648,18 +655,42 @@ class DataTagihanController extends Controller
             ->take($rowperpage)
             ->get()
             ->map(function ($item, $index) {
-                $item->item_id = $item['AA'];
-                $item->NOVA = ($item->NOCUST && $item->NOCUST != '-') ? scctcust::showVA($item->NOCUST) : null;
-                if (!$item->NOCUST || $item->NOCUST == '-') $item->NOCUST = null;
-                if (!$item->NUM2ND || $item->NUM2ND == '-') $item->NUM2ND = null;
-                $furutan = $item->FUrutan ?? $item->getAttribute('furutan');
-                $item->FUrutan = (string) (int) ($furutan ?? 0);
-                $item->print = true;
-                $item->naik = true;
-                $item->turun = true;
-                $item->delete = true;
-                return $item;
-            })->toArray();
+                $row = $item->toArray();
+                $get = static fn (string $key) => $row[$key] ?? $row[strtolower($key)] ?? null;
+
+                $nocust = $get('NOCUST');
+                $num2nd = $get('NUM2ND');
+                $furutan = $get('FUrutan');
+
+                return [
+                    'AA' => $get('AA'),
+                    'item_id' => $get('AA'),
+                    'CUSTID' => $get('CUSTID'),
+                    'NOCUST' => ($nocust && $nocust !== '-') ? $nocust : null,
+                    'NUM2ND' => ($num2nd && $num2nd !== '-') ? $num2nd : null,
+                    'NOVA' => ($nocust && $nocust !== '-') ? scctcust::showVA($nocust) : null,
+                    'NMCUST' => $get('NMCUST'),
+                    'CODE02' => $get('CODE02'),
+                    'DESC02' => $get('DESC02'),
+                    'DESC03' => $get('DESC03'),
+                    'BILLNM' => $get('BILLNM'),
+                    'BILLAM' => $get('BILLAM'),
+                    'BILLAC' => $get('BILLAC'),
+                    'BTA' => $get('BTA'),
+                    'PAIDST' => $get('PAIDST'),
+                    'PAIDDT' => $get('PAIDDT'),
+                    'FIDBANK' => $get('FIDBANK'),
+                    'FUrutan' => ($furutan === null || $furutan === '')
+                        ? '0'
+                        : (string) (int) $furutan,
+                    'print' => true,
+                    'naik' => true,
+                    'turun' => true,
+                    'delete' => true,
+                ];
+            })
+            ->values()
+            ->all();
         $response = array(
             "draw" => intval($draw),
             "recordsTotal" => $totalRecords ?? 0,

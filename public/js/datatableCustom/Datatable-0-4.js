@@ -1347,7 +1347,10 @@ async function getDT(options) {
                         }
                     } else {
                         renderFunc = function (data, type, row) {
-                            if (!data) {
+                            if (data === 0 || data === '0') {
+                                return data;
+                            }
+                            if (data === null || data === undefined || data === '') {
                                 return '';
                             }
                             return data;
