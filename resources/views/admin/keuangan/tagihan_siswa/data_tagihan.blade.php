@@ -397,9 +397,17 @@
             Object.entries(rowData).forEach(([key, value]) => {
                 let input = document.querySelector(`#${id} [name="${key.toLowerCase()}"]`);
                 if (input) {
-                    input.value = value;
+                    input.value = value ?? '';
                 }
             });
+            if (id === 'form-ubah-urutan') {
+                const urutanId = document.getElementById('urutan_tagihan_id');
+                const custId = document.getElementById('user_urutan_tagihan_id');
+                const furutan = document.getElementById('urutan-furutan');
+                if (urutanId) urutanId.value = rowData.item_id ?? rowData.AA ?? '';
+                if (custId) custId.value = rowData.CUSTID ?? '';
+                if (furutan) furutan.value = rowData.FUrutan ?? rowData.furutan ?? '0';
+            }
         }
 
         document.querySelector('#main_table tbody').addEventListener('click', function (e) {

@@ -175,22 +175,33 @@ class DataTagihanController extends Controller
         try {
             DB::beginTransaction();
             $custid = $request->input('custid');
-            $targetUrut = $request->urutan_tagihan === 'naik'
-                ? (int) $tagihan->FUrutan + 1
-                : (int) $tagihan->FUrutan - 1;
 
-            $other = scctbill::where('CUSTID', $custid)
-                ->where('FUrutan', $targetUrut)
+            $bills = scctbill::query()
+                ->where('CUSTID', $custid)
                 ->where('PAIDST', 0)
                 ->where('FSTSBolehBayar', 1)
-                ->first();
+                ->orderBy('FUrutan', 'asc')
+                ->orderBy('AA', 'asc')
+                ->get();
 
-            if (!$other) {
+            $currentIndex = $bills->search(fn ($bill) => (int) $bill->AA === (int) $tagihan->AA);
+            if ($currentIndex === false) {
                 DB::rollBack();
-                $msg = $request->urutan_tagihan === 'naik'
-                    ? 'Tagihan sudah berada pada urutan paling atas.'
-                    : 'Tagihan sudah berada pada urutan paling bawah.';
-                return response()->json(['message' => $msg], 422);
+                return response()->json(['message' => 'Tagihan tidak ditemukan pada daftar urutan siswa!'], 422);
+            }
+
+            if ($request->urutan_tagihan === 'naik') {
+                if ($currentIndex <= 0) {
+                    DB::rollBack();
+                    return response()->json(['message' => 'Tagihan sudah berada pada urutan paling atas.'], 422);
+                }
+                $other = $bills[$currentIndex - 1];
+            } else {
+                if ($currentIndex >= $bills->count() - 1) {
+                    DB::rollBack();
+                    return response()->json(['message' => 'Tagihan sudah berada pada urutan paling bawah.'], 422);
+                }
+                $other = $bills[$currentIndex + 1];
             }
 
             $currentUrut = $tagihan->FUrutan;
@@ -568,7 +579,6 @@ class DataTagihanController extends Controller
             'scctbill.PAIDDT',
             'scctbill.BTA',
             'scctbill.FIDBANK',
-            'scctbill.FUrutan',
             'scctcust.CODE02',
             'scctcust.NUM2ND',
             'scctbill.CUSTID',
@@ -576,6 +586,8 @@ class DataTagihanController extends Controller
         ]));
 
         $query = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
+            ->select($select)
+            ->selectRaw('CAST(COALESCE(scctbill.FUrutan, 0) AS UNSIGNED) AS FUrutan')
             ->where('scctbill.PAIDST', 0)
             ->where('scctbill.FSTSBolehBayar', 1)
             ->when(!blank($searchValue), function ($query) use ($whereAny, $searchValue) {
@@ -629,7 +641,6 @@ class DataTagihanController extends Controller
                         ELSE 999
                     END
                 ")
-            ->select($select)
             ->orderBy($columnName, $columnSortOrder)
             ->orderBy('scctcust.NOCUST', 'asc')
             ->orderBy('scctbill.FUrutan', 'asc')
@@ -641,7 +652,8 @@ class DataTagihanController extends Controller
                 $item->NOVA = ($item->NOCUST && $item->NOCUST != '-') ? scctcust::showVA($item->NOCUST) : null;
                 if (!$item->NOCUST || $item->NOCUST == '-') $item->NOCUST = null;
                 if (!$item->NUM2ND || $item->NUM2ND == '-') $item->NUM2ND = null;
-                $item->FUrutan = blank($item->FUrutan) ? '0' : (string) $item->FUrutan;
+                $furutan = $item->FUrutan ?? $item->getAttribute('furutan');
+                $item->FUrutan = (string) (int) ($furutan ?? 0);
                 $item->print = true;
                 $item->naik = true;
                 $item->turun = true;
