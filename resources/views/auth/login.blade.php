@@ -133,13 +133,42 @@
                                 </div>
                                 @enderror
                             </div>
-                            @if(filled(config('services.turnstile.site_key')) && config('services.turnstile.enabled', true) && !in_array(request()->getHost(), ['localhost', '127.0.0.1'], true))
+                            @if(($useMathFallback ?? false) === false && filled(config('services.turnstile.site_key')) && config('services.turnstile.enabled', true) && !in_array(request()->getHost(), ['localhost', '127.0.0.1'], true))
                             <div class="mb-3 text-center">
                                 <div class="cf-turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}" data-language="id"></div>
                                 @error('turnstile')
                                     <div class="text-danger small mt-2">{{ $message }}</div>
                                 @enderror
                             </div>
+                            @endif
+                            @if(($useMathFallback ?? false) === true)
+                                <input type="hidden" name="cf_fallback" value="1">
+                                <div class="mb-3">
+                                    <div class="alert alert-warning py-2 mb-2">
+                                        Mode non-Cloudflare aktif.
+                                    <a href="{{ route('login', ['cf_fallback' => 0]) }}" class="ms-2">Coba mode Cloudflare</a>
+                                    </div>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text"><i class="ri-function-line"></i></span>
+                                        <div class="form-floating form-floating-outline">
+                                            <input
+                                                type="number"
+                                                placeholder="Isi jawaban hitung"
+                                                id="math_answer"
+                                                name="math_answer"
+                                                autocomplete="off"
+                                                class="form-control @error('math_answer') is-invalid @enderror"
+                                                required
+                                            />
+                                            <label for="math_answer">Hitung: {{ $mathLeft ?? 0 }} {{ $mathOperator ?? '+' }} {{ $mathRight ?? 0 }}</label>
+                                        </div>
+                                    </div>
+                                    @error('math_answer')
+                                        <div class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </div>
+                                    @enderror
+                                </div>
                             @endif
                             <div class="mb-3 d-flex justify-content-start">
                                 <div class="form-check">
@@ -157,9 +186,23 @@
         </div>
     </div>
 
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    @if(($useMathFallback ?? false) === false)
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer onerror="window.handleTurnstileLoadError && window.handleTurnstileLoadError()"></script>
+    @endif
 
     <script>
+        window.handleTurnstileLoadError = function () {
+            const storageKey = 'cf_login_fail_count';
+            const currentFail = Math.max(0, parseInt(localStorage.getItem(storageKey) || '0', 10));
+            const nextFail = Math.max(0, currentFail + 1);
+            localStorage.setItem(storageKey, String(nextFail));
+
+            const target = new URL(window.location.href);
+            target.searchParams.set('cf_fallback', '1');
+            target.searchParams.set('cf_fail_count', String(nextFail));
+            window.location.replace(target.toString());
+        };
+
         document.addEventListener("DOMContentLoaded", function () {
             $('#formAuthentication').on('submit', function () {
                 loadingAlert('');

@@ -10,10 +10,39 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+use Throwable;
 
 class LoginController extends Controller
 {
     use AuthenticatesUsers;
+
+    public function showLoginForm(Request $request): View
+    {
+        if ($request->has("cf_fallback")) {
+            if ($request->boolean("cf_fallback")) {
+                session(["auth_cf_fallback" => true]);
+            } else {
+                session()->forget(["auth_cf_fallback", "auth_math_answer"]);
+            }
+        }
+
+        if ($this->shouldUseMathFallback($request)) {
+            [$left, $operator, $right, $expected] = $this->buildMathChallenge();
+            session(["auth_math_answer" => $expected]);
+
+            return view("auth.login", [
+                "useMathFallback" => true,
+                "mathLeft" => $left,
+                "mathOperator" => $operator,
+                "mathRight" => $right,
+            ]);
+        }
+
+        return view("auth.login", [
+            "useMathFallback" => false,
+        ]);
+    }
 
     protected function validateLogin(Request $request): void
     {
@@ -24,6 +53,8 @@ class LoginController extends Controller
 
         if ($this->shouldVerifyTurnstile()) {
             $rules["cf-turnstile-response"] = "required|string";
+        } elseif ($this->shouldUseMathFallback($request)) {
+            $rules["math_answer"] = "required|integer";
         }
 
         $request->validate($rules, [
@@ -31,6 +62,8 @@ class LoginController extends Controller
             "password.required" => "Silakan isi password.",
             "cf-turnstile-response.required" =>
                 "Silakan selesaikan verifikasi captcha.",
+            "math_answer.required" => "Silakan isi hasil perhitungan.",
+            "math_answer.integer" => "Jawaban hitung harus berupa angka.",
         ]);
     }
 
@@ -38,6 +71,8 @@ class LoginController extends Controller
     {
         if ($this->shouldVerifyTurnstile()) {
             $this->verifyTurnstile($request);
+        } elseif ($this->shouldUseMathFallback($request)) {
+            $this->verifyMathFallback($request);
         }
 
         $username = trim((string) $request->input("username"));
@@ -63,14 +98,23 @@ class LoginController extends Controller
 
     protected function verifyTurnstile(Request $request): void
     {
-        $response = Http::asForm()->post(
-            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-            [
-                "secret" => config("services.turnstile.secret_key"),
-                "response" => $request->input("cf-turnstile-response"),
-                "remoteip" => $request->ip(),
-            ],
-        );
+        try {
+            $response = Http::asForm()->post(
+                "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+                [
+                    "secret" => config("services.turnstile.secret_key"),
+                    "response" => $request->input("cf-turnstile-response"),
+                    "remoteip" => $request->ip(),
+                ],
+            );
+        } catch (Throwable $exception) {
+            session(["auth_cf_fallback" => true]);
+            throw ValidationException::withMessages([
+                "turnstile" => [
+                    "Layanan Cloudflare tidak dapat diakses. Halaman akan memakai login non-Cloudflare.",
+                ],
+            ]);
+        }
 
         if (!($response->json("success") ?? false)) {
             throw ValidationException::withMessages([
@@ -81,8 +125,28 @@ class LoginController extends Controller
         }
     }
 
+    protected function verifyMathFallback(Request $request): void
+    {
+        $expected = (int) session("auth_math_answer", PHP_INT_MIN);
+        $answer = (int) $request->input("math_answer", PHP_INT_MAX);
+
+        if ($expected === PHP_INT_MIN || $answer !== $expected) {
+            throw ValidationException::withMessages([
+                "math_answer" => [
+                    "Jawaban hitung tidak sesuai. Silakan coba lagi.",
+                ],
+            ]);
+        }
+
+        session()->forget("auth_math_answer");
+    }
+
     protected function shouldVerifyTurnstile(): bool
     {
+        if ($this->shouldUseMathFallback(request())) {
+            return false;
+        }
+
         if (!config("services.turnstile.enabled", true)) {
             return false;
         }
@@ -102,6 +166,32 @@ class LoginController extends Controller
         }
 
         return true;
+    }
+
+    protected function shouldUseMathFallback(?Request $request = null): bool
+    {
+        $request ??= request();
+
+        if ($request->boolean("cf_fallback")) {
+            return true;
+        }
+
+        return (bool) session("auth_cf_fallback", false);
+    }
+
+    private function buildMathChallenge(): array
+    {
+        $left = random_int(1, 40);
+        $right = random_int(1, 40);
+        $operator = random_int(0, 1) === 1 ? "+" : "-";
+
+        if ($operator === "-" && $left < $right) {
+            [$left, $right] = [$right, $left];
+        }
+
+        $result = $operator === "+" ? ($left + $right) : ($left - $right);
+
+        return [$left, $operator, $right, $result];
     }
 
     protected function redirectTo(): string
@@ -145,6 +235,8 @@ class LoginController extends Controller
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
+
+        $request->session()->forget(["auth_cf_fallback", "auth_math_answer"]);
 
         return redirect("/");
     }
