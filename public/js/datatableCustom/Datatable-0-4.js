@@ -706,6 +706,18 @@ function createColumns(id, columns, location) {
     headerOrFooter.appendChild(row);
 }
 
+/** Siapkan <tfoot> kosong — jangan duplikasi label header (hanya baris TOTAL dari footerCallback). */
+function prepareTableFoot(id) {
+    const table = document.getElementById(id);
+    let tfoot = table.querySelector('tfoot');
+    if (!tfoot) {
+        tfoot = document.createElement('tfoot');
+        tfoot.classList.add('table-light');
+        table.appendChild(tfoot);
+    }
+    tfoot.innerHTML = '';
+}
+
 let DT = {};
 const languageKey = 'datatables_id_language';
 const languageUrl = 'https://cdn.datatables.net/plug-ins/2.0.6/i18n/id.json';
@@ -965,37 +977,34 @@ async function dataTableCreate(options) {
         footerCallback: function (row, data, start, end, display) {
             let api = this.api();
             let json = this.api().ajax.json();
-            $(api.table().footer()).find('.total-row').remove();
-            if (json && json.totals) {
-                let totalRow = $('<tr class="total-row"></tr>');
-                totalRow.append('<th colspan="2" class="fw-bolder">TOTAL</th>');
-                api.columns().every(function (colIdx) {
-                    if (colIdx >= 2) {
-                        let cellVal = '';
-                        let value = Object.values(json.totals).find(v => (v.location ?? 1) == colIdx);
-                        if (value) {
-                            let colVal = value.value ?? 0;
-                            let columnType = value.columnType ?? null;
-                            if (columnType === 'currency') {
-                                colVal = new Intl.NumberFormat('id-ID', {
-                                    style: "currency",
-                                    currency: "IDR",
-                                    minimumFractionDigits: 0,
-                                    maximumFractionDigits: 0
-                                }).format(colVal);
-                            }
-                            cellVal = colVal;
-                        }
-                        totalRow.append(`<th class="text-end fw-bolder">${cellVal}</th>`);
-                    }
-                });
-                let footerTrs = $(api.table().footer()).find('tr');
-                if (footerTrs.length > 0) {
-                    footerTrs.eq(0).after(totalRow);
-                } else {
-                    $(api.table().footer()).append(totalRow);
-                }
+            const $footer = $(api.table().footer());
+            $footer.empty();
+            if (!json || !json.totals) {
+                return;
             }
+            let totalRow = $('<tr class="total-row"></tr>');
+            totalRow.append('<th colspan="2" class="fw-bolder">TOTAL</th>');
+            api.columns().every(function (colIdx) {
+                if (colIdx >= 2) {
+                    let cellVal = '';
+                    let value = Object.values(json.totals).find(v => (v.location ?? 1) == colIdx);
+                    if (value) {
+                        let colVal = value.value ?? 0;
+                        let columnType = value.columnType ?? null;
+                        if (columnType === 'currency') {
+                            colVal = new Intl.NumberFormat('id-ID', {
+                                style: "currency",
+                                currency: "IDR",
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0
+                            }).format(colVal);
+                        }
+                        cellVal = colVal;
+                    }
+                    totalRow.append(`<th class="text-end fw-bolder">${cellVal}</th>`);
+                }
+            });
+            $footer.append(totalRow);
         },
         error: function (xhr, error, code) {
             errorAlert('Data tidak dapat dimuat')
@@ -1375,13 +1384,12 @@ async function getDT(options) {
                         numberColumn: column.numberColumn ?? false,
                     })
                 })
-                const locations = ['thead', 'tfoot'];
-
-                locations.forEach(location => {
-                    if (options[location]) {
-                        createColumns(options.tableId, options.dataColumns, location);
-                    }
-                });
+                if (options.thead) {
+                    createColumns(options.tableId, options.dataColumns, 'thead');
+                }
+                if (options.tfoot) {
+                    prepareTableFoot(options.tableId);
+                }
                 dataTableCreate(options)
             }
         });

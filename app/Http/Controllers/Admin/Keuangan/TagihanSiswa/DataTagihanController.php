@@ -706,7 +706,7 @@ class DataTagihanController extends Controller
             "recordsFiltered" => $totalRecordswithFilter ?? 0,
             "data" => $records ?? [],
             'totals' => [
-                'tagihan' => ['location' => 8, 'value' => $totalTagihan, 'columnType' => 'currency'],
+                'tagihan' => ['location' => 9, 'value' => $totalTagihan, 'columnType' => 'currency'],
             ]
         );
         return response()->json($response);
