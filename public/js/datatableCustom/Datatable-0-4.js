@@ -760,6 +760,7 @@ async function dataTableCreate(options) {
         processing: true,
         // rowId: 'item_id',
         serverSide: options.serverSide ?? true,
+        order: options.order ?? [],
         paging: options.paging ?? true,
         pageLength: options.pageLength ?? 10,
         lengthMenu: options.lengthMenu ?? [10, 25, 50, 75, 100],
@@ -1367,7 +1368,7 @@ async function getDT(options) {
                     }
 
                     const isDuplicate = column.duplicate ?? true;
-                    options.dataColumns.push({
+                    const columnDef = {
                         data: column.data,
                         name: column.name,
                         duplicate: isDuplicate,
@@ -1382,7 +1383,11 @@ async function getDT(options) {
                         excludeFromSelection: column.excludeFromSelection ?? false,
                         columnType: columnType ?? null,
                         numberColumn: column.numberColumn ?? false,
-                    })
+                    };
+                    if (column.data === 'FUrutan' || column.data === 'BILLAM') {
+                        columnDef.type = 'num';
+                    }
+                    options.dataColumns.push(columnDef);
                 })
                 if (options.thead) {
                     createColumns(options.tableId, options.dataColumns, 'thead');

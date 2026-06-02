@@ -79,6 +79,7 @@ class DataTagihanController extends Controller
             [
                 'data' => 'naik',
                 'name' => 'Naik',
+                'orderable' => false,
                 'dataVal' => false,
                 'columnType' => 'button',
                 'className' => 'text-center',
@@ -93,6 +94,7 @@ class DataTagihanController extends Controller
             [
                 'data' => 'turun',
                 'name' => 'Turun',
+                'orderable' => false,
                 'dataVal' => false,
                 'columnType' => 'button',
                 'className' => 'text-center',
@@ -107,6 +109,7 @@ class DataTagihanController extends Controller
             [
                 'data' => 'delete',
                 'name' => '',
+                'orderable' => false,
                 'dataVal' => false,
                 'columnType' => 'button',
                 'className' => 'text-center',
@@ -436,18 +439,25 @@ class DataTagihanController extends Controller
         $search_arr = $request->get('search', []);
         $searchValue = $search_arr['value'] ?? '';
 
-        $columnName = "scctbill.FUrutan";
-        $columnSortOrder = "asc";
+        $columnName = 'scctbill.FUrutan';
+        $columnSortOrder = 'asc';
+        $userOrdered = false;
+        $nonSortableData = ['AA', 'naik', 'turun', 'delete', 'print', 'NOVA'];
 
         if (!empty($order_arr)) {
-            $columnIndex = $columnIndex_arr[0]["column"] ?? null;
+            $columnIndex = $columnIndex_arr[0]['column'] ?? null;
+            $requestedData = ($columnIndex !== null && isset($columnName_arr[$columnIndex]['data']))
+                ? $columnName_arr[$columnIndex]['data']
+                : null;
+
             if (
-                $columnIndex !== null &&
-                !empty($columnName_arr[$columnIndex]["data"]) &&
-                $columnName_arr[$columnIndex]["data"] !== "no"
+                $requestedData
+                && !in_array($requestedData, $nonSortableData, true)
+                && $requestedData !== 'no'
             ) {
-                $columnName = $columnName_arr[$columnIndex]["data"];
-                $columnSortOrder = $order_arr[0]["dir"] ?? "desc";
+                $userOrdered = true;
+                $columnName = $requestedData;
+                $columnSortOrder = strtolower($order_arr[0]['dir'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
             }
         }
 
@@ -459,7 +469,9 @@ class DataTagihanController extends Controller
             'FUrutan' => 'scctbill.FUrutan',
             'PAIDDT' => 'scctbill.PAIDDT',
             'NOCUST' => 'scctcust.NOCUST',
+            'NUM2ND' => 'scctcust.NUM2ND',
             'NMCUST' => 'scctcust.NMCUST',
+            'CODE02' => 'scctcust.CODE02',
             'DESC02' => 'scctcust.DESC02',
             'DESC03' => 'scctcust.DESC03',
         ];
@@ -638,9 +650,24 @@ class DataTagihanController extends Controller
             );
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
-        $records = (clone $query)
-            ->orderBy('scctbill.BTA')
-            ->orderByRaw("
+        $recordsQuery = clone $query;
+
+        if ($userOrdered) {
+            $dir = $columnSortOrder === 'desc' ? 'DESC' : 'ASC';
+            if ($columnName === 'scctbill.FUrutan') {
+                $recordsQuery->orderByRaw('CAST(COALESCE(scctbill.FUrutan, 0) AS SIGNED) ' . $dir);
+            } elseif ($columnName === 'scctbill.BILLAM') {
+                $recordsQuery->orderByRaw('CAST(COALESCE(scctbill.BILLAM, 0) AS DECIMAL(18,2)) ' . $dir);
+            } else {
+                $recordsQuery->orderBy($columnName, $columnSortOrder);
+            }
+            $recordsQuery
+                ->orderBy('scctcust.NOCUST', 'asc')
+                ->orderBy('scctbill.AA', 'asc');
+        } else {
+            $recordsQuery
+                ->orderBy('scctbill.BTA')
+                ->orderByRaw("
                     CASE
                         WHEN scctbill.BILLNM LIKE '%JULI%' THEN 1
                         WHEN scctbill.BILLNM LIKE '%AGUSTUS%' THEN 2
@@ -657,9 +684,11 @@ class DataTagihanController extends Controller
                         ELSE 999
                     END
                 ")
-            ->orderBy($columnName, $columnSortOrder)
-            ->orderBy('scctcust.NOCUST', 'asc')
-            ->orderBy('scctbill.FUrutan', 'asc')
+                ->orderByRaw('CAST(COALESCE(scctbill.FUrutan, 0) AS SIGNED) ASC')
+                ->orderBy('scctcust.NOCUST', 'asc');
+        }
+
+        $records = $recordsQuery
             ->skip($start)
             ->take($rowperpage)
             ->get()
