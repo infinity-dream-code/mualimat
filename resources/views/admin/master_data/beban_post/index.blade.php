@@ -240,7 +240,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">
-                            Tambah Data Master Kelas
+                            Tambah Data Beban Post
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -361,10 +361,18 @@
                             return response.json();
                         })
                         .then(data => {
-                            document.getElementById(formId).reset();
                             successAlert(data.message);
                             dataReload("main_table");
-                            if (formId !== "addForm") {
+                            if (formId === "addForm") {
+                                clearErrorMessages(formId);
+                                const nominalEl = document.getElementById("nominal");
+                                if (nominalEl) {
+                                    nominalEl.value = "";
+                                    nominalEl.dispatchEvent(new Event("input", {bubbles: true}));
+                                    nominalEl.focus();
+                                }
+                            } else {
+                                document.getElementById(formId).reset();
                                 document.querySelector(`#${formId} [data-bs-dismiss="modal"]`)?.click();
                             }
                         })
