@@ -104,8 +104,8 @@
                                     </label>
                                 </div>
                                 <div class="col">
-                                    <select class="form-select" id="post" name="post"
-                                            data-control="select2" data-placeholder="Pilih post">
+                                    <select class="form-select" id="post" name="post[]" multiple
+                                            data-control="select2" data-placeholder="Pilih post (bisa lebih dari satu)">
                                         @isset($post)
                                             @foreach($post as $item)
                                                 <option

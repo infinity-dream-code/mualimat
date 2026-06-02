@@ -356,7 +356,8 @@
                 paging: true,
                 serverSide: false,
                 searching: false,
-                lengthChange: false,
+                lengthChange: true,
+                lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
                 pageLength: 10,
                 order: [[1, 'desc']],
                 select: {

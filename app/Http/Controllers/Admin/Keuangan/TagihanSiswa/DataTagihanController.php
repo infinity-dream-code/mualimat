@@ -174,17 +174,36 @@ class DataTagihanController extends Controller
 
         try {
             DB::beginTransaction();
-            // Mapping UI: tombol "Naik" menaikkan angka urutan (mis. 1 -> 2),
-            // tombol "Turun" menurunkan angka urutan (mis. 2 -> 1).
-            $urutan = $request->urutan_tagihan == 'naik' ? 'UpdateUrutDOWN' : 'UpdateUrutUP';
-            // Procedure signature: (v_CUSTID, p_AA)
-            DB::select("CALL $urutan(?, ?)", [$request->input('custid'), $id]);
+            $custid = $request->input('custid');
+            $targetUrut = $request->urutan_tagihan === 'naik'
+                ? (int) $tagihan->FUrutan + 1
+                : (int) $tagihan->FUrutan - 1;
+
+            $other = scctbill::where('CUSTID', $custid)
+                ->where('FUrutan', $targetUrut)
+                ->where('PAIDST', 0)
+                ->where('FSTSBolehBayar', 1)
+                ->first();
+
+            if (!$other) {
+                DB::rollBack();
+                $msg = $request->urutan_tagihan === 'naik'
+                    ? 'Tagihan sudah berada pada urutan paling atas.'
+                    : 'Tagihan sudah berada pada urutan paling bawah.';
+                return response()->json(['message' => $msg], 422);
+            }
+
+            $currentUrut = $tagihan->FUrutan;
+            $tagihan->FUrutan = $other->FUrutan;
+            $other->FUrutan = $currentUrut;
+            $tagihan->save();
+            $other->save();
 
             DB::commit();
             return response()->json(['message' => 'Urutan tagihan diubah!'], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Gagal Mengubah Urutan Tagihan!, ' . $e, 'error' => $e], 422);
+            return response()->json(['message' => 'Gagal Mengubah Urutan Tagihan!, ' . $e->getMessage(), 'error' => $e->getMessage()], 422);
         }
     }
 
@@ -407,6 +426,24 @@ class DataTagihanController extends Controller
                 $columnName = $columnName_arr[$columnIndex]["data"];
                 $columnSortOrder = $order_arr[0]["dir"] ?? "desc";
             }
+        }
+
+        $sortableColumns = [
+            'BILLNM' => 'scctbill.BILLNM',
+            'BILLAM' => 'scctbill.BILLAM',
+            'BILLAC' => 'scctbill.BILLAC',
+            'BTA' => 'scctbill.BTA',
+            'FUrutan' => 'scctbill.FUrutan',
+            'PAIDDT' => 'scctbill.PAIDDT',
+            'NOCUST' => 'scctcust.NOCUST',
+            'NMCUST' => 'scctcust.NMCUST',
+            'DESC02' => 'scctcust.DESC02',
+            'DESC03' => 'scctcust.DESC03',
+        ];
+        if (isset($sortableColumns[$columnName])) {
+            $columnName = $sortableColumns[$columnName];
+        } elseif ($columnName && !str_contains($columnName, '.')) {
+            $columnName = 'scctbill.' . $columnName;
         }
 
         $filters = [];

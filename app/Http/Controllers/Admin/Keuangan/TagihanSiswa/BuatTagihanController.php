@@ -249,7 +249,7 @@ class BuatTagihanController extends Controller
             'siswa' => ['required', 'array', 'min:1'],
             'fungsi' => ['required', 'regex:/^\d{6}$/'],
             'nama_tagihan' => ['required'],
-            'tagihan' => ['required', 'array', 'min:1', 'max:1'],
+            'tagihan' => ['required', 'array', 'min:1'],
             'tagihan.*.tagihan' => ['required'],
             'tagihan.*.nominal' => ['required', 'regex:/^[0-9]+(\.[0-9]{3})*$/', 'not_in:0'],
         ], ValidationMessage::messages(), ValidationMessage::attributes());
@@ -306,7 +306,7 @@ class BuatTagihanController extends Controller
                         return response()->json(['message' => 'Nominal tidak boleh kosong'], 422);
                     }
 
-                    $post = $tagihans->firstWhere(['KodeAkun'], $item['tagihan']);
+                    $post = $tagihans->firstWhere('KodeAkun', $item['tagihan']);
                     if (!$post) return response()->json(['message' => 'Post tidak ditemukan'], 422);
 
                     $mst_tag = mst_tagihan::where('tagihan', $request['nama_tagihan'])->first();
@@ -319,7 +319,7 @@ class BuatTagihanController extends Controller
                         'CUSTID' => $siswa->CUSTID,
                         'BILLAC' => $request->fungsi,
                         'BILLCD' => $billCD,
-                        'BILLNM' => $mst_tag->tagihan
+                        'BILLNM' => $mst_tag->tagihan,
                     ], [
                         'BILLAM' => 0,
                         'PAIDST' => 0,
@@ -329,15 +329,15 @@ class BuatTagihanController extends Controller
                         'BTA' => $tahun_pelajaran_bta,
                     ]);
 
-                    $bill->increment('BILLAM', $nominal);
+                    $bill->increment('BILLAM', (int) $nominal);
 
-                    $billDetail = scctbill_detail::create([
+                    scctbill_detail::create([
                         'KodePost' => $post->KodeAkun,
                         'CUSTID' => $bill->CUSTID,
-                        'BILLAM' => $bill->BILLAM,
+                        'BILLAM' => (int) $nominal,
                         'tahun' => $tahun,
                         'periode' => $bulan,
-                        'BILLCD' => $billCD,
+                        'BILLCD' => $bill->BILLCD,
                     ]);
                 }
             }

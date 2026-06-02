@@ -501,6 +501,7 @@
                     dataReload(dtOptions.tableId);
                     successAlert(data.message);
                     modalDelete.hide();
+                    modalUrut.hide();
                 })
                 .catch(error => {
                     if (error.status === 422) {

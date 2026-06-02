@@ -287,6 +287,24 @@ class RekapTagihanController extends Controller
             }
         }
 
+        $sortableColumns = [
+            'BILLNM' => 'scctbill.BILLNM',
+            'BILLAM' => 'scctbill_detail.BILLAM',
+            'BILLAC' => 'scctbill.BILLAC',
+            'BTA' => 'scctbill.BTA',
+            'FUrutan' => 'scctbill.FUrutan',
+            'Urutan' => 'scctbill.FUrutan',
+            'NOCUST' => 'scctcust.NOCUST',
+            'NMCUST' => 'scctcust.NMCUST',
+            'KodePost' => 'scctbill_detail.KodePost',
+            'NamaAkun' => 'u_akun.NamaAkun',
+        ];
+        if (isset($sortableColumns[$columnName])) {
+            $columnName = $sortableColumns[$columnName];
+        } elseif ($columnName && !str_contains($columnName, '.')) {
+            $columnName = 'scctbill.' . $columnName;
+        }
+
         $filters = [];
         $filters1 = [];
         $filterQuery = null;
@@ -294,7 +312,11 @@ class RekapTagihanController extends Controller
 
         $filter = $request->input('filter', []);
         if ($request->filled('custid') && !isset($filter['custid'])) {
-            $filter['custid'] = $request->input('custid');
+            try {
+                $filter['custid'] = Crypt::decrypt($request->input('custid'));
+            } catch (DecryptException $e) {
+                $filter['custid'] = $request->input('custid');
+            }
         }
         if ($filter) {
             foreach ($filter as $key => $val) {
@@ -340,6 +362,13 @@ class RekapTagihanController extends Controller
                         if (!empty($namaTagihans) && $colName) {
                             $filters[] = [$colName, 'in', $namaTagihans];
                         }
+                    } elseif ($key === 'tahun_pelajaran' && $colName) {
+                        $normalizedVal = str_replace([' ', '-'], ['', '/'], trim((string) $val));
+                        $filters[] = [
+                            'whereRaw',
+                            'REPLACE(REPLACE(TRIM(scctbill.BTA), " ", ""), "-", "/") = ?',
+                            [$normalizedVal],
+                        ];
                     } else {
                         ($colName) && $filters[] = [$colName, '=', $val];
                     }
@@ -381,6 +410,10 @@ class RekapTagihanController extends Controller
             if (!empty($filters)) {
                 $filterQuery = function ($query) use ($filters) {
                     foreach ($filters as $filter) {
+                        if (($filter[0] ?? null) === 'whereRaw') {
+                            $query->whereRaw($filter[1], $filter[2] ?? []);
+                            continue;
+                        }
                         if (count($filter) === 3) {
                             if (($filter[1] ?? null) === 'in' && is_array($filter[2] ?? null)) {
                                 $query->whereIn($filter[0], $filter[2]);
@@ -535,12 +568,12 @@ class RekapTagihanController extends Controller
             return response()->json(['error' => 'siswa tidak ditemukan']);
         }
 
-        $siswa = scctcust::where('custid', $val)
+        $siswa = scctcust::where('CUSTID', $val)
             ->where(function ($query) {
                 $this->applyUnitScope($query);
             })
             ->first();
-        if (!$siswa) return response()->json(['error' => 'siswa tidak ditemukan']);
+        if (!$siswa) return response()->json(['message' => 'Siswa tidak ditemukan'], 422);
 
         $request->merge([
             'filter' => array_merge($request->input('filter', []), [
@@ -548,18 +581,27 @@ class RekapTagihanController extends Controller
             ]),
             'draw' => 2,
             'start' => 0,
-            'length' => "poll",
+            'length' => 'poll',
         ]);
         $tagihans = $this->getData($request);
 
         try {
             $tagihans = json_decode(json_encode($tagihans), true);
-            $tagihans = $tagihans['original']['data'];
-            if (!$tagihans) return response()->json(['message' => 'Tagihan Tidak Ditemukan'], 422);
-            $pdf = Pdf::loadView('pdf.data_tagihan.kartu-siswa', ['tagihans' => $tagihans, 'siswa' => $siswa]);
+            $tagihans = $tagihans['original']['data'] ?? [];
+            if (empty($tagihans)) {
+                return response()->json(['message' => 'Tagihan Tidak Ditemukan'], 422);
+            }
+            $nova = ($siswa->NOCUST && $siswa->NOCUST != '-')
+                ? scctcust::showVA($siswa->NOCUST)
+                : null;
+            $pdf = Pdf::loadView('cetak.kartu-siswa', [
+                'tagihans' => $tagihans,
+                'siswa' => $siswa,
+                'nova' => $nova,
+            ]);
             return $pdf->download('kartu-siswa.pdf');
-        } catch (Exception $e) {
-            return response()->json(['message' => 'Tagihan Tidak Ditemukan'], 422);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Tagihan Tidak Ditemukan', 'error' => $e->getMessage()], 422);
         }
     }
 }

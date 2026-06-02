@@ -182,7 +182,8 @@ class UploadTagihanExcelController extends Controller
             'tahun_pelajaran' => ['required', 'regex:/^\d{4}\/\d{4}(?:\s*-\s*(GANJIL|GENAP))?$/'],
             'fungsi' => ['required', 'integer'],
             'tagihan' => ['required'],
-            'post' => ['required'],
+            'post' => ['required', 'array', 'min:1'],
+            'post.*' => ['required', 'string'],
         ], ValidationMessage::messages(), ValidationMessage::attributes());
 
         $data = Cache::get($this->cacheKey);
@@ -200,12 +201,15 @@ class UploadTagihanExcelController extends Controller
         $tagihan = mst_tagihan::where('urut', $request->tagihan)->first();
         if (!$tagihan) return response()->json(['message' => 'Tagihan tidak ditemukan, silahkan muat ulang halaman!'], 422);
 
-        $post = u_akun::where('KodeAkun', $request->post)->first();
-        if (!$post) return response()->json(['message' => 'Post tidak ditemukan, silahkan muat ulang halaman!'], 422);
+        $postCodes = array_values(array_unique(array_filter((array) $request->post)));
+        $posts = u_akun::whereIn('KodeAkun', $postCodes)->get();
+        if ($posts->count() !== count($postCodes)) {
+            return response()->json(['message' => 'Post tidak ditemukan, silahkan muat ulang halaman!'], 422);
+        }
         try {
             DB::beginTransaction();
             foreach ($data as $item) {
-                if($item['status'] != 1) continue;
+                if ($item['status'] != 1) continue;
                 $siswa = scctcust::where('NOCUST', $item['nis'])->first();
                 if (!$siswa) return response()->json(['message' => "siswa dengan nis: {$item['nis']} tidak ditemukan!"], 422);
 
@@ -214,28 +218,33 @@ class UploadTagihanExcelController extends Controller
                     ->first();
 
                 $urut = $tagihanSiswaTerbaru ? $tagihanSiswaTerbaru['FUrutan'] + 1 : 1;
+                $billCD = date('Y') . '/i' . date('m') . '-' . ($urut + 1);
+                $nominal = (int) $item['nominal'];
+                $totalNominal = $nominal * $posts->count();
 
                 $bill = scctbill::create([
                     'CUSTID' => $siswa->CUSTID,
-                    'BILLAC' => $tahun.$bulan,
+                    'BILLAC' => $tahun . $bulan,
                     'BILLNM' => $tagihan->tagihan,
-                    'BILLAM' => $item['nominal'],
+                    'BILLAM' => $totalNominal,
                     'PAIDST' => 0,
                     'FUrutan' => $urut,
                     'FTGLTagihan' => now(),
                     'FSTSBolehBayar' => 1,
-                    'BTA' => $tahun_akademik,
-                    'BILLCD' => date('Y') . '/i' . date('m') . '-' . ($urut + 1)
+                    'BTA' => $matches[0],
+                    'BILLCD' => $billCD,
                 ]);
 
-                $billDetail = scctbill_detail::create([
-                    'KodePost' => $post->KodeAkun,
-                    'CUSTID' => $bill->CUSTID,
-                    'BILLAM' => $bill->BILLAM,
-                    'tahun' => $tahun,
-                    'periode' => $bulan,
-                    'BILLCD' => $bill->BILLCD,
-                ]);
+                foreach ($posts as $post) {
+                    scctbill_detail::create([
+                        'KodePost' => $post->KodeAkun,
+                        'CUSTID' => $bill->CUSTID,
+                        'BILLAM' => $nominal,
+                        'tahun' => $tahun,
+                        'periode' => $bulan,
+                        'BILLCD' => $bill->BILLCD,
+                    ]);
+                }
             }
 
             Cache::forget($this->cacheKey);
