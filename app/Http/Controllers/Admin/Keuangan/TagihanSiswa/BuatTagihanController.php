@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin\Keuangan\TagihanSiswa;
 
 use App\Http\Controllers\Controller;
 use App\Models\mst_kelas;
-use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
 use App\Models\u_akun;
 use App\Models\u_daftar_harga;
@@ -51,7 +50,9 @@ class BuatTagihanController extends Controller
         })
             ->orderByRaw("CASE WHEN kelas REGEXP '^[0-9]+$' THEN 0 ELSE 1 END, kelas")
             ->get();
-        $data['tagihan'] = mst_tagihan::orderBy('urut', 'asc')->get();
+        $data['tagihan'] = u_akun::query()
+            ->orderBy('KodeAkun', 'asc')
+            ->get(['KodeAkun', 'NamaAkun']);
 
         return view('admin.keuangan.tagihan_siswa.buat_tagihan.index_new', $data);
     }
@@ -289,11 +290,18 @@ class BuatTagihanController extends Controller
                         ->orWhereNull('u_daftar_harga.kode_prod')
                         ->orWhere('u_daftar_harga.kode_prod', '=', '');
                 });
-            })->select('u_daftar_harga.KodeAkun')
+            })->select('u_daftar_harga.KodeAkun', 'u_akun.NamaAkun')
             ->get();
 
         if ($tagihans->isEmpty()) return response()->json(['message' => 'Tagihan tidak ditemukan 1'], 422);
         if (count($request->input('tagihan')) != $tagihans->count()) return response()->json(['message' => 'Jumlah tagihan yang dipilih tidak sesuai dengan jumlah data, silahkan muat ulang halaman!'], 422);
+
+        $billNm = trim((string) $request->nama_tagihan);
+        if (!u_akun::where('NamaAkun', $billNm)->exists()) {
+            return response()->json([
+                'message' => 'Nama tagihan "' . $billNm . '" tidak ditemukan di daftar akun (u_akun).',
+            ], 422);
+        }
 
         try {
             DB::beginTransaction();
@@ -321,13 +329,6 @@ class BuatTagihanController extends Controller
                     $post = $tagihans->firstWhere('KodeAkun', $item['tagihan']);
                     if (!$post) return response()->json(['message' => 'Post tidak ditemukan'], 422);
 
-                    $mst_tag = mst_tagihan::where('tagihan', $request->nama_tagihan)->first();
-                    if (!$mst_tag) {
-                        return response()->json([
-                            'message' => 'Nama tagihan "' . $request->nama_tagihan . '" tidak terdaftar di master tagihan.',
-                        ], 422);
-                    }
-
                     $tahun = substr($request->fungsi, 0, 4);
                     $bulan = substr($request->fungsi, 4, 2);
 
@@ -335,7 +336,7 @@ class BuatTagihanController extends Controller
                         'CUSTID' => $siswa->CUSTID,
                         'BILLAC' => $request->fungsi,
                         'BILLCD' => $billCD,
-                        'BILLNM' => $mst_tag->tagihan,
+                        'BILLNM' => $billNm,
                     ], [
                         'BILLAM' => 0,
                         'PAIDST' => 0,
@@ -373,7 +374,7 @@ class BuatTagihanController extends Controller
     {
         $nama = trim((string) $request->input('nama_tagihan', ''));
         if ($nama !== '') {
-            return $nama;
+            return u_akun::where('NamaAkun', $nama)->value('NamaAkun') ?? $nama;
         }
 
         $items = $request->input('tagihan', []);
@@ -388,12 +389,7 @@ class BuatTagihanController extends Controller
 
         $namaAkun = trim((string) ($first['nama_akun'] ?? ''));
         if ($namaAkun !== '') {
-            $fromMst = mst_tagihan::where('tagihan', $namaAkun)->value('tagihan');
-            if ($fromMst) {
-                return $fromMst;
-            }
-
-            return $namaAkun;
+            return u_akun::where('NamaAkun', $namaAkun)->value('NamaAkun') ?? $namaAkun;
         }
 
         $kodeAkun = $first['tagihan'] ?? null;
@@ -401,11 +397,6 @@ class BuatTagihanController extends Controller
             return null;
         }
 
-        $namaFromAkun = u_akun::where('KodeAkun', $kodeAkun)->value('NamaAkun');
-        if (!$namaFromAkun) {
-            return null;
-        }
-
-        return mst_tagihan::where('tagihan', $namaFromAkun)->value('tagihan') ?? $namaFromAkun;
+        return u_akun::where('KodeAkun', $kodeAkun)->value('NamaAkun');
     }
 }

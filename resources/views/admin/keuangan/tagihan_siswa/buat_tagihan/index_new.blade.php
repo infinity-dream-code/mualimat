@@ -183,7 +183,8 @@
                                         @isset($tagihan)
                                             @foreach($tagihan as $item)
                                                 <option
-                                                    value="{{$item->tagihan}}" data-val="{{$item->kode}}">{{$item->tagihan}}</option>
+                                                    value="{{ $item->NamaAkun }}"
+                                                    data-kode-akun="{{ $item->KodeAkun }}">{{ $item->NamaAkun }}</option>
                                             @endforeach
                                         @else
                                             <option>data kosong</option>
@@ -805,10 +806,19 @@
             }
             let partedTahunPelajaram = partTahunPelajaran[0].split("/");
 
-            let periodeBulan = $('#nama_tagihan option:selected').data('val');
-            console.log(periodeBulan)
-            periodeBulan === undefined || periodeBulan === "" ? periodeBulan = '{{date('m')}}':'';
-            console.log(periodeBulan)
+            const bulanDariNama = {
+                JANUARI: '01', FEBRUARI: '02', MARET: '03', APRIL: '04',
+                MEI: '05', JUNI: '06', JULI: '07', AGUSTUS: '08',
+                SEPTEMBER: '09', OKTOBER: '10', NOVEMBER: '11', DESEMBER: '12',
+            };
+            let periodeBulan = '{{ date('m') }}';
+            const namaTagihan = String($('#nama_tagihan option:selected').val() || '').toUpperCase();
+            for (const [bulan, kode] of Object.entries(bulanDariNama)) {
+                if (namaTagihan.includes(bulan)) {
+                    periodeBulan = kode;
+                    break;
+                }
+            }
 
             if (periodeBulan < 7) {
                 fungsi.val(partedTahunPelajaram[1] + periodeBulan)
