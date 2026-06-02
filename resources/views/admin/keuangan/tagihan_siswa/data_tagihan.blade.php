@@ -412,6 +412,16 @@
             }
         }
 
+        function canChangeUrutan(rowEl) {
+            const rowData = DT[`${dtOptions.tableId}`].row(rowEl).data();
+            const urut = parseInt(rowData?.FUrutan ?? rowData?.furutan ?? '0', 10);
+            if (!Number.isFinite(urut) || urut <= 0) {
+                warningAlert('Tagihan dengan urutan 0 tidak dapat dinaikkan atau diturunkan.');
+                return false;
+            }
+            return true;
+        }
+
         document.querySelector('#main_table tbody').addEventListener('click', function (e) {
             if (e.target.closest('.btn-hapus')) {
                 const rowEl = e.target.closest('tr');
@@ -422,7 +432,7 @@
                 }
             } else if (e.target.closest('.btn-naik-urut')) {
                 const rowEl = e.target.closest('tr');
-                if (rowEl) {
+                if (rowEl && canChangeUrutan(rowEl)) {
                     document.getElementById("logo-urutan").className = "ri-arrow-up-line ri-5x me-2";
                     document.getElementById("caption-urutan").textContent = "Naikkan Urutan Tagihan?";
                     document.getElementById("sub-caption-urutan").textContent = "Anda yakin akan menaikkan urutan tagihan?";
@@ -433,7 +443,7 @@
                 }
             } else if (e.target.closest('.btn-turun-urut')) {
                 const rowEl = e.target.closest('tr');
-                if (rowEl) {
+                if (rowEl && canChangeUrutan(rowEl)) {
                     document.getElementById("logo-urutan").className = "ri-arrow-down-line ri-5x me-2";
                     document.getElementById("caption-urutan").textContent = "Turunkan Urutan Tagihan?";
                     document.getElementById("sub-caption-urutan").textContent = "Anda yakin akan menurunkan urutan tagihan?";

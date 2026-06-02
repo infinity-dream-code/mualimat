@@ -182,55 +182,86 @@ class DataTagihanController extends Controller
             ->where('FSTSBolehBayar', '=', 1)
             ->where('PAIDST', '=', 0)
             ->first();
-        if (!$tagihan) return response()->json(['message' => 'Tagihan tidak ditemukan!'], 422);
+        if (!$tagihan) {
+            return response()->json(['message' => 'Tagihan tidak ditemukan!'], 422);
+        }
 
-        $siswa = scctcust::where('CUSTID', $request->input('custid'))->first();
-        if (!$siswa) return response()->json(['message' => 'Siswa tidak ditemukan!'], 422);
+        $currentUrut = (int) ($tagihan->FUrutan ?? 0);
+        if ($currentUrut <= 0) {
+            return response()->json([
+                'message' => 'Tagihan dengan urutan 0 tidak dapat dinaikkan atau diturunkan.',
+            ], 422);
+        }
+
+        if ($request->urutan_tagihan === 'naik') {
+            $targetUrut = $currentUrut + 1;
+        } else {
+            $targetUrut = $currentUrut - 1;
+            if ($targetUrut <= 0) {
+                return response()->json([
+                    'message' => 'Urutan 1 tidak dapat ditukar ke urutan 0.',
+                ], 422);
+            }
+        }
+
+        if (!$this->furutanSlotExists($targetUrut)) {
+            $pesan = $request->urutan_tagihan === 'naik'
+                ? "Tidak ada tagihan dengan urutan {$targetUrut}. Urutan sudah paling atas."
+                : "Tidak ada tagihan dengan urutan {$targetUrut}.";
+
+            return response()->json(['message' => $pesan], 422);
+        }
 
         try {
             DB::beginTransaction();
-            $custid = $request->input('custid');
-
-            $bills = scctbill::query()
-                ->where('CUSTID', $custid)
-                ->where('PAIDST', 0)
-                ->where('FSTSBolehBayar', 1)
-                ->orderBy('FUrutan', 'asc')
-                ->orderBy('AA', 'asc')
-                ->get();
-
-            $currentIndex = $bills->search(fn ($bill) => (int) $bill->AA === (int) $tagihan->AA);
-            if ($currentIndex === false) {
-                DB::rollBack();
-                return response()->json(['message' => 'Tagihan tidak ditemukan pada daftar urutan siswa!'], 422);
-            }
-
-            if ($request->urutan_tagihan === 'naik') {
-                if ($currentIndex <= 0) {
-                    DB::rollBack();
-                    return response()->json(['message' => 'Tagihan sudah berada pada urutan paling atas.'], 422);
-                }
-                $other = $bills[$currentIndex - 1];
-            } else {
-                if ($currentIndex >= $bills->count() - 1) {
-                    DB::rollBack();
-                    return response()->json(['message' => 'Tagihan sudah berada pada urutan paling bawah.'], 422);
-                }
-                $other = $bills[$currentIndex + 1];
-            }
-
-            $currentUrut = $tagihan->FUrutan;
-            $tagihan->FUrutan = $other->FUrutan;
-            $other->FUrutan = $currentUrut;
-            $tagihan->save();
-            $other->save();
-
+            $this->swapFUrutanSlots($currentUrut, $targetUrut);
+            Cache::increment(Str::slug($this->cacheKey) . '_cache_version');
             DB::commit();
-            return response()->json(['message' => 'Urutan tagihan diubah!'], 200);
+
+            return response()->json([
+                'message' => "Urutan {$currentUrut} dan {$targetUrut} berhasil ditukar.",
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Gagal Mengubah Urutan Tagihan!, ' . $e->getMessage(), 'error' => $e->getMessage()], 422);
+
+            return response()->json([
+                'message' => 'Gagal mengubah urutan tagihan: ' . $e->getMessage(),
+                'error' => $e->getMessage(),
+            ], 422);
         }
+    }
+
+    /** Apakah ada tagihan aktif (belum lunas) dengan nilai FUrutan tertentu. */
+    private function furutanSlotExists(int $urut): bool
+    {
+        return scctbill::query()
+            ->where('PAIDST', 0)
+            ->where('FSTSBolehBayar', 1)
+            ->whereRaw('CAST(COALESCE(FUrutan, 0) AS SIGNED) = ?', [$urut])
+            ->exists();
+    }
+
+    /**
+     * Tukar semua tagihan pada slot FUrutan $fromUrut dengan slot $toUrut (global, bukan per baris).
+     */
+    private function swapFUrutanSlots(int $fromUrut, int $toUrut): void
+    {
+        $tempUrut = (int) scctbill::query()
+            ->where('PAIDST', 0)
+            ->where('FSTSBolehBayar', 1)
+            ->max('FUrutan') + 10000;
+
+        $applySlot = static function (int $from, int $to) {
+            scctbill::query()
+                ->where('PAIDST', 0)
+                ->where('FSTSBolehBayar', 1)
+                ->whereRaw('CAST(COALESCE(FUrutan, 0) AS SIGNED) = ?', [$from])
+                ->update(['FUrutan' => $to]);
+        };
+
+        $applySlot($fromUrut, $tempUrut);
+        $applySlot($toUrut, $fromUrut);
+        $applySlot($tempUrut, $toUrut);
     }
 
     public function cetak(Request $request)
