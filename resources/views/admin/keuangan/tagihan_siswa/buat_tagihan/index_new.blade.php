@@ -173,7 +173,7 @@
                             <div class="row d-flex align-items-center">
                                 <div class="col-3">
                                     <label class="form-label" for="nama_tagihan">
-                                        tagihan
+                                        Nama Tagihan
                                     </label>
                                 </div>
                                 <div class="col">
@@ -329,6 +329,28 @@
             tablePost.clear();
             tablePost.rows.add(newData);
             tablePost.draw();
+        }
+
+        function syncNamaTagihanFromAkun(namaAkun) {
+            if (!namaAkun) {
+                return;
+            }
+            const $select = $('#nama_tagihan');
+            let matched = false;
+            $select.find('option').each(function () {
+                const val = String($(this).val() || '').trim();
+                const text = String($(this).text() || '').trim();
+                if (val === namaAkun || text === namaAkun) {
+                    $select.val(val).trigger('change');
+                    matched = true;
+                    return false;
+                }
+            });
+            if (!matched) {
+                const option = new Option(namaAkun, namaAkun, true, true);
+                $select.append(option).trigger('change');
+            }
+            createPeriode();
         }
 
 
@@ -570,19 +592,37 @@
                     }
                 });
 
+                let firstNamaAkun = null;
                 selectedTagihanRows.every(function () {
                     let row = this.node();
                     let checkbox = $(row).find('.checkbox-tagihan');
+                    let rowData = tablePost.row(row).data();
 
                     if (checkbox.is(':checked')) {
                         let checkVal = encodeURIComponent(checkbox.val());
-                        let nominalInput = $(row).find('.nominal-input')
+                        let nominalInput = $(row).find('.nominal-input');
                         let nominalVal = encodeURIComponent(nominalInput.val());
+                        let namaAkun = encodeURIComponent(rowData?.nama_akun || '');
+
+                        if (!firstNamaAkun && rowData?.nama_akun) {
+                            firstNamaAkun = rowData.nama_akun;
+                        }
 
                         data += `&tagihan[${checkVal}][tagihan]=` + checkVal;
                         data += `&tagihan[${checkVal}][nominal]=` + nominalVal;
+                        data += `&tagihan[${checkVal}][nama_akun]=` + namaAkun;
                     }
                 });
+
+                if (!$('#nama_tagihan').val() && firstNamaAkun) {
+                    syncNamaTagihanFromAkun(firstNamaAkun);
+                }
+                if ($('#nama_tagihan').val()) {
+                    data += '&nama_tagihan=' + encodeURIComponent($('#nama_tagihan').val());
+                }
+                if ($('#fungsi').val()) {
+                    data += '&fungsi=' + encodeURIComponent($('#fungsi').val());
+                }
 
                 data += "&_token=" + csrfToken;
 
@@ -655,6 +695,16 @@
             $(createForm).on('change', '.checkbox-tagihan', function () {
                 let isChecked = $(this).is(':checked');
                 let row = $(this).closest('tr');
+                let rowData = tablePost.row(row).data();
+
+                if (isChecked) {
+                    $('#table-post tbody .checkbox-tagihan').not(this).prop('checked', false);
+                    $('#table-post tbody tr').not(row).find('input.form-control')
+                        .prop('readonly', true).prop('required', false);
+                    if (rowData?.nama_akun) {
+                        syncNamaTagihanFromAkun(rowData.nama_akun);
+                    }
+                }
 
                 row.find('input.form-control').prop('readonly', !isChecked);
                 row.find('input.form-control').prop('required', isChecked);
