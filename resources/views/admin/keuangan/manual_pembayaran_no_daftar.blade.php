@@ -927,8 +927,8 @@
                     const mainTable = [
                         [(nocust ? 'NIS ' : 'No. Pendaftaran'), ': ' + (nocust ? nocust : siswa.NUM2ND), 'Unit', ': ' + siswa.CODE02],
                         [(nocust ? 'No. VA ' : '-'), ': ' + (nocust ? showVA(nocust) : ''), 'Kelas', ': ' + (siswa.DESC02 ?? '') + ' ' + (siswa.DESC03 ?? '')],
-                        ['Nama ', ': ' + namaSiswa, 'Ayah', ': ' + (siswa.GENUS ?? '-')],
-                        ['Metode Bayar', ': ' + metodeLabel, 'Ibu', ': ' + (siswa.GENUS1 ?? '')],
+                        ['Nama ', ': ' + namaSiswa, 'Orang Tua', ': ' + (siswa.GENUS ?? siswa.genus ?? '-')],
+                        ['Metode Bayar', ': ' + metodeLabel, '', ''],
                     ]
 
                     bodyContent.push({
@@ -1033,8 +1033,8 @@
                     const mainTable = [
                         [(nocust ? 'NIS ' : 'No. Pendaftaran'), ': ' + (nocust ? nocust : siswa.NUM2ND), 'Unit', ': ' + siswa.CODE02],
                         [(nocust ? 'No. VA ' : '-'), ': ' + (nocust ? showVA(nocust) : ''), 'Kelas', ': ' + siswa.DESC02 + ' ' + siswa.DESC03],
-                        ['Nama ', ': ' + siswa.NMCUST, 'Ayah', ': ' + (siswa.GENUS ?? '-')],
-                        ['', '', 'Ibu', ': ' + (siswa.GENUS1 ?? '')],
+                        ['Nama ', ': ' + siswa.NMCUST, 'Orang Tua', ': ' + (siswa.GENUS ?? siswa.genus ?? '-')],
+                        ['', '', '', ''],
                     ]
 
                     bodyContent.push({

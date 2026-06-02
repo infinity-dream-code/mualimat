@@ -7,6 +7,7 @@ use App\Models\mst_kelas;
 use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
 use App\Models\scctbill;
+use App\Models\scctbill_detail;
 use App\Models\scctcust;
 use App\Models\ValidationMessage;
 use Illuminate\Http\Request;
@@ -45,7 +46,7 @@ class HapusTagihanController extends Controller
             ['data' => 'CODE02', 'name' => 'Unit', 'searchable' => true, 'orderable' => true],
             ['data' => 'DESC02', 'name' => 'Kelas', 'searchable' => true, 'orderable' => true],
             ['data' => 'BILLNM', 'name' => 'Nama Tagihan', 'searchable' => true, 'orderable' => true],
-            ['data' => 'BILLAM', 'name' => 'Tagihan', 'searchable' => true, 'orderable' => true, 'columnType' => 'currency', 'className' => 'text-end'],
+            ['data' => 'nominal', 'name' => 'Nominal', 'searchable' => false, 'orderable' => true, 'columnType' => 'currency', 'className' => 'text-end'],
             ['data' => 'BTA', 'name' => 'Tahun AKA', 'searchable' => true, 'orderable' => true],
         ];
     }
@@ -136,10 +137,19 @@ class HapusTagihanController extends Controller
             'scctcust.nocust',
         ];
 
+        $detailSum = scctbill_detail::query()
+            ->select([
+                'CUSTID',
+                'BILLCD',
+                DB::raw('COALESCE(SUM(BILLAM), 0) AS nominal_detail'),
+            ])
+            ->groupBy('CUSTID', 'BILLCD');
+
         $select = array_unique(array_merge($whereAny, [
             'scctbill.AA',
             'scctbill.BILLNM',
             'scctbill.BILLAM',
+            'scctbill.BILLCD',
             'scctbill.PAIDST',
             'scctbill.PAIDDT',
             'scctbill.BTA',
@@ -151,6 +161,10 @@ class HapusTagihanController extends Controller
         ]));
 
         $query = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
+            ->leftJoinSub($detailSum, 'bill_detail', function ($join) {
+                $join->on('bill_detail.CUSTID', '=', 'scctbill.CUSTID')
+                    ->on('bill_detail.BILLCD', '=', 'scctbill.BILLCD');
+            })
             ->where('scctbill.PAIDST', 0)
             ->where('scctbill.FSTSBolehBayar', 1)
             ->where('scctcust.STCUST', 1)
@@ -179,6 +193,7 @@ class HapusTagihanController extends Controller
 
         $records = (clone $query)->orderBy($columnName, $columnSortOrder)
             ->select($select)
+            ->addSelect(DB::raw('COALESCE(NULLIF(bill_detail.nominal_detail, 0), scctbill.BILLAM) AS nominal'))
             ->skip($start)
             ->take($rowperpage)
             ->get()
@@ -186,6 +201,7 @@ class HapusTagihanController extends Controller
                 $item->delete = true;
                 $item->item_id = $item['AA'];
                 $item->CUSTID = $item['CUSTID'];
+                $item->billam = $item->nominal;
                 return $item;
             })->toArray();
         $response = array(

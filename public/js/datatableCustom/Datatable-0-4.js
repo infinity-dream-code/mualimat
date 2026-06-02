@@ -486,24 +486,49 @@ function dtButtons(options, buttons) {
             title: '',
             text: '<i class="ri ri-file-pdf-2-line me-2"></i>Pdf',
             modifier: {page: 'all'},
-            orientation: 'portrait',
-            pageSize: 'A4',
+            orientation: options.pdfOrientation || 'portrait',
+            pageSize: options.pdfPageSize || 'A4',
             exportOptions: {
                 columns: ':visible:not(.no-export)',
             },
             customize: function (doc) {
-                const totalColumns = options.dataColumns.length;
+                const exportableCount = options.dataColumns.filter(col => col.exportable === true).length;
                 const LANDSCAPE_THRESHOLD = 8;
 
-                if (totalColumns > LANDSCAPE_THRESHOLD) {
+                if (options.pdfOrientation) {
+                    doc.pageOrientation = options.pdfOrientation;
+                } else if (exportableCount > LANDSCAPE_THRESHOLD) {
                     doc.pageOrientation = 'landscape';
                 }
-                doc.pageMargins = [10, 10, 10, 10];
-                doc.defaultStyle.fontSize = 7;
+                if (options.pdfPageSize) {
+                    doc.pageSize = options.pdfPageSize;
+                }
+                doc.pageMargins = options.pdfMargins || [10, 10, 10, 10];
+                doc.defaultStyle.fontSize = options.pdfFontSize ?? 7;
                 const tableNode = doc.content.find(n => n.table);
                 if (tableNode && tableNode.table && tableNode.table.body) {
-                    tableNode.table.widths =
-                        Array(tableNode.table.body[0].length).fill('*');
+                    if (options.pdfHeaderFontSize && tableNode.table.body[0]) {
+                        tableNode.table.body[0].forEach(cell => {
+                            if (cell && typeof cell === 'object') {
+                                cell.fontSize = options.pdfHeaderFontSize;
+                                cell.bold = true;
+                            }
+                        });
+                    }
+                    const colCount = tableNode.table.body[0].length;
+                    const pageWidth = doc.pageOrientation === 'landscape' ? 842 : 595;
+                    const margins = doc.pageMargins || [10, 10, 10, 10];
+                    const usableWidth = pageWidth - margins[0] - margins[2];
+                    const colWidth = Math.max(usableWidth / colCount, 28);
+                    tableNode.table.widths = Array(colCount).fill(colWidth);
+                    tableNode.layout = {
+                        hLineWidth: () => 0.5,
+                        vLineWidth: () => 0.5,
+                        paddingLeft: () => 2,
+                        paddingRight: () => 2,
+                        paddingTop: () => 2,
+                        paddingBottom: () => 2,
+                    };
                 }
                 const duplicateCols = getDuplicateExportColumns(options.dataColumns);
                 mergePdfDuplicates(doc, duplicateCols);
@@ -518,6 +543,19 @@ function dtButtons(options, buttons) {
             extend: 'print',
             title: '',
             text: '<i class="ri ri-printer-line me-2"></i>Print',
+            customize: function (win) {
+                const landscape = options.pdfOrientation === 'landscape'
+                    || options.dataColumns.filter(col => col.exportable === true).length > 8;
+                const fontSize = options.pdfFontSize ?? 8;
+                const style = win.document.createElement('style');
+                style.innerHTML = `
+                    @page { size: ${landscape ? 'landscape' : 'portrait'}; margin: 12mm; }
+                    body { font-size: ${fontSize}px; }
+                    table { width: 100% !important; font-size: ${fontSize}px !important; table-layout: fixed; }
+                    th, td { white-space: normal !important; word-break: break-word; padding: 2px 4px !important; }
+                `;
+                win.document.head.appendChild(style);
+            },
         },
     };
 
@@ -1267,6 +1305,20 @@ async function getDT(options) {
                                     );
 
                                     return item ? item[value] : defaultValue;
+                                };
+                                break;
+                            case 'nova_edit':
+                                renderFunc = function (data, type, row) {
+                                    if (type === 'display' || type === 'filter') {
+                                        const va = data ?? '-';
+                                        const custid = row.CUSTID ?? row.custid ?? '';
+                                        const nis = row.nocust ?? row.NOCUST ?? '';
+                                        return `<span class="me-1">${va}</span>` +
+                                            `<button type="button" class="btn btn-sm btn-icon btn-outline-primary btn-edit-nova" ` +
+                                            `data-custid="${custid}" data-nis="${nis}" data-nova="${va}" title="Edit Nomor VA">` +
+                                            `<i class="ri-pencil-line"></i></button>`;
+                                    }
+                                    return data;
                                 };
                                 break;
                             case 'custom_code_tagihan':

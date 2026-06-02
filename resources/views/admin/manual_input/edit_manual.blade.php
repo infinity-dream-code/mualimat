@@ -418,14 +418,7 @@
             if (tagihan !== null) {
                 formData.append('tagihan', tagihan);
             }
-            tablePostBaru.rows().every(function (index) {
-                const rowData = this.data();
-                const node = this.node();
-                if (!node) return;
-                formData.append(`data[${index}][KodeAkun]`, rowData.KodeAkun);
-                formData.append(`data[${index}][NamaAkun]`, rowData.NamaAkun);
-                formData.append(`data[${index}][nominal]`, rowData.nominal);
-            });
+            appendDetailPostToFormData(formData);
 
             loadingAlert('Mengedit data...');
             const request = new Request(
@@ -479,14 +472,7 @@
             if (tagihan !== null) {
                 formData.append('tagihan', tagihan);
             }
-            tablePostBaru.rows().every(function (index) {
-                const rowData = this.data();
-                const node = this.node();
-                if (!node) return;
-                formData.append(`data[${index}][KodeAkun]`, rowData.KodeAkun);
-                formData.append(`data[${index}][NamaAkun]`, rowData.NamaAkun);
-                formData.append(`data[${index}][nominal]`, rowData.nominal);
-            });
+            appendDetailPostToFormData(formData);
 
             formData.append('_method', 'PUT');
             loadingAlert('Mengedit data...');
@@ -585,6 +571,22 @@
                         console.log(error)
                     }
                 });
+        }
+
+        function appendDetailPostToFormData(formData) {
+            tablePostBaru.rows().every(function (index) {
+                const rowData = this.data();
+                const node = this.node();
+                if (!node) return;
+                const input = node.querySelector('.nominal-input');
+                const rawNominal = input
+                    ? input.value.replace(/\./g, '')
+                    : String(rowData.nominal ?? '').replace(/\./g, '');
+                const nominal = parseInt(rawNominal || '0', 10);
+                formData.append(`data[${index}][KodeAkun]`, rowData.KodeAkun);
+                formData.append(`data[${index}][NamaAkun]`, rowData.NamaAkun);
+                formData.append(`data[${index}][nominal]`, nominal);
+            });
         }
 
         async function getDetailTagihan(siswa, tagihan) {
@@ -824,7 +826,7 @@
                 searching: false,
                 lengthChange: false,
                 pageLength: 10,
-                order: [[1, 'desc']],
+                order: [[4, 'asc']],
                 scrollX: true,
             });
 
@@ -880,7 +882,7 @@
                 searching: false,
                 lengthChange: false,
                 pageLength: 10,
-                order: [[1, 'desc']],
+                order: [[4, 'asc']],
                 scrollX: true,
             });
 

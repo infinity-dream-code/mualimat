@@ -58,10 +58,17 @@ class EditManualController extends Controller
 
         ];
 
+        $detailSum = scctbill_detail::query()
+            ->select([
+                'CUSTID',
+                'BILLCD',
+                DB::raw('COALESCE(SUM(BILLAM), 0) AS nominal_detail'),
+            ])
+            ->groupBy('CUSTID', 'BILLCD');
+
         $select = array_unique(array_merge($whereAny, [
             'scctbill.AA',
             'scctbill.BILLNM',
-            'scctbill.BILLAM',
             'scctbill.PAIDST',
             'scctbill.PAIDDT',
             'scctbill.BTA',
@@ -70,11 +77,18 @@ class EditManualController extends Controller
             'scctbill.FUrutan',
         ]));
 
-        $tagihan = scctbill::select($select)
+        $tagihan = scctbill::query()
+            ->leftJoinSub($detailSum, 'bill_detail', function ($join) {
+                $join->on('bill_detail.CUSTID', '=', 'scctbill.CUSTID')
+                    ->on('bill_detail.BILLCD', '=', 'scctbill.BILLCD');
+            })
+            ->select($select)
+            ->selectRaw('COALESCE(NULLIF(bill_detail.nominal_detail, 0), scctbill.BILLAM) AS BILLAM')
             ->where('scctbill.CUSTID', $request->siswa)
+            ->where('scctbill.FSTSBolehBayar', 1)
             ->orderBy('scctbill.FUrutan', 'asc')
-            ->groupBy('scctbill.BILLCD')
             ->get();
+
         return response()->json($tagihan);
     }
 
@@ -110,7 +124,7 @@ class EditManualController extends Controller
             'data' => ['required', 'array', 'min:1'],
             'data.*.KodeAkun' => ['required'],
             'data.*.NamaAkun' => ['required'],
-            'data.*.nominal' => ['required', 'integer'],
+            'data.*.nominal' => ['required', 'numeric'],
         ], ValidationMessage::messages(),
             ValidationMessage::attributes());
 
@@ -175,8 +189,8 @@ class EditManualController extends Controller
             DB::beginTransaction();
             $totalTagihan = 0;
             foreach ($request->data as $key => $item) {
-                $nominal = str_replace('.', '', $item['nominal']);
-                if (!is_numeric($nominal)) {
+                $nominal = (int) preg_replace('/\D/', '', (string) ($item['nominal'] ?? 0));
+                if ($nominal <= 0) {
                     return response()->json(['message' => 'Nominal detail post tidak valid!'], 422);
                 }
 
@@ -221,7 +235,7 @@ class EditManualController extends Controller
             'data' => ['required', 'array', 'min:1'],
             'data.*.KodeAkun' => ['required'],
             'data.*.NamaAkun' => ['required'],
-            'data.*.nominal' => ['required', 'integer'],
+            'data.*.nominal' => ['required', 'numeric'],
         ], ValidationMessage::messages(),
             ValidationMessage::attributes());
 
@@ -279,13 +293,30 @@ class EditManualController extends Controller
             $urut = $tagihanSiswaTerbaru ? $tagihanSiswaTerbaru['FUrutan'] + 1 : 1;
             $billCD = date('Y') . '/i' . date('m') . '-' . ($urut + 1);
 
-            $bill = scctbill::firstOrCreate([
+            $tahun = substr($tagihan->BILLAC, 0, 4);
+            $bulan = substr($tagihan->BILLAC, 4, 2);
+
+            $totalTagihan = 0;
+            $detailRows = [];
+            foreach ($request->data as $item) {
+                $nominal = (int) preg_replace('/\D/', '', (string) ($item['nominal'] ?? 0));
+                if ($nominal <= 0) {
+                    DB::rollBack();
+                    return response()->json(['message' => 'Nominal detail post tidak valid!'], 422);
+                }
+                $detailRows[] = [
+                    'KodePost' => $item['KodeAkun'],
+                    'nominal' => $nominal,
+                ];
+                $totalTagihan += $nominal;
+            }
+
+            $bill = scctbill::create([
                 'CUSTID' => $request->siswa,
                 'BILLAC' => $tagihan->BILLAC,
                 'BILLCD' => $billCD,
-                'BILLNM' => $tagihan->BILLNM
-            ], [
-                'BILLAM' => 0,
+                'BILLNM' => $tagihan->BILLNM,
+                'BILLAM' => $totalTagihan,
                 'PAIDST' => 0,
                 'FUrutan' => $urut,
                 'FTGLTagihan' => now(),
@@ -293,31 +324,17 @@ class EditManualController extends Controller
                 'BTA' => $tagihan->BTA,
             ]);
 
-            $tahun = substr($bill->BILLAC, 0, 4);
-            $bulan = substr($bill->BILLAC, 4, 2);
-
-            $totalTagihan = 0;
-            foreach ($request->data as $key => $item) {
-                $nominal = str_replace('.', '', $item['nominal']);
-                if (!is_numeric($nominal)) {
-                    return response()->json(['message' => 'Nominal detail post tidak valid!'], 422);
-                }
+            foreach ($detailRows as $detail) {
                 scctbill_detail::create([
-                    'KodePost' => $item['KodeAkun'],
+                    'KodePost' => $detail['KodePost'],
                     'CUSTID' => $bill->CUSTID,
-                    'BILLAM' => $nominal,
+                    'BILLAM' => $detail['nominal'],
                     'tahun' => $tahun,
                     'periode' => $bulan,
                     'BILLCD' => $bill->BILLCD,
                 ]);
-
-                $totalTagihan += $nominal;
             }
 
-
-            $bill->update([
-                'BILLAM' => $totalTagihan,
-            ]);
             DB::commit();
             return response()->json(['message' => 'Tagihan Berhasil Disalin dan disimpan!'], 200);
         }catch (\Exception $e) {

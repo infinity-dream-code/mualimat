@@ -132,33 +132,19 @@
                 </div>
             </div>
             <div class="table-responsive text-nowrap">
-                <table class="table table-sm table-bordered table-hover"
-                       id="main_table_2">
-                    <thead class="table-light">
-                    <tr>
-                        <th></th>
-                        <th>NIS</th>
-                        <th>NO. DAFTAR</th>
-                        <th>Kelas</th>
-                        <th>NO. VA</th>
-                        <th>NAMA</th>
-                        <th>Nama Post</th>
-                        <th>Periode</th>
-                        <th>Tagihan</th>
-                        <th>Nominal Bayar</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td class="text-center" colspan="12">Silahkan Pilih Siswa</td>
-                    </tr>
-                    </tbody>
+                <table class="table table-sm table-bordered table-hover" id="main_table_2">
+                    <thead class="table-light"></thead>
+                    <tbody></tbody>
                 </table>
             </div>
             <div class="card-footer border-0">
                 <div class="w-100">
                     <div class="row">
                         <div class="d-flex justify-content-center justify-content-md-end gap-4">
+                            <button type="button" class="btn btn-facebook" id="cetak-kuitansi">
+                                <span class="ri-printer-line me-2"></span>
+                                Cetak Kuitansi
+                            </button>
                             <button type="button" class="btn btn-danger cetak-tagihan">
                                 <span class="ri-file-pdf-2-line me-2"></span>
                                 Pratinjau
@@ -167,6 +153,42 @@
                                 <span class="ri-cash-line me-2"></span>
                                 Bayar
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form id="form-edit-nova" class="mainForm">
+        <div class="modal modal-blur fade" id="modal-edit-nova" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Nomor VA</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body py-4">
+                        <input type="hidden" id="edit_nova_custid" name="custid" value="">
+                        <div class="mb-3">
+                            <label class="form-label required" for="edit_nova_nis">NIS (untuk generate VA)</label>
+                            <input type="text" class="form-control numberOnly" id="edit_nova_nis" name="nocust" required>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label">Preview Nomor VA</label>
+                            <input type="text" class="form-control" id="edit_nova_preview" readonly>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="w-100">
+                            <div class="row">
+                                <div class="col">
+                                    <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="modal">Batal</button>
+                                </div>
+                                <div class="col">
+                                    <button type="submit" class="btn btn-primary w-100">Simpan</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -494,18 +516,12 @@
                     if (!result?.tagihans?.length) {
                         throw createError("Data Tagihan Kosong", 422);
                     }
+                    Swal.close();
                     const data = await generateKuitansi(result);
-                    const pdf = await generatePdf('KUITANSI', data.data, data.unit ?? false)
-                    // if (!result['tagihans'] || result['tagihans'].length === 0) {
-                    //     console.log('kosong');
-                    //     const error = new Error("Data Tagihan Kosong");
-                    //     error.status = 422;
-                    //     throw error;
-                    // }
-
-                    if (pdf) {
-                        successAlert('Sukses, Rekap telah dicetak');
+                    if (!data?.data) {
+                        throw createError('Gagal membuat kuitansi', 422);
                     }
+                    await generatePdf('KUITANSI', data.data, data.unit ?? false);
                 } catch (error) {
                     if (error.status === 422) {
                         const errors = error.error || error.errors;
@@ -664,8 +680,14 @@
             const userName = "{{ Auth::user()->name }}";
             const domisili = "{{ config('app.domisili') }}";
             const tanggalSekarang = "{{ \Carbon\Carbon::now()->isoFormat('dddd, D MMMM YYYY') }}";
-            const APP_NOVA = {{config('app.nova')}};
-            const showVA = (nis) => APP_NOVA + String(nis).padStart(10, '0');
+            const APP_NOVA = {{ (int) config('app.nova', 751023) }};
+            const showVA = (nis, unit) => {
+                if (!nis) return '';
+                const code = String(unit ?? '').trim().toLowerCase();
+                const prefix = (code === '63' || code.includes('ma')) ? '797763' : String(APP_NOVA).substring(0, 6);
+                return prefix + String(nis).padStart(10, '0');
+            };
+            const modalEditNova = new bootstrap.Modal(document.getElementById('modal-edit-nova'));
 
             function getContentWidth(pageSize = 'A4', orientation = 'portrait', margins = [30, 30, 30, 30]) {
                 const sizes = {
@@ -883,11 +905,12 @@
                         ? 'Beragam'
                         : formatMetodePembayaran(fidBank);
 
+                    const ortu = siswa.GENUS ?? siswa.genus ?? '-';
                     const mainTable = [
-                        [(nocust ? 'NIS ' : 'No. Pendaftaran'), ': ' + (nocust ? nocust : siswa.NUM2ND), 'Unit', ': ' + siswa.CODE02],
-                        [(nocust ? 'No. VA ' : '-'), ': ' + (nocust ? showVA(nocust) : ''), 'Kelas', ': ' + (siswa.DESC02 ?? '') + ' ' + (siswa.DESC03 ?? '')],
-                        ['Nama ', ': ' + namaSiswa, 'Ayah', ': ' + (siswa.GENUS ?? '-')],
-                        ['Metode Bayar', ': ' + metodeLabel, 'Ibu', ': ' + (siswa.GENUS1 ?? '')],
+                        [(nocust ? 'NIS ' : 'No. Pendaftaran'), ': ' + (nocust ? nocust : (siswa.NUM2ND ?? '-')), 'Unit', ': ' + (siswa.CODE02 ?? '-')],
+                        [(nocust ? 'No. VA ' : '-'), ': ' + (nocust ? showVA(nocust, siswa.CODE02) : '-'), 'Kelas', ': ' + (siswa.DESC02 ?? '') + ' ' + (siswa.DESC03 ?? '')],
+                        ['Nama ', ': ' + namaSiswa, 'Orang Tua', ': ' + ortu],
+                        ['Metode Bayar', ': ' + metodeLabel, '', ''],
                     ]
 
                     bodyContent.push({
@@ -989,11 +1012,12 @@
                     let siswa = data.siswa;
                     let nocust = siswa.NOCUST === null || siswa.NOCUST === '' || siswa.NOCUST === '-' || !siswa.NOCUST ? false : siswa.NOCUST;
 
+                    const ortu = siswa.GENUS ?? siswa.genus ?? '-';
                     const mainTable = [
-                        [(nocust ? 'NIS ' : 'No. Pendaftaran'), ': ' + (nocust ? nocust : siswa.NUM2ND), 'Unit', ': ' + siswa.CODE02],
-                        [(nocust ? 'No. VA ' : '-'), ': ' + (nocust ? showVA(nocust) : ''), 'Kelas', ': ' + siswa.DESC02 + ' ' + siswa.DESC03],
-                        ['Nama ', ': ' + siswa.NMCUST, 'Ayah', ': ' + (siswa.GENUS ?? '-')],
-                        ['', '', 'Ibu', ': ' + (siswa.GENUS1 ?? '')],
+                        [(nocust ? 'NIS ' : 'No. Pendaftaran'), ': ' + (nocust ? nocust : (siswa.NUM2ND ?? '-')), 'Unit', ': ' + (siswa.CODE02 ?? '-')],
+                        [(nocust ? 'No. VA ' : '-'), ': ' + (nocust ? showVA(nocust, siswa.CODE02) : '-'), 'Kelas', ': ' + (siswa.DESC02 ?? '') + ' ' + (siswa.DESC03 ?? '')],
+                        ['Nama ', ': ' + (siswa.NMCUST ?? '-'), 'Orang Tua', ': ' + ortu],
+                        ['', '', '', ''],
                     ]
 
                     bodyContent.push({
@@ -1066,6 +1090,56 @@
                 Object.assign(err, extra);
                 return err;
             }
+
+            document.getElementById('cetak-kuitansi')?.addEventListener('click', function (e) {
+                e.preventDefault();
+                printPaidTagihan();
+            });
+
+            $(document).on('click', '.btn-edit-nova', function () {
+                const btn = $(this);
+                $('#edit_nova_custid').val(btn.data('custid') || '');
+                const nis = String(btn.data('nis') || '').trim();
+                $('#edit_nova_nis').val(nis);
+                const selected = $('#siswa').select2('data')[0];
+                const unit = selected?.CODE02 ?? selected?.code02 ?? '';
+                $('#edit_nova_preview').val(nis ? showVA(nis, unit) : '');
+                modalEditNova.show();
+            });
+
+            $('#edit_nova_nis').on('input', function () {
+                const selected = $('#siswa').select2('data')[0];
+                const unit = selected?.CODE02 ?? selected?.code02 ?? '';
+                const nis = $(this).val().trim();
+                $('#edit_nova_preview').val(nis ? showVA(nis, unit) : '');
+            });
+
+            document.getElementById('form-edit-nova')?.addEventListener('submit', function (e) {
+                e.preventDefault();
+                loadingAlert('Menyimpan nomor VA...');
+                const formData = new FormData(this);
+                formData.append('_token', csrfToken);
+                fetch('{{ route('admin.keuangan.manual-pembayaran.update-nocust') }}', {
+                    method: 'POST',
+                    headers: {'X-CSRF-TOKEN': csrfToken},
+                    body: formData,
+                })
+                    .then(async (res) => {
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok) throw {status: res.status, message: data.message || 'Gagal menyimpan'};
+                        return data;
+                    })
+                    .then((data) => {
+                        Swal.close();
+                        successAlert(data.message);
+                        modalEditNova.hide();
+                        dataReload(dtOptions.tableId);
+                    })
+                    .catch((err) => {
+                        Swal.close();
+                        errorAlert(err.message || 'Gagal menyimpan nomor VA');
+                    });
+            });
 
             async function buildHttpError(response) {
                 const status = response.status;

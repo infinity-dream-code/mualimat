@@ -54,6 +54,79 @@ class SaldoVirtualAccountController extends Controller
             ->all();
     }
 
+    private function resolveUnitCodesForSekolahFilter(string $sekolahCode): array
+    {
+        $trimmed = trim($sekolahCode);
+        if ($trimmed === '') {
+            return [];
+        }
+
+        return mst_sekolah::query()
+            ->where(function ($q) use ($trimmed) {
+                $q->whereRaw('TRIM(CAST(CODE01 AS CHAR)) = ?', [$trimmed])
+                    ->orWhereRaw('TRIM(CAST(CODE02 AS CHAR)) = ?', [$trimmed]);
+            })
+            ->get()
+            ->flatMap(fn($row) => [trim((string) $row->CODE01), trim((string) $row->CODE02)])
+            ->filter(fn($code) => $code !== '')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function scopedUnitCodes(): array
+    {
+        if (blank($this->sekolah)) {
+            return [];
+        }
+
+        $schoolCodes = $this->resolveScopedSchoolCodes();
+        if (empty($schoolCodes)) {
+            return $this->resolveUnitCodesForSekolahFilter((string) $this->sekolah);
+        }
+
+        return collect($schoolCodes)
+            ->flatMap(fn($code) => $this->resolveUnitCodesForSekolahFilter($code))
+            ->filter(fn($code) => $code !== '')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function applyFilterQuery($query, array $filters): void
+    {
+        foreach ($filters as $filter) {
+            if (($filter[0] ?? null) === 'whereRaw') {
+                $query->whereRaw($filter[1], $filter[2] ?? []);
+                continue;
+            }
+            if (($filter[0] ?? null) === '_sekolah') {
+                $codes = $filter[2] ?? [];
+                if (!empty($codes)) {
+                    $query->where(function ($q) use ($codes) {
+                        foreach ($codes as $code) {
+                            $q->orWhereRaw('TRIM(CAST(scctcust.CODE02 AS CHAR)) = ?', [$code]);
+                        }
+                    });
+                }
+                continue;
+            }
+            if (count($filter) === 3) {
+                if (($filter[1] ?? null) === 'in' && is_array($filter[2] ?? null)) {
+                    $query->whereIn($filter[0], $filter[2]);
+                } else {
+                    $query->where($filter[0], $filter[1], $filter[2]);
+                }
+            } elseif (count($filter) === 4) {
+                if ($filter[3] == 'whereBetween') {
+                    $query->whereBetween($filter[0], [$filter[1], $filter[2]]);
+                } else {
+                    $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
+                }
+            }
+        }
+    }
+
     public function __construct()
     {
         $this->middleware(function ($request, $next) {
@@ -159,7 +232,8 @@ class SaldoVirtualAccountController extends Controller
                 'buttonText' => 'Detail Transaksi',
                 'noCaption' => true,
                 'buttonClass' => 'btn btn-sm btn-primary btn-icon btn-print-tagihan',
-                'buttonIcon' => 'ri-profile-line'
+                'buttonIcon' => 'ri-profile-line',
+                'exportable' => false,
             ],
         ];
     }
@@ -214,6 +288,11 @@ class SaldoVirtualAccountController extends Controller
                         ($colName) && $filters[] = [$colName, 'like', $val];
                     } else if ($key == 'kelas') {
                         $filters[] = ['scctcust.CODE03', '=', $val];
+                    } else if ($key === 'sekolah') {
+                        $unitCodes = $this->resolveUnitCodesForSekolahFilter((string) $val);
+                        if (!empty($unitCodes)) {
+                            $filters[] = ['_sekolah', 'in', $unitCodes];
+                        }
                     } else if ($key == 'saldo_positif') {
                         if ((string) $val === '1') {
                             $filters[] = ['whereRaw', '(COALESCE(trx.kredit, 0) - COALESCE(trx.debet, 0)) > 0', []];
@@ -224,38 +303,20 @@ class SaldoVirtualAccountController extends Controller
                 }
             }
 
-            if ($this->sekolah !== null) {
-                $filters[] = ['scctcust.CODE02', '=', $this->sekolah];
+            $scopedCodes = $this->scopedUnitCodes();
+            if (!empty($scopedCodes)) {
+                $filters[] = ['_sekolah', 'in', $scopedCodes];
             }
 
             if (!empty($filters)) {
-                $filterQuery = function ($query) use ($filters) {
-                    foreach ($filters as $filter) {
-                        if (($filter[0] ?? null) === 'whereRaw') {
-                            $query->whereRaw($filter[1], $filter[2] ?? []);
-                            continue;
-                        }
-                        if (count($filter) === 3) {
-                            $query->where($filter[0], $filter[1], $filter[2]);
-                        } elseif (count($filter) === 4) {
-                            if ($filter[3] == 'whereBetween') {
-                                $query->whereBetween($filter[0], [$filter[1], $filter[2]]);
-                            } else {
-                                $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
-                            }
-                        }
-                    }
-                };
+                $filterQuery = fn($query) => $this->applyFilterQuery($query, $filters);
             }
-        } elseif ($this->sekolah !== null) {
-            $filters[] = ['scctcust.CODE02', '=', $this->sekolah];
-            $filterQuery = function ($query) use ($filters) {
-                foreach ($filters as $filter) {
-                    if (count($filter) === 3) {
-                        $query->where($filter[0], $filter[1], $filter[2]);
-                    }
-                }
-            };
+        } else {
+            $scopedCodes = $this->scopedUnitCodes();
+            if (!empty($scopedCodes)) {
+                $filters[] = ['_sekolah', 'in', $scopedCodes];
+                $filterQuery = fn($query) => $this->applyFilterQuery($query, $filters);
+            }
         }
 
         $whereAny = [
@@ -300,9 +361,14 @@ class SaldoVirtualAccountController extends Controller
             });
         }
 
-        $totalRecords = Cache::remember("scctcust_total_count_{$this->sekolah}", 600, function () {
-            return scctcust::when($this->sekolah, function ($query) {
-                $query->where('CODE02', $this->sekolah);
+        $scopedCodesForCount = $this->scopedUnitCodes();
+        $totalRecords = Cache::remember('scctcust_total_count_' . md5(json_encode($scopedCodesForCount)), 600, function () use ($scopedCodesForCount) {
+            return scctcust::when(!empty($scopedCodesForCount), function ($query) use ($scopedCodesForCount) {
+                $query->where(function ($q) use ($scopedCodesForCount) {
+                    foreach ($scopedCodesForCount as $code) {
+                        $q->orWhereRaw('TRIM(CAST(CODE02 AS CHAR)) = ?', [$code]);
+                    }
+                });
             })->count('CUSTID');
         });
 

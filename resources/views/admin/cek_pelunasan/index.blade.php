@@ -387,19 +387,27 @@
                     }
                 });
             fetch(request)
-                .then(res => res.blob())
+                .then(async res => {
+                    const contentType = res.headers.get('content-type') || '';
+                    if (!res.ok || contentType.includes('application/json')) {
+                        const payload = contentType.includes('application/json')
+                            ? await res.json().catch(() => ({}))
+                            : {};
+                        throw {
+                            status: res.status,
+                            message: payload.message || payload.error || 'Gagal membuat kartu siswa',
+                        };
+                    }
+                    return res.blob();
+                })
                 .then(blob => {
                     const url = URL.createObjectURL(blob);
                     window.open(url, '_blank');
                     Swal.close();
                 })
                 .catch(error => {
-                    if (error.status === 422) {
-                        const errors = error.error || error.errors;
-                        errorAlert(error.message);
-                        if (errors) {
-                            processErrors(errors)
-                        }
+                    if (error.status === 422 || error.message) {
+                        errorAlert(error.message || 'Gagal membuat kartu siswa');
                     } else {
                         const errorMessages = {
                             401: 'Sesi anda sudah habis 🙏 <br>Silahkan muat ulang halaman untuk melanjutkan! <br> jika masalah masih terjadi silahkan login kembali!',

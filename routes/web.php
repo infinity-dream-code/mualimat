@@ -133,6 +133,7 @@ Route::prefix("admin")
                     Route::get("get-tagihan", "getTagihan")->name("get-tagihan");
                     Route::get("cetak-tagihan", "cetakTagihan")->name("cetak-tagihan");
                     Route::get("cetak-tagihan-dibayar", "cetakPembayaran")->name("cetak-tagihan-dibayar");
+                    Route::post("update-nocust", "updateNocust")->name("update-nocust");
                     Route::resource("", \App\Http\Controllers\Admin\Keuangan\ManualPembayaranController::class)->parameters(["" => "id"]);
                 });
 

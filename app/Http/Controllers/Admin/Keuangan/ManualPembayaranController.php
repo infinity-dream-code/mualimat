@@ -42,21 +42,33 @@ class ManualPembayaranController extends Controller
     public function getColumn()
     {
         return [
-            ['data' => 'item_id', 'name' => 'no', 'className' => 'text-center', 'columnType' => 'checkbox', 'selectName' => 'tagihan[post]', 'preData' => '', 'selectClass' => 'scctbill'],
-            ['data' => 'nocust', 'name' => 'NIS', 'searchable' => true, 'orderable' => true],
-            ['data' => 'nmcust', 'name' => 'NAMA', 'searchable' => true, 'orderable' => true],
-            ['data' => 'CODE02', 'name' => 'Unit', 'searchable' => true, 'orderable' => true],
-            ['data' => 'DESC02', 'name' => 'Kelas', 'searchable' => true, 'orderable' => true],
-            ['data' => 'BILLNM', 'name' => 'Nama Tagihan', 'searchable' => true, 'orderable' => true],
-            ['data' => 'list_nama_akun', 'name' => 'List Tagihan', 'columnType' => 'array', 'keyLabel' => false, 'searchable' => true, 'orderable' => true],
+            [
+                'data' => 'item_id',
+                'name' => 'no',
+                'className' => 'text-center',
+                'columnType' => 'checkbox',
+                'selectName' => 'tagihan[post]',
+                'selectClass' => 'scctbill',
+            ],
+            ['data' => 'nocust', 'name' => 'NIS', 'searchable' => true, 'orderable' => true, 'duplicate' => true],
+            ['data' => 'NUM2ND', 'name' => 'NO. DAFTAR', 'searchable' => true, 'orderable' => true, 'duplicate' => true],
+            ['data' => 'kelas_label', 'name' => 'Kelas', 'searchable' => true, 'orderable' => false, 'duplicate' => true],
+            ['data' => 'NOVA', 'name' => 'NO. VA', 'searchable' => true, 'orderable' => false, 'duplicate' => true, 'columnType' => 'nova_edit'],
+            ['data' => 'nmcust', 'name' => 'NAMA', 'searchable' => true, 'orderable' => true, 'duplicate' => true],
+            ['data' => 'list_nama_akun', 'name' => 'Nama Post', 'columnType' => 'array', 'keyLabel' => false, 'searchable' => true, 'orderable' => false],
+            ['data' => 'BILLAC', 'name' => 'Periode', 'searchable' => true, 'orderable' => true, 'columnType' => 'periode'],
             ['data' => 'BILLAM', 'name' => 'Tagihan', 'searchable' => true, 'orderable' => true, 'columnType' => 'currency', 'className' => 'text-end'],
-            ['data' => 'BTA', 'name' => 'Tahun AKA', 'searchable' => true, 'orderable' => true],
-            ['data' => null, 'name' => 'bayar', 'columnType' => 'input', 'inputType' => 'text',
+            [
+                'data' => null,
+                'name' => 'Nominal Bayar',
+                'columnType' => 'input',
+                'inputType' => 'text',
                 'inputClass' => 'form-control bg-body formattedNumber',
                 'inputName' => 'tagihan[nominal_bayar][]',
                 'inputDisabled' => true,
                 'inputPlaceholder' => 'nominal bayar',
-                'excludeFromSelection' => true],
+                'excludeFromSelection' => true,
+            ],
         ];
     }
 
@@ -98,13 +110,19 @@ class ManualPembayaranController extends Controller
                 'scctbill.AA',
                 'scctbill.BILLNM',
                 'scctbill.BILLAM',
+                'scctbill.BILLAC',
                 'scctbill.PAIDST',
                 'scctbill.PAIDDT',
                 'scctbill.BTA',
                 'scctbill.FIDBANK',
                 'scctbill.FUrutan',
+                'scctcust.CUSTID',
                 'scctcust.CODE02',
                 'scctcust.DESC02',
+                'scctcust.DESC03',
+                'scctcust.NOCUST',
+                'scctcust.NUM2ND',
+                'scctcust.NMCUST',
             ]));
 
             $query = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
@@ -138,7 +156,21 @@ class ManualPembayaranController extends Controller
                 ->get()
                 ->map(function ($item) {
                     $item->item_id = $item->AA;
-                    $item->list_nama_akun = explode(',', $item->list_nama_akun);
+                    $item->nocust = $item->NOCUST;
+                    $item->nmcust = $item->NMCUST;
+                    $item->kelas_label = trim(($item->DESC02 ?? '') . ' ' . ($item->DESC03 ?? ''));
+                    $nis = $item->NOCUST;
+                    if ($nis && $nis !== '-') {
+                        $item->NOVA = scctcust::showVA($nis);
+                    } elseif ($item->NUM2ND && $item->NUM2ND !== '-') {
+                        $item->NOVA = scctcust::showVA($item->NUM2ND);
+                    } else {
+                        $item->NOVA = '-';
+                    }
+                    $rawList = $item->list_nama_akun ?? '';
+                    $item->list_nama_akun = $rawList !== '' && $rawList !== null
+                        ? array_values(array_filter(array_map('trim', explode(',', (string) $rawList))))
+                        : [];
                     unset($item->AA);
                     return $item;
                 })->toArray();
@@ -531,7 +563,6 @@ class ManualPembayaranController extends Controller
                 'scctcust.DESC03',
                 'scctcust.DESC04',
                 'scctcust.GENUS',
-                DB::raw('NULL as GENUS1'),
             ]);
 
             $siswa = scctcust::where('CUSTID', $cust)->select($select)->first();
@@ -649,6 +680,40 @@ class ManualPembayaranController extends Controller
                 : 'Tagihan Tidak Ditemukan';
 
             return response()->json(['message' => $message], 422);
+        }
+    }
+
+    public function updateNocust(Request $request)
+    {
+        $request->validate([
+            'custid' => ['required'],
+            'nocust' => ['required', 'regex:/^[0-9]+$/'],
+        ], ValidationMessage::messages(), ValidationMessage::attributes());
+
+        $siswa = scctcust::where('CUSTID', $request->custid)->first();
+        if (!$siswa) {
+            return response()->json(['message' => 'Siswa tidak ditemukan'], 422);
+        }
+
+        $nocust = trim((string) $request->nocust);
+        $exists = scctcust::where('NOCUST', $nocust)
+            ->where('CUSTID', '!=', $siswa->CUSTID)
+            ->exists();
+        if ($exists) {
+            return response()->json(['message' => 'NIS / nomor VA sudah digunakan siswa lain'], 422);
+        }
+
+        try {
+            $siswa->NOCUST = $nocust;
+            $siswa->save();
+
+            return response()->json([
+                'message' => 'Nomor VA berhasil diperbarui',
+                'nocust' => $nocust,
+                'nova' => scctcust::showVA($nocust),
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Gagal memperbarui nomor VA', 'error' => $e->getMessage()], 422);
         }
     }
 }

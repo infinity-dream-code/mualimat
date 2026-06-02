@@ -60,33 +60,50 @@ class CekPelunasanController extends Controller
 
     public function cetakKartuSiswa(Request $request)
     {
-        if (!$request['custid']) return response()->json(['error' => 'siswa tidak ditemukan']);
-        $request['draw'] = 2;
-        $request['start'] = 0;
-        $request['length'] = "poll";
-        $val = $request['custid'];
+        if (!$request->filled('custid')) {
+            return response()->json(['message' => 'Siswa tidak ditemukan'], 422);
+        }
 
-        $siswa = scctcust::where('custid', $val)->first();
-        if (!$siswa) return response()->json(['error' => 'siswa tidak ditemukan']);
+        $custid = $request->input('custid');
+        $siswa = scctcust::where('CUSTID', $custid)->first();
+        if (!$siswa) {
+            return response()->json(['message' => 'Siswa tidak ditemukan'], 422);
+        }
 
         $request->merge([
             'filter' => array_merge($request->input('filter', []), [
-                'custid' => $val
-            ])
+                'custid' => $custid,
+            ]),
+            'draw' => 2,
+            'start' => 0,
+            'length' => 'poll',
         ]);
 
-        $filter = $request;
         try {
-            $tagihans = $this->getData($filter);
-//            dd($tagihans);
+            $tagihans = json_decode(json_encode($this->getData($request)), true);
+            $tagihans = $tagihans['original']['data'] ?? [];
+            if (empty($tagihans)) {
+                return response()->json(['message' => 'Tagihan Tidak Ditemukan'], 422);
+            }
 
-            $tagihans = json_decode(json_encode($tagihans), true);
-            $tagihans = $tagihans['original']['data'];
-            if (!$tagihans) return response()->json(['message' => 'Tagihan Tidak Ditemukan'], 422);
-            $pdf = Pdf::loadView('cetak.kartu-siswa', ['tagihans' => $tagihans, 'siswa' => $siswa]);
+            $nova = ($siswa->NOCUST && $siswa->NOCUST !== '-')
+                ? scctcust::showVA($siswa->NOCUST)
+                : (($siswa->NUM2ND && $siswa->NUM2ND !== '-')
+                    ? scctcust::showVA($siswa->NUM2ND)
+                    : null);
+
+            $pdf = Pdf::loadView('cetak.kartu-siswa', [
+                'tagihans' => $tagihans,
+                'siswa' => $siswa,
+                'nova' => $nova,
+            ]);
+
             return $pdf->download('kartu-siswa.pdf');
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Tagihan Tidak Ditemukan', 'error' => $e], 422);
+            return response()->json([
+                'message' => 'Gagal membuat kartu siswa',
+                'error' => $e->getMessage(),
+            ], 422);
         }
     }
 
@@ -216,7 +233,7 @@ class CekPelunasanController extends Controller
 
         $query = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
             ->where('scctbill.FSTSBolehBayar', 1)
-            ->where('scctcust.stcust', 1)
+            ->where('scctcust.STCUST', 1)
             ->whereAny($whereAny, 'like', '%' . $searchValue . '%')
             ->where(function ($query) use ($filterQuery) {
                 if ($filterQuery) {
@@ -264,14 +281,17 @@ class CekPelunasanController extends Controller
             });
         }
 
-        $records->toArray();
+        $data = $records->map(fn ($item) => $item instanceof \Illuminate\Database\Eloquent\Model
+            ? $item->toArray()
+            : (array) $item
+        )->values()->all();
 
-        $response = array(
+        $response = [
             "draw" => intval($draw),
             "recordsTotal" => $totalRecords ?? 0,
             "recordsFiltered" => $totalRecordswithFilter ?? 0,
-            "data" => $records ?? [],
-        );
+            "data" => $data,
+        ];
         return response()->json($response);
     }
 }
