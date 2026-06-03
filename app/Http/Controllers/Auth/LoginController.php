@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
@@ -98,31 +99,60 @@ class LoginController extends Controller
 
     protected function verifyTurnstile(Request $request): void
     {
+        $secret = config("services.turnstile.secret_key");
+        $token = (string) $request->input("cf-turnstile-response", "");
+
+        if ($token === "") {
+            $this->failTurnstileAndUseFallback(
+                "Token captcha kosong. Halaman dialihkan ke login non-Cloudflare.",
+            );
+        }
+
+        if (!filled($secret)) {
+            $this->failTurnstileAndUseFallback(
+                "Secret key Turnstile belum diset di server. Gunakan login non-Cloudflare.",
+            );
+        }
+
         try {
-            $response = Http::asForm()->post(
+            $response = Http::timeout(8)->asForm()->post(
                 "https://challenges.cloudflare.com/turnstile/v0/siteverify",
                 [
-                    "secret" => config("services.turnstile.secret_key"),
-                    "response" => $request->input("cf-turnstile-response"),
+                    "secret" => $secret,
+                    "response" => $token,
                     "remoteip" => $request->ip(),
                 ],
             );
         } catch (Throwable $exception) {
-            session(["auth_cf_fallback" => true]);
-            throw ValidationException::withMessages([
-                "turnstile" => [
-                    "Layanan Cloudflare tidak dapat diakses. Halaman akan memakai login non-Cloudflare.",
-                ],
+            Log::warning("Turnstile siteverify unreachable", [
+                "message" => $exception->getMessage(),
             ]);
+
+            $this->failTurnstileAndUseFallback(
+                "Layanan Cloudflare tidak dapat diakses. Halaman dialihkan ke login non-Cloudflare.",
+            );
         }
 
-        if (!($response->json("success") ?? false)) {
-            throw ValidationException::withMessages([
-                "turnstile" => [
-                    "Verifikasi captcha gagal. Centang captcha lalu coba lagi.",
-                ],
+        $payload = $response->json();
+        if (!($payload["success"] ?? false)) {
+            Log::warning("Turnstile siteverify rejected token", [
+                "error_codes" => $payload["error-codes"] ?? [],
+                "host" => $request->getHost(),
             ]);
+
+            $this->failTurnstileAndUseFallback(
+                "Verifikasi Cloudflare gagal di server (biasanya secret key tidak cocok atau domain belum diizinkan). Halaman dialihkan ke login non-Cloudflare.",
+            );
         }
+    }
+
+    private function failTurnstileAndUseFallback(string $message): void
+    {
+        session(["auth_cf_fallback" => true]);
+
+        throw ValidationException::withMessages([
+            "turnstile" => [$message],
+        ])->redirectTo(route("login", ["cf_fallback" => 1]));
     }
 
     protected function verifyMathFallback(Request $request): void

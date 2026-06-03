@@ -33,16 +33,18 @@ return [
 
     "turnstile" => [
         "enabled" => env("TURNSTILE_ENABLED", true),
-        "site_key" => env(
-            env("APP_ENV", "production") === "local"
-                ? "TURNSTILE_SITE_KEY_LOCAL"
-                : "TURNSTILE_SITE_KEY_PROD",
-        ),
-        "secret_key" => env(
-            env("APP_ENV", "production") === "local"
-                ? "TURNSTILE_SECRET_KEY_LOCAL"
-                : "TURNSTILE_SECRET_KEY_PROD",
-        ),
+        "site_key" => env("TURNSTILE_SITE_KEY")
+            ?: env(
+                env("APP_ENV", "production") === "local"
+                    ? "TURNSTILE_SITE_KEY_LOCAL"
+                    : "TURNSTILE_SITE_KEY_PROD",
+            ),
+        "secret_key" => env("TURNSTILE_SECRET_KEY")
+            ?: env(
+                env("APP_ENV", "production") === "local"
+                    ? "TURNSTILE_SECRET_KEY_LOCAL"
+                    : "TURNSTILE_SECRET_KEY_PROD",
+            ),
     ],
 
 ];

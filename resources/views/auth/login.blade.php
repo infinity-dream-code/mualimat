@@ -204,6 +204,12 @@
         };
 
         document.addEventListener("DOMContentLoaded", function () {
+            @if($errors->has('turnstile') && ($useMathFallback ?? false) === false)
+            const target = new URL(window.location.href);
+            target.searchParams.set('cf_fallback', '1');
+            window.location.replace(target.toString());
+            @endif
+
             $('#formAuthentication').on('submit', function () {
                 loadingAlert('');
             });
