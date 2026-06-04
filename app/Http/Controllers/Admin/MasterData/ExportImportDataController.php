@@ -224,10 +224,7 @@ class ExportImportDataController extends Controller
                     })->first();
 
                     $thn_aka = mst_thn_aka::where('thn_aka', $item['angkatan'])->first();
-                    $kelas = mst_kelas::where('unit', 'like', '%' . $item['unit'] . '%')
-                        ->where('jenjang', $item['kelas'])
-                        ->where('kelas', $item['kelompok'])
-                        ->first();
+                    $kelas = mst_kelas::findForImport($item['unit'], $item['kelas'], $item['kelompok']);
 
                     $unit = mst_sekolah::where('DESC01', 'like', '%' . $item['unit'] . '%')->first();
 
@@ -310,10 +307,7 @@ class ExportImportDataController extends Controller
                 foreach ($data as $item) {
                     if (strlen($item['nis']) > 10) continue;
                     $existingCust = scctcust::where('NOCUST', $item['nis'])->first();
-                    $kelas = mst_kelas::where('unit', $item['unit'])
-                        ->where('jenjang', $item['kelas'])
-                        ->where('kelas', $item['kelompok'])
-                        ->first();
+                    $kelas = mst_kelas::findForImport($item['unit'], $item['kelas'], $item['kelompok']);
 
                     if ($existingCust && $kelas) {
                         $existingCust->update([

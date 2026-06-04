@@ -36,7 +36,11 @@ class ImportDataSiswa implements WithMultipleSheets, ToCollection, WithHeadingRo
                 continue;
             }
 
-            $rowData['ortu'] = trim((string) ($rowData['ortu'] ?? $rowData['genus'] ?? $rowData['ayah'] ?? '')) ?: null;
+            $rowData['unit'] = trim((string) ($rowData['unit'] ?? ''));
+            $rowData['kelas'] = is_numeric($rowData['kelas'] ?? null)
+                ? (string) (int) $rowData['kelas']
+                : trim((string) ($rowData['kelas'] ?? ''));
+            $rowData['kelompok'] = trim((string) ($rowData['kelompok'] ?? ''));
 
             $rowData['status'] = 1;
             $status_ket = null;
@@ -79,15 +83,25 @@ class ImportDataSiswa implements WithMultipleSheets, ToCollection, WithHeadingRo
                 }
             }
 
-            $kelasExists = mst_kelas::where('kelas', $row['kelompok'])
-                ->where('jenjang', $row['kelas'])
-                ->where('unit', $row['unit'])
-                ->exists();
+            $rowData['ortu'] = trim((string) ($rowData['ortu'] ?? $rowData['genus'] ?? $rowData['ayah'] ?? '')) ?: null;
 
-            if (!$kelasExists) {
+            $matchedKelas = mst_kelas::findForImport(
+                $rowData['unit'],
+                $rowData['kelas'],
+                $rowData['kelompok'],
+            );
+
+            if (!$matchedKelas) {
                 $rowData['status'] = 0;
-                if (!empty($status_ket)) $status_ket .= ', ';
-                $status_ket .= "Kelas tidak ditemukan";
+                if (!empty($status_ket)) {
+                    $status_ket .= ', ';
+                }
+                $status_ket .= sprintf(
+                    'Kelas tidak ditemukan (Unit: %s, Kelas: %s, Kelompok: %s). Buat dulu di Master Kelas.',
+                    $rowData['unit'],
+                    $rowData['kelas'],
+                    $rowData['kelompok'],
+                );
             }
 
 
