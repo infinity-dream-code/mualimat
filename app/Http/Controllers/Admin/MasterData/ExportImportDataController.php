@@ -211,11 +211,17 @@ class ExportImportDataController extends Controller
             DB::beginTransaction();
             if ($request->metode == '1' || $request->metode == '2') {
                 $data = array_filter(Cache::get('import_data_siswa'), function ($item) use ($request) {
-                    return !empty($request->metode == '1' ? $item['nis'] : $item['nodaftar']);
+                    $nis = $item['nis'] ?? null;
+                    $nodaftar = $item['nodaftar'] ?? null;
+
+                    return !empty($request->metode == '1' ? $nis : $nodaftar);
                 });
 
                 foreach ($data as $item) {
-                    if (strlen($request->metode == '1' ? $item['nis'] : $item['nodaftar']) > 10) continue;
+                    $item = $this->normalizeImportItem($item);
+                    $lookupKey = $request->metode == '1' ? ($item['nis'] ?? '') : ($item['nodaftar'] ?? '');
+
+                    if (strlen($lookupKey) > 10) continue;
                     $existingCust = scctcust::where(function ($query) use ($request, $item) {
                         if ($request->metode == '1') {
                             $query->where('NOCUST', $item['nis']);
@@ -251,14 +257,14 @@ class ExportImportDataController extends Controller
 
                     if (!$existingCust) {
                         if ($request->metode == '2') {
-                            if ($item['nis']) {
+                            if (!empty($item['nis'])) {
                                 $existingNis = scctcust::where('NOCUST', $item['nis'])->first();
                                 if ($existingNis) {
                                     return response()->json(['message' => 'Gagal, siswa dengan NIS :' . $item['nis'] . ' sudah ada!'], 422);
                                 }
                             }
                         } else {
-                            if ($item['nodaftar']) {
+                            if (!empty($item['nodaftar'])) {
                                 $existingNodaftar = scctcust::where('NUM2ND', $item['nodaftar'])->first();
                                 if ($existingNodaftar) {
                                     return response()->json(['message' => 'Gagal, siswa dengan Nomor Pendaftaran :' . $item['nodaftar'] . ' sudah ada!'], 422);
@@ -279,12 +285,13 @@ class ExportImportDataController extends Controller
                     }
                 }
             } else if ($request->metode == '3') {
-                $data = array_filter(Cache::get('import_data_siswa'), function ($item) use ($request) {
-                    return !empty($item['nis']);
+                $data = array_filter(Cache::get('import_data_siswa'), function ($item) {
+                    return !empty($item['nis'] ?? null);
                 });
 
                 foreach ($data as $item) {
-                    if (strlen($item['nis']) > 10) continue;
+                    $item = $this->normalizeImportItem($item);
+                    if (strlen((string) ($item['nis'] ?? '')) > 10) continue;
                     $existingCust = scctcust::where('NOCUST', $item['nis'])->first();
                     $kelas = mst_kelas::findForImport($item['unit'], $item['kelas'], $item['kelompok']);
 
@@ -297,12 +304,13 @@ class ExportImportDataController extends Controller
                     }
                 }
             } else if ($request->metode == '4') {
-                $data = array_filter(Cache::get('import_data_siswa'), function ($item) use ($request) {
-                    return !empty($item['nodaftar']);
+                $data = array_filter(Cache::get('import_data_siswa'), function ($item) {
+                    return !empty($item['nodaftar'] ?? null);
                 });
 
                 foreach ($data as $item) {
-                    if (strlen($item['nodaftar']) > 10) continue;
+                    $item = $this->normalizeImportItem($item);
+                    if (strlen((string) ($item['nodaftar'] ?? '')) > 10) continue;
                     $existingNis = scctcust::where('NOCUST', $item['nodaftar'])->first();
                     if ($existingNis) {
                         return response()->json(['message' => 'Gagal, NIS :' . $item['nodaftar'] . ' sudah ada!'], 422);
@@ -345,6 +353,18 @@ class ExportImportDataController extends Controller
     {
         Cache::forget($this->cacheKey);
         return response()->json(['message' => 'Data dibersihkan'], 200);
+    }
+
+    private function normalizeImportItem(array $item): array
+    {
+        $item['nis'] = isset($item['nis']) && $item['nis'] !== '' && $item['nis'] !== null
+            ? (string) $item['nis']
+            : null;
+        $item['nodaftar'] = isset($item['nodaftar']) && $item['nodaftar'] !== '' && $item['nodaftar'] !== null
+            ? (string) $item['nodaftar']
+            : null;
+
+        return $item;
     }
 
     /** Nama ortu/wali utama (kolom ortu / genus / ayah di Excel). */

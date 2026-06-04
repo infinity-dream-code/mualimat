@@ -49,18 +49,20 @@ class ImportDataSiswa implements WithMultipleSheets, ToCollection, WithHeadingRo
 
             $nis = isset($row['nis']) ? trim((string)$row['nis']) : null;
             $nodaftar = isset($row['nodaftar']) ? trim((string)$row['nodaftar']) : null;
+            $rowData['nis'] = ($nis !== null && $nis !== '') ? $nis : null;
+            $rowData['nodaftar'] = ($nodaftar !== null && $nodaftar !== '') ? $nodaftar : null;
 
-            if (!$nis && !$nodaftar) {
+            if (!$rowData['nis'] && !$rowData['nodaftar']) {
                 $rowData['status'] = 0;
                 $status_ket = 'NIS &/ NODAFTAR tidak boleh kosong';
             }
 
-            if ($nis && !is_numeric($nis)) {
+            if ($rowData['nis'] && !is_numeric($rowData['nis'])) {
                 $rowData['status'] = 0;
                 if (!empty($status_ket)) $status_ket .= ', ';
                 $status_ket .= "NIS harus berupa angka";
-            } elseif ($nis) {
-                $rowData['nis'] = (string)$rowData['nis'];
+            } elseif ($rowData['nis']) {
+                $rowData['nis'] = (string) $rowData['nis'];
                 $checkData = scctcust::where('NOCUST', $rowData['nis'])->first();
                 if ($checkData) {
                     $rowData['status'] = 2;
@@ -70,12 +72,12 @@ class ImportDataSiswa implements WithMultipleSheets, ToCollection, WithHeadingRo
                 }
             }
 
-            if ($nodaftar && !is_numeric($nodaftar)) {
+            if ($rowData['nodaftar'] && !is_numeric($rowData['nodaftar'])) {
                 $rowData['status'] = 0;
                 if (!empty($status_ket)) $status_ket .= ', ';
                 $status_ket .= "NODAFTAR harus berupa angka";
-            } elseif ($nodaftar) {
-                $rowData['nodaftar'] = (string)$rowData['nodaftar'];
+            } elseif ($rowData['nodaftar']) {
+                $rowData['nodaftar'] = (string) $rowData['nodaftar'];
                 $checkData = scctcust::where('NUM2ND', $rowData['nodaftar'])->first();
                 if ($checkData) {
                     $rowData['status'] = 2;
