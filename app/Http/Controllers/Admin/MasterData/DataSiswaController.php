@@ -78,6 +78,8 @@ class DataSiswaController extends Controller
         return [
             ["data" => null, "name" => "no", "className" => "text-center", "columnType" => "row", "exportable" => true],
             ["data" => "nocust", "name" => "NIS", "searchable" => true, "orderable" => true, "exportable" => true],
+            ["data" => "va_spp", "name" => "VA SPP", "searchable" => false, "orderable" => false, "exportable" => true],
+            ["data" => "va_saku", "name" => "VA Saku", "searchable" => false, "orderable" => false, "exportable" => true],
             ["data" => "NUM2ND", "name" => "No Pendaftaran", "searchable" => true, "orderable" => true, "exportable" => true],
             ["data" => "nmcust", "name" => "NAMA", "searchable" => true, "orderable" => true, "exportable" => true],
             ["data" => "CODE02", "name" => "Unit", "searchable" => true, "orderable" => true, "exportable" => true],
@@ -242,8 +244,15 @@ class DataSiswaController extends Controller
             ->get()
             ->map(function ($item) {
                 $row = $item->toArray();
+                $nis = trim((string) ($item->nocust ?? ''));
                 $row["item_id"] = $item->CUSTID;
                 $row["nis"] = $item->nocust;
+                $row["va_spp"] = ($nis !== '' && $nis !== '-')
+                    ? scctcust::showVASpp($nis)
+                    : '';
+                $row["va_saku"] = ($nis !== '' && $nis !== '-')
+                    ? scctcust::showVASaku($nis)
+                    : '';
                 $row["no_pendaftaran"] = $item->NUM2ND;
                 $row["nama"] = $item->nmcust;
                 $row["angkatan"] = $item->DESC04;

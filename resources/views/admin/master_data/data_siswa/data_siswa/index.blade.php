@@ -488,15 +488,31 @@
             buttons: ['copy', 'excel', 'pdf', 'print'],
             pdfPageSize: 'A3',
             pdfOrientation: 'landscape',
-            pdfFontSize: 6,
-            pdfHeaderFontSize: 7,
-            pdfMargins: [8, 10, 8, 10],
-            pdfWidths: ['auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', '*', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'],
+            pdfFontSize: 5,
+            pdfHeaderFontSize: 6,
+            pdfMargins: [6, 8, 6, 8],
+            pdfColumnWidths: {
+                no: 18,
+                nocust: 48,
+                va_spp: 72,
+                va_saku: 72,
+                NUM2ND: 48,
+                nmcust: '*',
+                CODE02: 28,
+                DESC02: 32,
+                DESC03: 32,
+                DESC04: 38,
+                CODE04: 24,
+                DESC05: 55,
+                GENUS: 55,
+                NO_WA: 48,
+                STCUST: 24,
+            },
             printCustomize: function (win) {
                 const style = `
-                    @page { size: landscape; margin: 10mm; }
-                    table { width: 100% !important; table-layout: auto !important; }
-                    th, td { white-space: nowrap !important; font-size: 10px !important; padding: 4px !important; }
+                    @page { size: landscape; margin: 8mm; }
+                    table { width: 100% !important; table-layout: fixed !important; }
+                    th, td { white-space: normal !important; word-break: break-all !important; font-size: 9px !important; padding: 3px !important; }
                 `;
                 $(win.document.head).append(`<style>${style}</style>`);
             }

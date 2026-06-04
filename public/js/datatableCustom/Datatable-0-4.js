@@ -520,7 +520,37 @@ function dtButtons(options, buttons) {
                     const margins = doc.pageMargins || [10, 10, 10, 10];
                     const usableWidth = pageWidth - margins[0] - margins[2];
                     const colWidth = Math.max(usableWidth / colCount, 28);
-                    tableNode.table.widths = Array(colCount).fill(colWidth);
+                    const exportableColumns = options.dataColumns.filter(col => col.exportable === true);
+
+                    if (options.pdfColumnWidths && exportableColumns.length === colCount) {
+                        tableNode.table.widths = exportableColumns.map(col => {
+                            const configured = options.pdfColumnWidths[col.data ?? 'no'];
+                            if (configured === '*') {
+                                return '*';
+                            }
+                            if (typeof configured === 'number') {
+                                return configured;
+                            }
+                            return colWidth;
+                        });
+                    } else if (options.pdfWidths && options.pdfWidths.length === colCount) {
+                        tableNode.table.widths = options.pdfWidths.map(width => {
+                            if (width === '*' || width === 'auto') {
+                                return width;
+                            }
+                            return Number(width) || colWidth;
+                        });
+                    } else {
+                        tableNode.table.widths = Array(colCount).fill(colWidth);
+                    }
+
+                    for (let rowIndex = 0; rowIndex < tableNode.table.body.length; rowIndex++) {
+                        tableNode.table.body[rowIndex].forEach(cell => {
+                            if (cell && typeof cell === 'object') {
+                                cell.noWrap = false;
+                            }
+                        });
+                    }
                     tableNode.layout = {
                         hLineWidth: () => 0.5,
                         vLineWidth: () => 0.5,
