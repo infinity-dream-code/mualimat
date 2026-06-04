@@ -11,7 +11,6 @@ use App\Models\scctcust;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class CekLunasSiswaController extends Controller
 {
@@ -133,37 +132,27 @@ class CekLunasSiswaController extends Controller
             })
             ->where($filterClosure);
 
-        // Aggregated per siswa + tagihan (BILLNM) + tahun
-        $aggregated = (clone $baseQuery)
-            ->select([
-                "scctbill.CUSTID",
-                "scctbill.BILLNM",
-                "scctbill.BTA",
-                "scctcust.nocust",
-                "scctcust.nmcust",
-                "scctcust.CODE02",
-                "scctcust.DESC02",
-                "scctcust.DESC03",
-                DB::raw("MIN(scctbill.PAIDST) as status"),
-                DB::raw("SUM(scctbill.BILLAM) as total"),
-            ])
-            ->groupBy(
-                "scctbill.CUSTID",
-                "scctbill.BILLNM",
-                "scctbill.BTA",
-                "scctcust.nocust",
-                "scctcust.nmcust",
-                "scctcust.CODE02",
-                "scctcust.DESC02",
-                "scctcust.DESC03",
-            );
-
-        $totalRecords = (clone $aggregated)->get()->count();
+        $totalRecords = (clone $baseQuery)->count("scctbill.AA");
         $totalRecordsWithFilter = $totalRecords;
 
-        $rowsQuery = (clone $aggregated)
+        $rowsQuery = (clone $baseQuery)
+            ->select([
+                "scctbill.AA",
+                "scctbill.CUSTID",
+                "scctbill.BILLNM",
+                "scctbill.BTA",
+                "scctbill.PAIDST",
+                "scctbill.BILLCD",
+                "scctcust.nocust",
+                "scctcust.nmcust",
+                "scctcust.CODE02",
+                "scctcust.DESC02",
+                "scctcust.DESC03",
+            ])
             ->orderBy("scctcust.nocust", "asc")
-            ->orderBy("scctbill.BTA", "desc");
+            ->orderBy("scctbill.BTA", "desc")
+            ->orderBy("scctbill.BILLNM", "asc")
+            ->orderBy("scctbill.AA", "asc");
 
         if ($length !== "poll") {
             $rowsQuery->skip($start)->take((int) $length);
@@ -171,12 +160,14 @@ class CekLunasSiswaController extends Controller
 
         $records = $rowsQuery->get()->map(function ($item) {
             return [
+                "AA" => $item->AA,
                 "CUSTID" => $item->CUSTID,
                 "BTA" => $item->BTA,
                 "nocust" => $item->nocust,
                 "nmcust" => $item->nmcust,
                 "BILLNM" => $item->BILLNM,
-                "status" => (int) $item->status === 1,
+                "BILLCD" => $item->BILLCD,
+                "status" => (int) $item->PAIDST === 1,
                 "CODE02" => $item->CODE02,
                 "kelas_display" => trim(($item->DESC02 ?? "") . " " . ($item->DESC03 ?? "")),
             ];

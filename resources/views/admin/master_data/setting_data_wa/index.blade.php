@@ -141,6 +141,13 @@
                             <li class="list-group-item list-group-timeline-danger">Ukuran file tidak boleh lebih dari <span class="fw-bold">1024KB/1MB</span>.</li>
                             <li class="list-group-item list-group-timeline-danger">Pastikan NIS telah terdaftar pada data siswa.</li>
                             <li class="list-group-item list-group-timeline-danger">Kolom yang harus terisi: <span class="fw-bold">NIS, NAMA, NO WA</span>.</li>
+                            <li class="list-group-item list-group-timeline-danger">Contoh file yang dapat diproses untuk import:
+                                <a class="btn btn-sm btn-outline-primary fw-bolder"
+                                   href="{{ asset('data_siswa.xlsx') }}"
+                                   download>
+                                    <i class="ri ri-file-excel-line me-2"></i>Contoh File
+                                </a>
+                            </li>
                         </ul>
 
                         <fieldset class="form-fieldset">
