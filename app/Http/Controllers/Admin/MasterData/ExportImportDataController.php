@@ -14,6 +14,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Maatwebsite\Excel\HeadingRowImport;
 use Maatwebsite\Excel\Validators\ValidationException;
@@ -225,10 +226,21 @@ class ExportImportDataController extends Controller
 
                     $thn_aka = mst_thn_aka::where('thn_aka', $item['angkatan'])->first();
                     $kelas = mst_kelas::findForImport($item['unit'], $item['kelas'], $item['kelompok']);
-
-                    $unit = mst_sekolah::where('DESC01', 'like', '%' . $item['unit'] . '%')->first();
+                    $unit = $this->resolveSekolahForImport($item['unit'], $kelas);
 
                     if (!$thn_aka || !$kelas || !$unit) {
+                        Log::warning('export_import_data.validateData.missing_reference', [
+                            'nis' => $item['nis'] ?? null,
+                            'nodaftar' => $item['nodaftar'] ?? null,
+                            'angkatan' => $item['angkatan'] ?? null,
+                            'unit' => $item['unit'] ?? null,
+                            'kelas' => $item['kelas'] ?? null,
+                            'kelompok' => $item['kelompok'] ?? null,
+                            'thn_aka_found' => (bool) $thn_aka,
+                            'kelas_found' => (bool) $kelas,
+                            'sekolah_found' => (bool) $unit,
+                        ]);
+
                         return response()->json(['message' => 'Silahkan periksa kembali kelas/sekolah/thn_aka siswa',
                             'thn_aka' => $thn_aka,
                             'unit' => $unit,
@@ -254,49 +266,16 @@ class ExportImportDataController extends Controller
                             }
                         }
 
-                        scctcust::create([
-                            'NOCUST' => $item['nis'] ?? '-',
-                            'NMCUST' => $item['nama'],
-                            'NUM2ND' => $item['nodaftar'] ?? '-',
-                            'STCUST' => 1,
-                            'CODE01' => $unit->CODE01,
-                            'DESC01' => 'Nur Hidayah',
-                            'CODE02' => $unit->DESC01,
-                            'DESC02' => $kelas->jenjang,
-                            'CODE03' => $kelas->id,
-                            'DESC03' => $kelas->kelas,
-                            'CODE04' => $item['gender'],
-                            'DESC04' => $thn_aka->thn_aka,
-                            'DESC05' => $item['alamat'],
-                            'GENUS' => $this->resolveOrtuForDb($item),
-                            'GENUS1' => $this->resolveOrtuSecondForDb($item),
-                            'LastUpdate' => Carbon::now(),
-                            'GetWisma' => $item['wisma'] ?? null,
-                            'GENUSContact' => $item['kontakwali'] ?? null,
-                            'EksternalInternal' => $item['eksint'] ?? null,
-                        ]);
+                        scctcust::create($this->buildScctcustPayload($item, $unit, $kelas, $thn_aka));
                     } else {
-                        $existingCust->update([
-                            'NOCUST' => $request->metode == '2' ? $item['nis'] : $existingCust->NOCUST,
-                            'NMCUST' => $item['nama'],
-                            'NUM2ND' => $request->metode == '2' ? $existingCust->NUM2ND : ($item['nodaftar'] ?? '-'),
-                            'STCUST' => 1,
-                            'CODE01' => $unit->CODE01,
-                            'DESC01' => 'Nur Hidayah',
-                            'CODE02' => $unit->DESC01,
-                            'DESC02' => $kelas->jenjang,
-                            'CODE03' => $kelas->id,
-                            'DESC03' => $kelas->kelas,
-                            'CODE04' => $item['gender'],
-                            'DESC04' => $thn_aka->thn_aka,
-                            'DESC05' => $item['alamat'],
-                            'GENUS' => $this->resolveOrtuForDb($item),
-                            'GENUS1' => $this->resolveOrtuSecondForDb($item),
-                            'LastUpdate' => Carbon::now(),
-                            'GetWisma' => $item['wisma'] ?? null,
-                            'GENUSContact' => $item['kontakwali'] ?? null,
-                            'EksternalInternal' => $item['eksint'] ?? null,
-                        ]);
+                        $existingCust->update($this->buildScctcustPayload(
+                            $item,
+                            $unit,
+                            $kelas,
+                            $thn_aka,
+                            $request->metode == '2',
+                            $existingCust,
+                        ));
                     }
                 }
             } else if ($request->metode == '3') {
@@ -344,7 +323,21 @@ class ExportImportDataController extends Controller
             return response()->json(['message' => 'Sukses, data siswa telah disimpan, silahkan periksa kembali'], 200);
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json(['message' => 'Gagal, data tidak dapat disimpan'], 422);
+
+            Log::error('export_import_data.validateData.failed', [
+                'metode' => $request->metode,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $response = ['message' => 'Gagal, data tidak dapat disimpan'];
+            if (config('app.debug')) {
+                $response['error'] = $e->getMessage();
+            }
+
+            return response()->json($response, 422);
         }
     }
 
@@ -368,5 +361,78 @@ class ExportImportDataController extends Controller
         $second = trim((string) ($item['ibu'] ?? ''));
 
         return $second !== '' ? $second : null;
+    }
+
+    private function resolveSekolahForImport(?string $unit, ?mst_kelas $kelas): ?mst_sekolah
+    {
+        $unit = trim((string) $unit);
+
+        if ($unit !== '') {
+            $byUnit = mst_sekolah::query()
+                ->where(function ($query) use ($unit) {
+                    $query->where('DESC01', 'like', '%' . $unit . '%')
+                        ->orWhere('CODE01', $unit)
+                        ->orWhereRaw('UPPER(TRIM(DESC01)) = ?', [strtoupper($unit)]);
+                })
+                ->first();
+
+            if ($byUnit) {
+                return $byUnit;
+            }
+        }
+
+        if (!$kelas) {
+            return null;
+        }
+
+        $kelasUnit = trim((string) ($kelas->unit ?? ''));
+
+        return mst_sekolah::query()
+            ->where(function ($query) use ($kelasUnit) {
+                $query->where('DESC01', 'like', '%' . $kelasUnit . '%')
+                    ->orWhere('CODE01', $kelasUnit)
+                    ->orWhereRaw('UPPER(TRIM(DESC01)) = ?', [strtoupper($kelasUnit)]);
+            })
+            ->first();
+    }
+
+    private function buildScctcustPayload(
+        array $item,
+        mst_sekolah $unit,
+        mst_kelas $kelas,
+        mst_thn_aka $thn_aka,
+        bool $metodeByNodaftar = false,
+        ?scctcust $existingCust = null,
+    ): array {
+        $payload = [
+            'NOCUST' => $item['nis'] ?? '-',
+            'NMCUST' => $item['nama'],
+            'NUM2ND' => $item['nodaftar'] ?? '-',
+            'STCUST' => 1,
+            'CODE01' => $unit->CODE01,
+            'DESC01' => config('app.nama_instansi'),
+            'CODE02' => $unit->DESC01,
+            'DESC02' => $kelas->jenjang,
+            'CODE03' => $kelas->id,
+            'DESC03' => $kelas->kelas,
+            'CODE04' => $item['gender'] ?? null,
+            'DESC04' => $thn_aka->thn_aka,
+            'DESC05' => $item['alamat'] ?? null,
+            'GENUS' => $this->resolveOrtuForDb($item),
+            'LastUpdate' => Carbon::now(),
+        ];
+
+        if ($existingCust) {
+            $payload['NOCUST'] = $metodeByNodaftar ? ($item['nis'] ?? $existingCust->NOCUST) : $existingCust->NOCUST;
+            $payload['NUM2ND'] = $metodeByNodaftar
+                ? $existingCust->NUM2ND
+                : ($item['nodaftar'] ?? $existingCust->NUM2ND ?? '-');
+
+            return $payload;
+        }
+
+        $payload['CUSTID'] = scctcust::nextCustId();
+
+        return $payload;
     }
 }

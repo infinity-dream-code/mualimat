@@ -35,5 +35,12 @@ class scctcust extends Model
         return self::showVAMTS($nis);
     }
 
+    public static function nextCustId(): int
+    {
+        $max = self::query()->max('CUSTID');
+
+        return ((int) $max) + 1;
+    }
+
     protected $guarded = [];
 }
