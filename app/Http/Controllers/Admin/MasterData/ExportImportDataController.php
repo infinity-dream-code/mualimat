@@ -51,12 +51,8 @@ class ExportImportDataController extends Controller
             ['data' => 'kelompok', 'name' => 'Kelompok', 'searchable' => false, 'orderable' => false],
             ['data' => 'angkatan', 'name' => 'Angkatan', 'searchable' => false, 'orderable' => false],
             ['data' => 'gender', 'name' => 'Jenis Kelamin', 'searchable' => false, 'orderable' => false],
-            ['data' => 'ayah', 'name' => 'Ayah', 'searchable' => false, 'orderable' => false],
-            ['data' => 'ibu', 'name' => 'Ibu', 'searchable' => false, 'orderable' => false],
-            ['data' => 'kontakwali', 'name' => 'Kontak Wali', 'searchable' => false, 'orderable' => false],
+            ['data' => 'ortu', 'name' => 'Ortu / Wali', 'searchable' => false, 'orderable' => false],
             ['data' => 'alamat', 'name' => 'Alamat', 'searchable' => false, 'orderable' => false],
-            ['data' => 'eksint', 'name' => 'Eksint', 'searchable' => false, 'orderable' => false],
-            ['data' => 'wisma', 'name' => 'Wisma', 'searchable' => false, 'orderable' => false],
         ];
     }
 
@@ -124,12 +120,8 @@ class ExportImportDataController extends Controller
                 'kelompok' => $item['kelompok'] ?? null,
                 'angkatan' => $item['angkatan'] ?? null,
                 'gender' => $item['gender'] ?? null,
-                'ayah' => $item['ayah'] ?? null,
-                'ibu' => $item['ibu'] ?? null,
+                'ortu' => $item['ortu'] ?? $item['genus'] ?? null,
                 'alamat' => $item['alamat'] ?? null,
-                'kontakwali' => $item['kontakwali'] ?? null,
-                'eksint' => $item['eksint'] ?? null,
-                'wisma' => $item['wisma'] ?? null,
                 'status' => $item['status'] ?? 0,
                 'keterangan' => $item['keterangan'],
             ];
@@ -159,9 +151,7 @@ class ExportImportDataController extends Controller
         try {
             $headingsData = (new HeadingRowImport)->toArray($file);
             $requiredColumns = [
-                'nama', 'unit', 'kelas', 'kelompok',
-                'angkatan', 'ayah', 'ibu', 'eksint',
-                'kontakwali', 'wisma'
+                'nama', 'unit', 'kelas', 'kelompok', 'angkatan',
             ];
 
             $conditionalColumns = ['nis', 'nodaftar'];
@@ -281,12 +271,12 @@ class ExportImportDataController extends Controller
                             'CODE04' => $item['gender'],
                             'DESC04' => $thn_aka->thn_aka,
                             'DESC05' => $item['alamat'],
-                            'GENUS' => $item['ayah'],
-                            'GENUS1' => $item['ibu'],
+                            'GENUS' => $this->resolveOrtuForDb($item),
+                            'GENUS1' => $this->resolveOrtuSecondForDb($item),
                             'LastUpdate' => Carbon::now(),
-                            'GetWisma' => $item['wisma'],
-                            'GENUSContact' => $item['kontakwali'],
-                            'EksternalInternal' => $item['eksint'],
+                            'GetWisma' => $item['wisma'] ?? null,
+                            'GENUSContact' => $item['kontakwali'] ?? null,
+                            'EksternalInternal' => $item['eksint'] ?? null,
                         ]);
                     } else {
                         $existingCust->update([
@@ -303,12 +293,12 @@ class ExportImportDataController extends Controller
                             'CODE04' => $item['gender'],
                             'DESC04' => $thn_aka->thn_aka,
                             'DESC05' => $item['alamat'],
-                            'GENUS' => $item['ayah'],
-                            'GENUS1' => $item['ibu'],
+                            'GENUS' => $this->resolveOrtuForDb($item),
+                            'GENUS1' => $this->resolveOrtuSecondForDb($item),
                             'LastUpdate' => Carbon::now(),
-                            'GetWisma' => $item['wisma'],
-                            'GENUSContact' => $item['kontakwali'],
-                            'EksternalInternal' => $item['eksint'],
+                            'GetWisma' => $item['wisma'] ?? null,
+                            'GENUSContact' => $item['kontakwali'] ?? null,
+                            'EksternalInternal' => $item['eksint'] ?? null,
                         ]);
                     }
                 }
@@ -368,5 +358,21 @@ class ExportImportDataController extends Controller
     {
         Cache::forget($this->cacheKey);
         return response()->json(['message' => 'Data dibersihkan'], 200);
+    }
+
+    /** Nama ortu/wali utama (kolom ortu / genus / ayah di Excel). */
+    private function resolveOrtuForDb(array $item): ?string
+    {
+        $ortu = trim((string) ($item['ortu'] ?? $item['genus'] ?? $item['ayah'] ?? ''));
+
+        return $ortu !== '' ? $ortu : null;
+    }
+
+    /** Nama ortu kedua — hanya untuk file lama (kolom ibu). */
+    private function resolveOrtuSecondForDb(array $item): ?string
+    {
+        $second = trim((string) ($item['ibu'] ?? ''));
+
+        return $second !== '' ? $second : null;
     }
 }

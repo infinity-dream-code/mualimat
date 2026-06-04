@@ -23,11 +23,7 @@ class ImportDataSiswa implements WithMultipleSheets, ToCollection, WithHeadingRo
     {
         $cacheKey = 'import_data_siswa';
 
-        $requiredKeys = ['nama', 'unit', 'kelas', 'kelompok', 'angkatan', 'alamat', 'ayah', 'ibu', 'eksint', 'kontakwali', 'wisma'];
-        $defaults = [
-            'nis' => null,
-            'nodaftar' => null,
-        ];
+        $requiredKeys = ['nama', 'unit', 'kelas', 'kelompok', 'angkatan'];
 
         $processedData = [];
 
@@ -36,7 +32,11 @@ class ImportDataSiswa implements WithMultipleSheets, ToCollection, WithHeadingRo
 
             $rowData = $row->toArray();
 
-            if (count(array_intersect_key(array_flip($requiredKeys), $rowData)) !== count($requiredKeys)) continue;
+            if (count(array_intersect_key(array_flip($requiredKeys), $rowData)) !== count($requiredKeys)) {
+                continue;
+            }
+
+            $rowData['ortu'] = trim((string) ($rowData['ortu'] ?? $rowData['genus'] ?? $rowData['ayah'] ?? '')) ?: null;
 
             $rowData['status'] = 1;
             $status_ket = null;
