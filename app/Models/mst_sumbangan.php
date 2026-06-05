@@ -14,7 +14,7 @@ class mst_sumbangan extends Model
 
     public $timestamps = false;
 
-    public $incrementing = true;
+    public $incrementing = false;
 
     protected $fillable = [
         "nmsumbangan",

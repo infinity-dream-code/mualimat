@@ -7,6 +7,7 @@ use App\Models\mst_sumbangan;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MasterWakafController extends Controller
 {
@@ -50,87 +51,106 @@ class MasterWakafController extends Controller
 
     public function getData(Request $request)
     {
-        $draw = $request->get('draw');
-        $start = (int) $request->get('start', 0);
-        $rowperpage = (int) $request->get('length', 10);
+        try {
+            $draw = (int) $request->get('draw', 0);
+            $start = (int) $request->get('start', 0);
+            $rowperpage = (int) $request->get('length', 10);
 
-        $columnIndexArr = $request->get('order', []);
-        $columnNameArr = $request->get('columns', []);
-        $searchArr = $request->get('search', []);
-        $searchValue = $searchArr['value'] ?? '';
+            $columnIndexArr = $request->get('order', []);
+            $columnNameArr = $request->get('columns', []);
+            $searchArr = $request->get('search', []);
+            $searchValue = trim((string) ($searchArr['value'] ?? ''));
 
-        $filterNama = trim((string) $request->input('filter.nama', ''));
-        $filterStatus = (string) $request->input('filter.status', 'all');
+            $filterNama = trim((string) $request->input('filter.nama', ''));
+            $filterStatus = (string) $request->input('filter.status', 'all');
 
-        $defaultColumn = 'idincrement';
-        $defaultOrder = 'desc';
+            $defaultColumn = 'idincrement';
+            $defaultOrder = 'desc';
 
-        if (!empty($columnIndexArr)) {
-            $columnIndex = $columnIndexArr[0]['column'] ?? 0;
-            $columnName = $columnNameArr[$columnIndex]['data'] ?? $defaultColumn;
-            $columnSortOrder = $columnIndexArr[0]['dir'] ?? $defaultOrder;
-        } else {
             $columnName = $defaultColumn;
             $columnSortOrder = $defaultOrder;
-        }
 
-        $allowedSort = ['idincrement', 'nmsumbangan', 'nocust', 'stcust_label'];
-        if (!in_array($columnName, $allowedSort, true)) {
-            $columnName = $defaultColumn;
-        }
+            if (is_array($columnIndexArr) && !empty($columnIndexArr)) {
+                $columnIndex = (int) ($columnIndexArr[0]['column'] ?? 0);
+                $columnSortOrder = strtolower((string) ($columnIndexArr[0]['dir'] ?? $defaultOrder));
+                $columnSortOrder = in_array($columnSortOrder, ['asc', 'desc'], true) ? $columnSortOrder : $defaultOrder;
 
-        $baseQuery = mst_sumbangan::query()
-            ->select(['idincrement', 'nmsumbangan', 'nocust', 'stcust']);
-
-        $applyFilters = function ($query) use ($searchValue, $filterNama, $filterStatus) {
-            if ($searchValue !== '') {
-                $query->where(function ($q) use ($searchValue) {
-                    $q->where('nmsumbangan', 'like', '%' . $searchValue . '%')
-                        ->orWhere('nocust', 'like', '%' . $searchValue . '%');
-                });
+                if (is_array($columnNameArr) && isset($columnNameArr[$columnIndex])) {
+                    $columnName = (string) ($columnNameArr[$columnIndex]['data'] ?? $defaultColumn);
+                }
             }
 
-            if ($filterNama !== '') {
-                $query->where('nmsumbangan', 'like', '%' . $filterNama . '%');
-            }
+            $allowedSortMap = [
+                'idincrement' => 'idincrement',
+                'nmsumbangan' => 'nmsumbangan',
+                'nocust' => 'nocust',
+                'stcust_label' => 'stcust',
+            ];
+            $sortColumn = $allowedSortMap[$columnName] ?? $defaultColumn;
 
-            if (in_array($filterStatus, ['0', '1'], true)) {
-                $query->where('stcust', (int) $filterStatus);
-            }
-        };
+            $baseQuery = DB::connection('DATA_MYSQL')
+                ->table('mst_sumbangan')
+                ->select(['idincrement', 'nmsumbangan', 'nocust', 'stcust']);
 
-        $totalRecords = (clone $baseQuery)->count();
-        $filteredQuery = (clone $baseQuery);
-        $applyFilters($filteredQuery);
-        $totalRecordswithFilter = (clone $filteredQuery)->count();
+            $applyFilters = function ($query) use ($searchValue, $filterNama, $filterStatus) {
+                if ($searchValue !== '') {
+                    $query->where(function ($q) use ($searchValue) {
+                        $q->where('nmsumbangan', 'like', '%' . $searchValue . '%')
+                            ->orWhere('nocust', 'like', '%' . $searchValue . '%');
+                    });
+                }
 
-        if ($columnName === 'stcust_label') {
-            $filteredQuery->orderBy('stcust', $columnSortOrder);
-        } else {
-            $filteredQuery->orderBy($columnName, $columnSortOrder);
+                if ($filterNama !== '') {
+                    $query->where('nmsumbangan', 'like', '%' . $filterNama . '%');
+                }
+
+                if (in_array($filterStatus, ['0', '1'], true)) {
+                    $query->where('stcust', (int) $filterStatus);
+                }
+            };
+
+            $totalRecords = (clone $baseQuery)->count();
+            $filteredQuery = clone $baseQuery;
+            $applyFilters($filteredQuery);
+            $totalRecordswithFilter = (clone $filteredQuery)->count();
+
+            $records = $filteredQuery
+                ->orderBy($sortColumn, $columnSortOrder)
+                ->skip($start)
+                ->take($rowperpage)
+                ->get()
+                ->map(function ($item) {
+                    $status = (int) ($item->stcust ?? 0);
+                    $item->stcust_label = $status === 1
+                        ? '<span class="badge bg-label-success">Aktif</span>'
+                        : '<span class="badge bg-label-danger">Nonaktif</span>';
+                    $item->toggle = true;
+                    $item->item_id = $item->idincrement;
+                    return $item;
+                })
+                ->toArray();
+
+            return response()->json([
+                'draw' => $draw,
+                'recordsTotal' => $totalRecords,
+                'recordsFiltered' => $totalRecordswithFilter,
+                'data' => $records,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('MasterWakaf getData failed', [
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+
+            return response()->json([
+                'draw' => (int) $request->get('draw', 0),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'message' => 'Gagal memuat data master wakaf',
+            ], 500);
         }
-
-        $records = $filteredQuery
-            ->skip($start)
-            ->take($rowperpage)
-            ->get()
-            ->map(function ($item) {
-                $status = (int) ($item->stcust ?? 0);
-                $item->stcust_label = $status === 1
-                    ? '<span class="badge bg-label-success">Aktif</span>'
-                    : '<span class="badge bg-label-danger">Nonaktif</span>';
-                $item->toggle = true;
-                $item->item_id = $item->idincrement;
-                return $item;
-            })
-            ->toArray();
-
-        return response()->json([
-            'draw' => (int) $draw,
-            'recordsTotal' => $totalRecords,
-            'recordsFiltered' => $totalRecordswithFilter,
-            'data' => $records,
-        ]);
     }
 
     public function toggleStatus($id)
