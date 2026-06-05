@@ -96,7 +96,7 @@
 @section('script')
     <script src="{{asset('main/libs/select2/select2.js')}}"></script>
     <script src="{{asset('main/libs/datatables-bs5/datatables-bootstrap5.js')}}"></script>
-    <script src="{{asset('js/datatableCustom/Datatable-0-4.js')}}?v=20260605-export-fix"></script>
+    <script src="{{asset('js/datatableCustom/Datatable-0-4.js')}}?v=20260605-pdf-margin"></script>
     <script src="{{asset('main/libs/bootstrap-datepicker/bootstrap-datepicker.js')}}"></script>
 
     <script type="text/javascript">
@@ -118,9 +118,10 @@
             buttons: ['copy', 'excel', 'pdf', 'print'],
             pdfOrientation: 'landscape',
             pdfPageSize: 'A4',
-            pdfMargins: [12, 14, 12, 14],
+            pdfMargins: [28, 20, 44, 20],
             pdfFontSize: 8,
             pdfHeaderFontSize: 9,
+            pdfWidths: [28, '*', 92, 52, 78, 68],
         };
 
         document.addEventListener('DOMContentLoaded', function () {

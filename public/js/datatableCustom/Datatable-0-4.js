@@ -518,7 +518,7 @@ function dtButtons(options, buttons) {
                     const colCount = tableNode.table.body[0].length;
                     const pageWidth = doc.pageOrientation === 'landscape' ? 842 : 595;
                     const margins = doc.pageMargins || [10, 10, 10, 10];
-                    const usableWidth = pageWidth - margins[0] - margins[2];
+                    const usableWidth = pageWidth - margins[0] - margins[2] - 16;
                     const colWidth = Math.max(usableWidth / colCount, 28);
                     const exportableColumns = options.dataColumns.filter(col => col.exportable === true);
 
