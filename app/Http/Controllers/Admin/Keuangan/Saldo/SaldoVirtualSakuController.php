@@ -257,21 +257,27 @@ class SaldoVirtualSakuController extends Controller
         $defaultColumn = 'scctcust.NOCUST';
         $defaultOrder = 'asc';
 
-        if ($request->has('order')) {
+        if ($request->has('order') && !empty($request->get('order'))) {
             $columnIndex_arr = $request->get('order');
-            $columnIndex = $columnIndex_arr[0]['column'];
-            $columnSortOrder = $columnIndex_arr[0]['dir'];
+            $columnIndex = $columnIndex_arr[0]['column'] ?? 0;
+            $columnSortOrder = $columnIndex_arr[0]['dir'] ?? $defaultOrder;
+            $columnName = $columnName_arr[$columnIndex]['data'] ?? $defaultColumn;
         } else {
-            $columnIndex = $defaultColumn;
+            $columnName = $defaultColumn;
             $columnSortOrder = $defaultOrder;
         }
 
-        $columnName = $columnName_arr[$columnIndex]['data'];
-        $searchValue = $search_arr['value'];
+        $searchValue = $search_arr['value'] ?? '';
 
         if (!$columnName || $columnName == 'no') {
             $columnName = $defaultColumn;
             $columnSortOrder = $defaultOrder;
+        }
+
+        if ($columnName === 'saldo') {
+            $columnName = DB::raw('(COALESCE(trx.kredit, 0) - COALESCE(trx.debet, 0))');
+        } elseif (!str_contains($columnName, '.')) {
+            $columnName = 'scctcust.' . $columnName;
         }
 
         $filter = $request->input('filter');
@@ -439,22 +445,25 @@ class SaldoVirtualSakuController extends Controller
         $defaultColumn = 'sccttran.TRXDATE';
         $defaultOrder = 'desc';
 
-        if ($request->has('order')) {
+        if ($request->has('order') && !empty($request->get('order'))) {
             $columnIndex_arr = $request->get('order');
-            $columnIndex = $columnIndex_arr[0]['column'];
-            $columnSortOrder = $columnIndex_arr[0]['dir'];
-
+            $columnIndex = $columnIndex_arr[0]['column'] ?? 0;
+            $columnSortOrder = $columnIndex_arr[0]['dir'] ?? $defaultOrder;
+            $columnName = $columnName_arr[$columnIndex]['data'] ?? $defaultColumn;
         } else {
-            $columnIndex = $defaultColumn;
+            $columnName = $defaultColumn;
             $columnSortOrder = $defaultOrder;
         }
 
-        $columnName = $columnName_arr[$columnIndex]['data'];
-        $searchValue = $search_arr['value'];
+        $searchValue = $search_arr['value'] ?? '';
 
         if (!$columnName || $columnName == 'no') {
             $columnName = $defaultColumn;
             $columnSortOrder = $defaultOrder;
+        }
+
+        if (!str_contains($columnName, '.')) {
+            $columnName = 'sccttran.' . $columnName;
         }
 
         $filter = $request->input('filter');
