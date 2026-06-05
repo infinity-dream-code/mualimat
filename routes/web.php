@@ -442,6 +442,18 @@ Route::prefix("admin")
                 )->parameters(["" => "id"]);
             });
 
+        Route::prefix("pengumuman")
+            ->name("pengumuman.")
+            ->controller(\App\Http\Controllers\Admin\PengumumanController::class)
+            ->group(function () {
+                Route::get("get-data", "getData")->name("get-data");
+                Route::get("get-column", "getColumn")->name("get-column");
+                Route::resource(
+                    "",
+                    \App\Http\Controllers\Admin\PengumumanController::class,
+                )->parameters(["" => "id"]);
+            });
+
         Route::prefix("rekap-saldo")
             ->name("rekap-saldo.")
             ->group(function () {

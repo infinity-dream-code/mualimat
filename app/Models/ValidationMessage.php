@@ -39,6 +39,8 @@ class ValidationMessage extends Model
             "thn_aka" => "Tahun Akademik/Pelajaran",
             "client_name_wa" => "Nama Client WA",
             "no_wa" => "No WA",
+            "Title" => "Judul",
+            "Payload" => "Isi Pengumuman",
         ];
     }
 
