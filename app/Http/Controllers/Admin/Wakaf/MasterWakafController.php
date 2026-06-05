@@ -29,34 +29,22 @@ class MasterWakafController extends Controller
     public function getColumn()
     {
         return [
-            ['data' => null, 'name' => 'no', 'columnType' => 'row', 'className' => 'text-center', 'duplicate' => false],
-            ['data' => 'nmsumbangan', 'name' => 'Nama Sumbangan', 'searchable' => true, 'orderable' => true, 'duplicate' => false],
-            ['data' => 'nocust', 'name' => 'No VA', 'searchable' => true, 'orderable' => true, 'duplicate' => false],
+            ['data' => null, 'name' => 'no', 'columnType' => 'row', 'className' => 'text-center', 'duplicate' => false, 'exportable' => true],
+            ['data' => 'nmsumbangan', 'name' => 'Nama Sumbangan', 'searchable' => true, 'orderable' => true, 'duplicate' => false, 'exportable' => true],
+            ['data' => 'nocust', 'name' => 'No VA', 'searchable' => true, 'orderable' => true, 'duplicate' => false, 'exportable' => true],
             [
-                'data' => 'status',
+                'data' => 'stcust',
                 'name' => 'Status',
+                'columnType' => 'switch',
                 'searchable' => false,
                 'orderable' => true,
                 'className' => 'text-center',
                 'duplicate' => false,
+                'exportable' => true,
+                'trueVal' => 'Aktif',
+                'falseVal' => 'Nonaktif',
             ],
         ];
-    }
-
-    private function buildStatusToggleHtml(int $id, int $status): string
-    {
-        $isActive = $status === 1;
-        $checked = $isActive ? 'checked' : '';
-        $stateClass = $isActive ? 'is-active' : 'is-inactive';
-        $label = $isActive ? 'Aktif' : 'Nonaktif';
-
-        return '<div class="dt-switch-wrap ' . $stateClass . '">'
-            . '<label class="dt-switch mb-0">'
-            . '<input type="checkbox" class="dt-status-switch" data-id="' . $id . '" ' . $checked . '>'
-            . '<span class="dt-switch-slider"></span>'
-            . '</label>'
-            . '<span class="dt-switch-label">' . $label . '</span>'
-            . '</div>';
     }
 
     public function getData(Request $request)
@@ -97,7 +85,7 @@ class MasterWakafController extends Controller
             $allowedSortMap = [
                 'nmsumbangan' => 'namaSumbangan',
                 'nocust' => 'NOCUST',
-                'status' => 'STCUST',
+                'stcust' => 'STCUST',
             ];
             $sortColumn = $allowedSortMap[$columnName] ?? $defaultColumn;
 
@@ -138,9 +126,8 @@ class MasterWakafController extends Controller
                 ->take($rowperpage)
                 ->get()
                 ->map(function ($item) {
-                    $status = (int) ($item->stcust ?? 0);
+                    $item->stcust = (int) ($item->stcust ?? 0);
                     $item->nocust = $item->nocust ?: '-';
-                    $item->status = $this->buildStatusToggleHtml((int) $item->idincrement, $status);
                     $item->item_id = $item->idincrement;
                     return $item;
                 })
