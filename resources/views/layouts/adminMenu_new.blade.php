@@ -262,7 +262,7 @@
                     </a>
                 </li>
                 <li class="menu-item {{ Request::is(['admin/pengumuman*']) ? 'active' : '' }}">
-                    <a href="{{route('admin.pengumuman.index')}}" class="menu-link">
+                    <a href="{{ url('admin/pengumuman') }}" class="menu-link">
                         <div data-i18n="Pengumuman">Pengumuman</div>
                     </a>
                 </li>
