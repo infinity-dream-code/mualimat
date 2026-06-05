@@ -107,6 +107,7 @@ class RekapWakafController extends Controller
             ];
             $sortColumn = $allowedSortMap[$columnName] ?? $defaultColumn;
             $sortByNominal = $columnName === 'nominal';
+            $nominalExpr = 'ABS(COALESCE(t.KREDIT, 0) - COALESCE(t.DEBET, 0))';
 
             $baseQuery = DB::connection('DATA_MYSQL')
                 ->table('sccttran_sumbangan as t')
@@ -116,7 +117,7 @@ class RekapWakafController extends Controller
                     DB::raw('m.STCUST as stcust'),
                     DB::raw('t.TRXDATE as trxdate'),
                     DB::raw('t.METODE as metode'),
-                    DB::raw('(COALESCE(t.KREDIT, 0) - COALESCE(t.DEBET, 0)) as nominal'),
+                    DB::raw($nominalExpr . ' as nominal'),
                 ]);
 
             $applyFilters = function ($query) use (
@@ -162,12 +163,12 @@ class RekapWakafController extends Controller
 
             $totalNominal = (clone $filteredQuery)
                 ->reorder()
-                ->selectRaw('COALESCE(SUM(COALESCE(t.KREDIT, 0) - COALESCE(t.DEBET, 0)), 0) as total_nominal')
+                ->selectRaw('COALESCE(SUM(' . $nominalExpr . '), 0) as total_nominal')
                 ->value('total_nominal');
 
             $recordsQuery = clone $filteredQuery;
             if ($sortByNominal) {
-                $recordsQuery->orderByRaw('(COALESCE(t.KREDIT, 0) - COALESCE(t.DEBET, 0)) ' . $columnSortOrder);
+                $recordsQuery->orderByRaw($nominalExpr . ' ' . $columnSortOrder);
             } else {
                 $recordsQuery->orderBy($sortColumn, $columnSortOrder);
             }
