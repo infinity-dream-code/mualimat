@@ -71,8 +71,12 @@ class MasterWakafController extends Controller
             $searchArr = $request->get('search', []);
             $searchValue = trim((string) ($searchArr['value'] ?? ''));
 
-            $filterNama = trim((string) $request->input('filter.nama', ''));
-            $filterStatus = (string) $request->input('filter.status', 'all');
+            $filter = $request->input('filter', []);
+            if (!is_array($filter)) {
+                $filter = [];
+            }
+            $filterNama = trim((string) ($filter['nama'] ?? ''));
+            $filterStatus = strtolower(trim((string) ($filter['status'] ?? 'all')));
 
             $defaultColumn = 'idincrement';
             $defaultOrder = 'desc';

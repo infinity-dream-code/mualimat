@@ -94,14 +94,15 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label" for="filter[nama]">Nama Sumbangan</label>
-                            <input type="text" class="form-control" id="filter[nama]" name="filter[nama]" placeholder="Cari nama sumbangan">
+                            <input type="text" class="form-control" id="filter[nama]" name="filter[nama]" placeholder="Cari nama sumbangan" value="{{ request('filter.nama', '') }}">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label" for="filter[status]">Status</label>
                             <select class="form-select" id="filter[status]" name="filter[status]">
-                                <option value="all">Semua</option>
-                                <option value="1">Aktif</option>
-                                <option value="0">Nonaktif</option>
+                                @php($filterStatus = (string) request('filter.status', 'all'))
+                                <option value="all" @selected($filterStatus === 'all')>Semua</option>
+                                <option value="1" @selected($filterStatus === '1')>Aktif</option>
+                                <option value="0" @selected($filterStatus === '0')>Nonaktif</option>
                             </select>
                         </div>
                     </div>
@@ -147,7 +148,22 @@
         };
 
         document.addEventListener('DOMContentLoaded', function () {
-            getDT(dtOptions);
+            if (dtOptions.dataUrl && dtOptions.columnUrl) {
+                getDT(dtOptions);
+
+                if (dtOptions.formId) {
+                    const filterForm = $(`#${dtOptions.formId}`);
+                    filterForm.on('submit', function (e) {
+                        e.preventDefault();
+                        dataReFilter(dtOptions.tableId);
+                    });
+                    filterForm.on('reset', function () {
+                        setTimeout(function () {
+                            dataReFilter(dtOptions.tableId);
+                        }, 0);
+                    });
+                }
+            }
 
             document.querySelector(`#${dtOptions.tableId} tbody`).addEventListener('change', function (e) {
                 const toggle = e.target.closest('.dt-status-switch');
