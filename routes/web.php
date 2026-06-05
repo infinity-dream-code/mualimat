@@ -472,6 +472,8 @@ Route::prefix("admin")
                     ->controller(\App\Http\Controllers\Admin\Wakaf\RekapWakafController::class)
                     ->group(function () {
                         Route::get("/", "index")->name("index");
+                        Route::get("get-data", "getData")->name("get-data");
+                        Route::get("get-column", "getColumn")->name("get-column");
                     });
             });
 
