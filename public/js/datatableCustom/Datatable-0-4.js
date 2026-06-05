@@ -198,7 +198,7 @@ function getDuplicateExportColumns(dataColumns) {
     let excelIdx = 0;
     dataColumns.forEach(col => {
         if (col.exportable !== true) return;
-        if (!col.duplicate) result.push(excelIdx);
+        if (col.duplicate === true) result.push(excelIdx);
         excelIdx++;
     });
     return result;
