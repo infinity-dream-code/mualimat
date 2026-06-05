@@ -84,24 +84,14 @@
         document.addEventListener('DOMContentLoaded', function () {
             getDT(dtOptions);
 
-            document.querySelector(`#${dtOptions.tableId} tbody`).addEventListener('click', function (e) {
-                const button = e.target.closest('.btn-toggle-status');
-                if (!button) return;
+            document.querySelector(`#${dtOptions.tableId} tbody`).addEventListener('change', function (e) {
+                const toggle = e.target.closest('.wakaf-status-toggle');
+                if (!toggle) return;
 
-                const rawData = button.getAttribute('data-val');
-                if (!rawData) return;
-
-                let rowData;
-                try {
-                    rowData = JSON.parse(rawData);
-                } catch (err) {
-                    errorAlert('Data baris tidak valid');
-                    return;
-                }
-
-                const itemId = rowData.item_id;
+                const itemId = toggle.getAttribute('data-id');
                 if (!itemId) {
                     warningAlert('Data tidak valid, silahkan muat ulang halaman');
+                    toggle.checked = !toggle.checked;
                     return;
                 }
 
@@ -130,6 +120,7 @@
                         dataReload(dtOptions.tableId);
                     })
                     .catch((error) => {
+                        toggle.checked = !toggle.checked;
                         errorAlert(error.message || 'Terjadi kesalahan saat mengubah status');
                     });
             });

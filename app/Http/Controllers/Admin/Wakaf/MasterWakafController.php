@@ -30,22 +30,9 @@ class MasterWakafController extends Controller
     {
         return [
             ['data' => null, 'name' => 'no', 'columnType' => 'row', 'className' => 'text-center'],
-            ['data' => 'idincrement', 'name' => 'ID', 'searchable' => true, 'orderable' => true],
             ['data' => 'nmsumbangan', 'name' => 'Nama Sumbangan', 'searchable' => true, 'orderable' => true],
             ['data' => 'nocust', 'name' => 'No VA', 'searchable' => true, 'orderable' => true],
-            ['data' => 'stcust_label', 'name' => 'Status', 'searchable' => false, 'orderable' => true, 'className' => 'text-center'],
-            [
-                'data' => 'toggle',
-                'name' => '',
-                'dataVal' => true,
-                'columnType' => 'button',
-                'className' => 'text-center',
-                'button' => 'action',
-                'buttonText' => 'Aktif / Nonaktif',
-                'buttonClass' => 'btn btn-sm btn-warning btn-toggle-status',
-                'buttonIcon' => 'ri-repeat-line me-1',
-                'noCaption' => false,
-            ],
+            ['data' => 'status_toggle', 'name' => 'Status', 'searchable' => false, 'orderable' => true, 'className' => 'text-center'],
         ];
     }
 
@@ -81,10 +68,9 @@ class MasterWakafController extends Controller
             }
 
             $allowedSortMap = [
-                'idincrement' => 'idincrement',
                 'nmsumbangan' => 'namaSumbangan',
                 'nocust' => 'NOCUST',
-                'stcust_label' => 'STCUST',
+                'status_toggle' => 'STCUST',
             ];
             $sortColumn = $allowedSortMap[$columnName] ?? $defaultColumn;
 
@@ -126,10 +112,14 @@ class MasterWakafController extends Controller
                 ->get()
                 ->map(function ($item) {
                     $status = (int) ($item->stcust ?? 0);
-                    $item->stcust_label = $status === 1
-                        ? '<span class="badge bg-label-success">Aktif</span>'
-                        : '<span class="badge bg-label-danger">Nonaktif</span>';
-                    $item->toggle = true;
+                    $checked = $status === 1 ? 'checked' : '';
+                    $label = $status === 1 ? 'Aktif' : 'Nonaktif';
+                    $item->status_toggle = '
+                        <div class="form-check form-switch d-inline-flex align-items-center gap-2 m-0">
+                            <input class="form-check-input wakaf-status-toggle" type="checkbox" role="switch" data-id="' . $item->idincrement . '" ' . $checked . '>
+                            <span class="badge ' . ($status === 1 ? 'bg-label-success' : 'bg-label-danger') . '">' . $label . '</span>
+                        </div>';
+                    $item->nocust = $item->nocust ?: '-';
                     $item->item_id = $item->idincrement;
                     return $item;
                 })
