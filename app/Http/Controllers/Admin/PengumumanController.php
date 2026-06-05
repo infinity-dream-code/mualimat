@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Validator;
 
 class PengumumanController extends Controller
 {
-    public string $title = 'Laporan';
+    public string $title = 'Pengumuman';
     public string $mainTitle = 'Pengumuman';
     public string $dataTitle = 'Pengumuman';
 

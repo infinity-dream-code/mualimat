@@ -204,7 +204,6 @@
             'admin/rekap-saldo',
             'admin/cek-pelunasan',
             'admin/potongan-tagihan*',
-            'admin/pengumuman*',
         ]) ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon ri ri-file-chart-line"></i>
@@ -261,12 +260,14 @@
                         <div data-i18n="Buat Potongan Tagihan">Buat Potongan Tagihan</div>
                     </a>
                 </li>
-                <li class="menu-item {{ Request::is(['admin/pengumuman*']) ? 'active' : '' }}">
-                    <a href="{{ url('admin/pengumuman') }}" class="menu-link">
-                        <div data-i18n="Pengumuman">Pengumuman</div>
-                    </a>
-                </li>
             </ul>
+        </li>
+
+        <li class="menu-item {{ Request::is(['admin/pengumuman*']) ? 'active' : '' }}">
+            <a href="{{ url('admin/pengumuman') }}" class="menu-link">
+                <i class="menu-icon ri ri-megaphone-line"></i>
+                <div data-i18n="Pengumuman">Pengumuman</div>
+            </a>
         </li>
 
         <li class="menu-item mt-auto pb-2">
