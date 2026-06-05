@@ -32,7 +32,16 @@ class MasterWakafController extends Controller
             ['data' => null, 'name' => 'no', 'columnType' => 'row', 'className' => 'text-center'],
             ['data' => 'nmsumbangan', 'name' => 'Nama Sumbangan', 'searchable' => true, 'orderable' => true],
             ['data' => 'nocust', 'name' => 'No VA', 'searchable' => true, 'orderable' => true],
-            ['data' => 'status_toggle', 'name' => 'Status', 'searchable' => false, 'orderable' => true, 'className' => 'text-center'],
+            [
+                'data' => 'stcust',
+                'name' => 'Status',
+                'searchable' => false,
+                'orderable' => true,
+                'className' => 'text-center',
+                'columnType' => 'switch',
+                'trueVal' => 'Aktif',
+                'falseVal' => 'Nonaktif',
+            ],
         ];
     }
 
@@ -70,7 +79,7 @@ class MasterWakafController extends Controller
             $allowedSortMap = [
                 'nmsumbangan' => 'namaSumbangan',
                 'nocust' => 'NOCUST',
-                'status_toggle' => 'STCUST',
+                'stcust' => 'STCUST',
             ];
             $sortColumn = $allowedSortMap[$columnName] ?? $defaultColumn;
 
@@ -111,14 +120,7 @@ class MasterWakafController extends Controller
                 ->take($rowperpage)
                 ->get()
                 ->map(function ($item) {
-                    $status = (int) ($item->stcust ?? 0);
-                    $checked = $status === 1 ? 'checked' : '';
-                    $label = $status === 1 ? 'Aktif' : 'Nonaktif';
-                    $item->status_toggle = '
-                        <div class="form-check form-switch d-inline-flex align-items-center gap-2 m-0">
-                            <input class="form-check-input wakaf-status-toggle" type="checkbox" role="switch" data-id="' . $item->idincrement . '" ' . $checked . '>
-                            <span class="badge ' . ($status === 1 ? 'bg-label-success' : 'bg-label-danger') . '">' . $label . '</span>
-                        </div>';
+                    $item->stcust = (int) ($item->stcust ?? 0);
                     $item->nocust = $item->nocust ?: '-';
                     $item->item_id = $item->idincrement;
                     return $item;

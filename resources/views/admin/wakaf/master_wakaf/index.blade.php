@@ -3,6 +3,71 @@
     <link rel="stylesheet" href="{{asset('main/libs/datatables-bs5/datatables.bootstrap5.css')}}">
     <link rel="stylesheet" href="{{asset('main/libs/datatables-responsive-bs5/responsive.bootstrap5.css')}}">
     <link rel="stylesheet" href="{{asset('main/libs/datatables-buttons-bs5/buttons.bootstrap5.css')}}">
+    <style>
+        .dt-switch-wrap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .dt-switch {
+            position: relative;
+            display: inline-block;
+            width: 56px;
+            height: 30px;
+        }
+
+        .dt-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .dt-switch-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: #d9dee3;
+            border-radius: 30px;
+            transition: background-color .25s ease;
+        }
+
+        .dt-switch-slider:before {
+            content: "";
+            position: absolute;
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform .25s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
+        }
+
+        .dt-switch input:checked + .dt-switch-slider {
+            background: #28c76f;
+        }
+
+        .dt-switch input:checked + .dt-switch-slider:before {
+            transform: translateX(26px);
+        }
+
+        .dt-switch-label {
+            min-width: 58px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .dt-switch-wrap.is-active .dt-switch-label {
+            color: #28c76f;
+        }
+
+        .dt-switch-wrap.is-inactive .dt-switch-label {
+            color: #ea5455;
+        }
+    </style>
 @endsection
 
 @section('content')
@@ -85,7 +150,7 @@
             getDT(dtOptions);
 
             document.querySelector(`#${dtOptions.tableId} tbody`).addEventListener('change', function (e) {
-                const toggle = e.target.closest('.wakaf-status-toggle');
+                const toggle = e.target.closest('.dt-status-switch');
                 if (!toggle) return;
 
                 const itemId = toggle.getAttribute('data-id');

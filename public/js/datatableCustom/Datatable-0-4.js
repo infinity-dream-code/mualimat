@@ -1269,6 +1269,35 @@ async function getDT(options) {
                                     return data;
                                 }
                                 break;
+                            case 'switch':
+                                renderFunc = function (data, type, row) {
+                                    const isActive = data === 1 || data === '1' || data === true;
+                                    const trueVal = column.trueVal ?? 'Aktif';
+                                    const falseVal = column.falseVal ?? 'Nonaktif';
+                                    const label = isActive ? trueVal : falseVal;
+                                    const itemId = row.item_id ?? row.idincrement ?? '';
+
+                                    if (type === 'export' || type === 'filter') {
+                                        return label;
+                                    }
+
+                                    if (type === 'display') {
+                                        const checked = isActive ? 'checked' : '';
+                                        const stateClass = isActive ? 'is-active' : 'is-inactive';
+                                        return `
+                                            <div class="dt-switch-wrap ${stateClass}">
+                                                <label class="dt-switch mb-0">
+                                                    <input type="checkbox" class="dt-status-switch" data-id="${itemId}" ${checked}>
+                                                    <span class="dt-switch-slider"></span>
+                                                </label>
+                                                <span class="dt-switch-label">${label}</span>
+                                            </div>
+                                        `;
+                                    }
+
+                                    return data;
+                                }
+                                break;
                             case 'input':
                                 //for text/number only
                                 renderFunc = function (data, type, row) {
