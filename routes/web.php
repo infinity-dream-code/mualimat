@@ -454,6 +454,27 @@ Route::prefix("admin")
                 )->parameters(["" => "id"]);
             });
 
+        Route::prefix("wakaf")
+            ->name("wakaf.")
+            ->group(function () {
+                Route::prefix("master-wakaf")
+                    ->name("master-wakaf.")
+                    ->controller(\App\Http\Controllers\Admin\Wakaf\MasterWakafController::class)
+                    ->group(function () {
+                        Route::get("/", "index")->name("index");
+                        Route::get("get-data", "getData")->name("get-data");
+                        Route::get("get-column", "getColumn")->name("get-column");
+                        Route::patch("{id}/toggle-status", "toggleStatus")->name("toggle-status");
+                    });
+
+                Route::prefix("rekap-wakaf")
+                    ->name("rekap-wakaf.")
+                    ->controller(\App\Http\Controllers\Admin\Wakaf\RekapWakafController::class)
+                    ->group(function () {
+                        Route::get("/", "index")->name("index");
+                    });
+            });
+
         Route::prefix("rekap-saldo")
             ->name("rekap-saldo.")
             ->group(function () {

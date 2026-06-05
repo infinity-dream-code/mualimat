@@ -1,0 +1,138 @@
+@extends('layouts.admin_new')
+@section('style')
+    <link rel="stylesheet" href="{{asset('main/libs/datatables-bs5/datatables.bootstrap5.css')}}">
+    <link rel="stylesheet" href="{{asset('main/libs/datatables-responsive-bs5/responsive.bootstrap5.css')}}">
+    <link rel="stylesheet" href="{{asset('main/libs/datatables-buttons-bs5/buttons.bootstrap5.css')}}">
+@endsection
+
+@section('content')
+    <h3 class="page-heading d-flex text-gray-900 fw-bold flex-column justify-content-center my-0">
+        {{($dataTitle??($mainTitle??($title??'')))}}
+    </h3>
+    <ul class="breadcrumb breadcrumb-style2">
+        <li class="breadcrumb-item">
+            <a href="{{ route('admin.index') }}" class="text-hover-primary">Beranda</a>
+        </li>
+        <li class="breadcrumb-item">{{ $title ?? 'Wakaf' }}</li>
+        <li class="breadcrumb-item">{{ $mainTitle ?? 'Wakaf' }}</li>
+        <li class="breadcrumb-item active">{{ $dataTitle ?? 'Master Wakaf' }}</li>
+    </ul>
+
+    <div class="card">
+        <div class="card-header header-elements">
+            <h5 class="mb-0 me-2">{{($dataTitle??$mainTitle)}}</h5>
+        </div>
+        <div class="card-body">
+            <form id="filterForm">
+                <fieldset class="form-fieldset">
+                    <h5>Filter</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="filter[nama]">Nama Sumbangan</label>
+                            <input type="text" class="form-control" id="filter[nama]" name="filter[nama]" placeholder="Cari nama sumbangan">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="filter[status]">Status</label>
+                            <select class="form-select" id="filter[status]" name="filter[status]">
+                                <option value="all">Semua</option>
+                                <option value="1">Aktif</option>
+                                <option value="0">Nonaktif</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-center justify-content-md-end gap-3">
+                        <button type="reset" class="btn btn-secondary">
+                            <span class="ri-reset-left-line me-2"></span>Reset
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <span class="ri-search-line me-2"></span>Cari
+                        </button>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+        <div class="card-datatable table-responsive text-nowrap">
+            <table class="table table-sm table-bordered table-hover" id="main_table">
+                <thead class="table-light"></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+@endsection
+
+@section('script')
+    <script src="{{asset('main/libs/datatables-bs5/datatables-bootstrap5.js')}}"></script>
+    <script src="{{asset('js/datatableCustom/Datatable-0-4.js')}}"></script>
+
+    <script type="text/javascript">
+        const dtOptions = {
+            tableId: 'main_table',
+            formId: 'filterForm',
+            columnUrl: '{{($columnsUrl??null)}}',
+            dataUrl: '{{($datasUrl??null)}}',
+            dataColumns: [],
+            thead: true,
+            tfoot: true,
+            paging: true,
+            searching: true,
+            fixedHeader: false,
+            pageLength: 10,
+            lengthMenu: [10, 25, 50, 75, 100],
+            buttons: ['copy', 'excel', 'pdf', 'print'],
+        };
+
+        document.addEventListener('DOMContentLoaded', function () {
+            getDT(dtOptions);
+
+            document.querySelector(`#${dtOptions.tableId} tbody`).addEventListener('click', function (e) {
+                const button = e.target.closest('.btn-toggle-status');
+                if (!button) return;
+
+                const rawData = button.getAttribute('data-val');
+                if (!rawData) return;
+
+                let rowData;
+                try {
+                    rowData = JSON.parse(rawData);
+                } catch (err) {
+                    errorAlert('Data baris tidak valid');
+                    return;
+                }
+
+                const itemId = rowData.item_id;
+                if (!itemId) {
+                    warningAlert('Data tidak valid, silahkan muat ulang halaman');
+                    return;
+                }
+
+                loadingAlert('Mengubah status wakaf...');
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const url = '{{ route('admin.wakaf.master-wakaf.toggle-status', ':id') }}'.replace(':id', itemId);
+
+                fetch(url, {
+                    method: 'PATCH',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({}),
+                })
+                    .then(async (response) => {
+                        const result = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                            throw {status: response.status, message: result.message || 'Gagal mengubah status'};
+                        }
+                        return result;
+                    })
+                    .then((result) => {
+                        successAlert(result.message || 'Status berhasil diubah');
+                        dataReload(dtOptions.tableId);
+                    })
+                    .catch((error) => {
+                        errorAlert(error.message || 'Terjadi kesalahan saat mengubah status');
+                    });
+            });
+        });
+    </script>
+@endsection
