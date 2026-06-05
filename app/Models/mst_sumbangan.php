@@ -17,8 +17,8 @@ class mst_sumbangan extends Model
     public $incrementing = false;
 
     protected $fillable = [
-        "nmsumbangan",
-        "stcust",
-        "nocust",
+        "namaSumbangan",
+        "STCUST",
+        "NOCUST",
     ];
 }

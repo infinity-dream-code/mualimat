@@ -82,30 +82,35 @@ class MasterWakafController extends Controller
 
             $allowedSortMap = [
                 'idincrement' => 'idincrement',
-                'nmsumbangan' => 'nmsumbangan',
-                'nocust' => 'nocust',
-                'stcust_label' => 'stcust',
+                'nmsumbangan' => 'namaSumbangan',
+                'nocust' => 'NOCUST',
+                'stcust_label' => 'STCUST',
             ];
             $sortColumn = $allowedSortMap[$columnName] ?? $defaultColumn;
 
             $baseQuery = DB::connection('DATA_MYSQL')
                 ->table('mst_sumbangan')
-                ->select(['idincrement', 'nmsumbangan', 'nocust', 'stcust']);
+                ->select([
+                    'idincrement',
+                    DB::raw('namaSumbangan as nmsumbangan'),
+                    DB::raw('NOCUST as nocust'),
+                    DB::raw('STCUST as stcust'),
+                ]);
 
             $applyFilters = function ($query) use ($searchValue, $filterNama, $filterStatus) {
                 if ($searchValue !== '') {
                     $query->where(function ($q) use ($searchValue) {
-                        $q->where('nmsumbangan', 'like', '%' . $searchValue . '%')
-                            ->orWhere('nocust', 'like', '%' . $searchValue . '%');
+                        $q->where('namaSumbangan', 'like', '%' . $searchValue . '%')
+                            ->orWhere('NOCUST', 'like', '%' . $searchValue . '%');
                     });
                 }
 
                 if ($filterNama !== '') {
-                    $query->where('nmsumbangan', 'like', '%' . $filterNama . '%');
+                    $query->where('namaSumbangan', 'like', '%' . $filterNama . '%');
                 }
 
                 if (in_array($filterStatus, ['0', '1'], true)) {
-                    $query->where('stcust', (int) $filterStatus);
+                    $query->where('STCUST', (int) $filterStatus);
                 }
             };
 
@@ -162,8 +167,8 @@ class MasterWakafController extends Controller
 
         try {
             DB::connection('DATA_MYSQL')->beginTransaction();
-            $newStatus = (int) $data->stcust === 1 ? 0 : 1;
-            $data->update(['stcust' => $newStatus]);
+            $newStatus = (int) $data->STCUST === 1 ? 0 : 1;
+            $data->update(['STCUST' => $newStatus]);
             DB::connection('DATA_MYSQL')->commit();
 
             return response()->json([
