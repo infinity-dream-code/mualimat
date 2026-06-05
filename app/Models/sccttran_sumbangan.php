@@ -10,14 +10,14 @@ class sccttran_sumbangan extends Model
 
     protected $table = 'sccttran_sumbangan';
 
-    protected $primaryKey = 'urut';
+    protected $primaryKey = 'TRANSNO';
 
     public $timestamps = false;
 
     public $incrementing = false;
 
     protected $fillable = [
-        'idSumbangan',
+        'CUSTID',
         'METODE',
         'TRXDATE',
         'DEBET',

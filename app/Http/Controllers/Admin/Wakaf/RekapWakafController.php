@@ -110,9 +110,8 @@ class RekapWakafController extends Controller
 
             $baseQuery = DB::connection('DATA_MYSQL')
                 ->table('sccttran_sumbangan as t')
-                ->join('mst_sumbangan as m', 'm.idincrement', '=', 't.idSumbangan')
+                ->join('mst_sumbangan as m', 'm.idincrement', '=', 't.CUSTID')
                 ->select([
-                    't.urut',
                     DB::raw('m.namaSumbangan as nmsumbangan'),
                     DB::raw('m.STCUST as stcust'),
                     DB::raw('t.TRXDATE as trxdate'),
