@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\Rekap\RekapPenerimaan\RekapPenerimaanPerAkunContr
 use App\Http\Controllers\Admin\Rekap\RekapTaighan\RekapTagihanPerAkunController;
 use App\Http\Controllers\Admin\RekapSaldoController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Auth\SsoLoginController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 Auth::routes([
     "register" => false,
 ]);
+Route::get("/sso/login", [SsoLoginController::class, "login"])->name("sso.login");
 Route::get("/", [AuthController::class, "index"])->name("index");
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

@@ -54,4 +54,8 @@ return [
             ),
     ],
 
+    "portal_sso" => [
+        "secret" => env("PORTAL_SSO_SECRET"),
+    ],
+
 ];
