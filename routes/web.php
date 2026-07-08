@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\Rekap\RekapPenerimaan\RekapPenerimaanPerAkunController;
 use App\Http\Controllers\Admin\Rekap\RekapTaighan\RekapTagihanPerAkunController;
 use App\Http\Controllers\Admin\RekapSaldoController;
+use App\Http\Controllers\ApprovalPrestasiController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\SsoLoginController;
 use App\Http\Controllers\AuthController;
@@ -29,6 +30,20 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 Route::get("/reload-captcha", [AuthController::class, "reloadCaptcha"])->name(
     "reload-captcha",
 );
+
+Route::prefix('approval-prestasi')
+    ->name('approval-prestasi.')
+    ->controller(ApprovalPrestasiController::class)
+    ->group(function () {
+        Route::get('login', 'loginForm')->name('login-form');
+        Route::post('login', 'login')->name('login');
+        Route::post('logout', 'logout')->name('logout');
+
+        Route::get('/', 'index')->name('index');
+        Route::get('data', 'getData')->name('data');
+        Route::patch('{id}/approve', 'approve')->name('approve');
+        Route::patch('{id}/reject', 'reject')->name('reject');
+    });
 
 Route::prefix("admin")
     ->name("admin.")

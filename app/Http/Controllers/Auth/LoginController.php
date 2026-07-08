@@ -79,7 +79,7 @@ class LoginController extends Controller
         $username = trim((string) $request->input("username"));
         $password = (string) $request->input("password");
 
-        $user = CyberKey::query()->where("users", $username)->first();
+        $user = CyberKey::on('mysql')->where("users", $username)->first();
 
         if (!$user || empty($user->password)) {
             $this->throwInvalidCredentials();

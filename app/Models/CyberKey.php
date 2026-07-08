@@ -10,6 +10,8 @@ class CyberKey extends Model implements AuthenticatableContract
 {
     use Authenticatable;
 
+    protected $connection = 'mysql';
+
     protected $table = "cyber_key";
 
     protected $primaryKey = "urut";
