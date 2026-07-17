@@ -1,0 +1,9 @@
+HTTP/1.1 419 unknown status
+Date: Fri, 17 Jul 2026 08:26:44 GMT
+Server: Apache/2.4.53 (Win64) OpenSSL/1.1.1n PHP/8.1.6
+X-Powered-By: PHP/8.1.6
+Cache-Control: no-cache, private
+Set-Cookie: muallimaat_muhammadiyah_yogyakarta_session=eyJpdiI6ImxKZlpMSjF1cml2UEI2NDBReHJYMVE9PSIsInZhbHVlIjoiaXhXMEhWV1ZlQ0VOMm5Gb0JsR1Q4OElOVTl6S0FJV0JvSjFWelZ5Z2UwT1Vtb1A4eS9Wc3JQT0FyeUtZYkFIbkVvYWxIRzlGSHJMeFJna0tyekRrZGgzeGZaVElnTUFlZVJ6a3ZLODNhN09nWUE2a1ZjclNWdHJPYk51R1VMYUEiLCJtYWMiOiI3OWRjNjZhOTQwY2E2NmUyYzk0YWQxN2I1YjA0NTQ4NGJlYjA2NzQ1YzZkZTA5YTJjYmRiNGI2MTIzODVhN2M2IiwidGFnIjoiIn0%3D; expires=Fri, 17 Jul 2026 10:26:44 GMT; Max-Age=7200; path=/; httponly; samesite=lax
+Transfer-Encoding: chunked
+Content-Type: text/html; charset=UTF-8
+

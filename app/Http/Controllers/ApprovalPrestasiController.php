@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\View\View;
+use Throwable;
 
 class ApprovalPrestasiController extends Controller
 {
@@ -29,12 +30,26 @@ class ApprovalPrestasiController extends Controller
             'password' => ['required', 'string', 'max:128'],
         ]);
 
-        $user = DB::connection('DATA_MYSQL')
-            ->table('user_prestasi')
-            ->where('username', $validated['username'])
-            ->first();
+        try {
+            $user = DB::connection('DATA_MYSQL')
+                ->table('user_prestasi')
+                ->where('username', $validated['username'])
+                ->first();
+        } catch (Throwable $exception) {
+            report($exception);
 
-        if (!$user || !$this->verifyPassword($validated['password'], (string) ($user->password ?? ''))) {
+            return back()->withInput($request->only('username'))->withErrors([
+                'username' => 'Tidak dapat terhubung ke database user prestasi. Hubungi admin.',
+            ]);
+        }
+
+        if (!$user) {
+            return back()->withInput($request->only('username'))->withErrors([
+                'username' => 'Username atau password salah.',
+            ]);
+        }
+
+        if (!$this->verifyPassword($validated['password'], (string) ($user->password ?? ''))) {
             return back()->withInput($request->only('username'))->withErrors([
                 'username' => 'Username atau password salah.',
             ]);

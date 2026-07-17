@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\CyberKey;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,11 +13,49 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class LoginController extends Controller
 {
-    use AuthenticatesUsers;
+    use AuthenticatesUsers {
+        login as protected loginRequest;
+    }
+
+    public function login(Request $request): Response
+    {
+        try {
+            return $this->loginRequest($request);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (QueryException $exception) {
+            Log::error("Login database error", [
+                "message" => $exception->getMessage(),
+                "connection" => $exception->getConnectionName(),
+            ]);
+
+            throw ValidationException::withMessages([
+                "username" => [
+                    "Koneksi database autentikasi gagal. Silakan coba lagi atau hubungi admin.",
+                ],
+            ]);
+        } catch (Throwable $exception) {
+            Log::error("Login unexpected error", [
+                "message" => $exception->getMessage(),
+                "class" => $exception::class,
+                "file" => $exception->getFile(),
+                "line" => $exception->getLine(),
+            ]);
+
+            throw ValidationException::withMessages([
+                "username" => [
+                    config("app.debug")
+                        ? "Login error: {$exception->getMessage()}"
+                        : "Terjadi kesalahan saat login. Silakan coba lagi atau gunakan login intranet.",
+                ],
+            ]);
+        }
+    }
 
     public function showLoginForm(Request $request): View
     {
@@ -134,9 +173,11 @@ class LoginController extends Controller
         }
 
         $payload = $response->json();
-        if (!($payload["success"] ?? false)) {
+        if (!is_array($payload) || !($payload["success"] ?? false)) {
             Log::warning("Turnstile siteverify rejected token", [
-                "error_codes" => $payload["error-codes"] ?? [],
+                "error_codes" => is_array($payload)
+                    ? ($payload["error-codes"] ?? [])
+                    : [],
                 "host" => $request->getHost(),
             ]);
 
@@ -146,7 +187,7 @@ class LoginController extends Controller
         }
     }
 
-    private function failTurnstileAndUseFallback(string $message): void
+    private function failTurnstileAndUseFallback(string $message): never
     {
         session(["auth_cf_fallback" => true]);
 
@@ -185,6 +226,10 @@ class LoginController extends Controller
             return false;
         }
 
+        if (!$this->requestUsesCloudflareEdge()) {
+            return false;
+        }
+
         $host = request()->getHost();
 
         if (
@@ -196,6 +241,15 @@ class LoginController extends Controller
         }
 
         return true;
+    }
+
+    protected function requestUsesCloudflareEdge(): bool
+    {
+        $request = request();
+
+        return filled($request->header("CF-Ray"))
+            || filled($request->header("CF-Connecting-IP"))
+            || filled($request->header("CF-Visitor"));
     }
 
     protected function shouldUseMathFallback(?Request $request = null): bool
