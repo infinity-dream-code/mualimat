@@ -362,10 +362,10 @@
                 }
             }, function (start, end) {
                 let duration = end.diff(start, 'days');
-                if (duration > 365) {
-                    warningAlert("Maksimal 365 hari.");
+                if (duration > 730) {
+                    warningAlert("Maksimal 2 tahun (730 hari).");
                     date.data('daterangepicker').setStartDate(start);
-                    date.data('daterangepicker').setEndDate(start.clone().add(365, 'days'));
+                    date.data('daterangepicker').setEndDate(start.clone().add(730, 'days'));
                 }
             });
 
