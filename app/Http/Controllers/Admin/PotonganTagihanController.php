@@ -348,7 +348,15 @@ PotonganTagihanController extends Controller
             )
             ->where("scctbill.PAIDST", 1)
             ->where("scctbill.FSTSBolehBayar", 1)
-            ->where("scctcust.STCUST", 1)
+            ->where("scctbill_cut.IS_SHOW", 1)
+            ->where(function ($q) {
+                $q->where("scctcust.STCUST", 1)
+                    ->orWhere(function ($q2) {
+                        $q2->where("scctcust.STCUST", 0)
+                            ->whereNotNull("scctbill_cut.REASON")
+                            ->where("scctbill_cut.REASON", "!=", "");
+                    });
+            })
             ->when(!blank($searchValue), function ($query) use ($whereAny, $searchValue) {
                 $query->where(function ($q) use ($whereAny, $searchValue) {
                     $sanitizeSearch = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $searchValue);
@@ -412,8 +420,9 @@ PotonganTagihanController extends Controller
                 default => "",
             };
 
-            $billCutQuery = ScctbillCut::select(['ID', 'CUT_DATE', 'BILL_CUT', 'REASON'])
+            $billCutQuery = ScctbillCut::select(['ID', 'CUT_DATE', 'BILL_CUT', 'REASON', 'IS_SHOW'])
                 ->where('AA', $item->AA)
+                ->where('IS_SHOW', 1)
                 ->orderBy('CUT_DATE', 'ASC')
                 ->get();
 
@@ -538,6 +547,7 @@ PotonganTagihanController extends Controller
                             'BILL_CUT' => $nominal,
                             'CUT_DATE' => $tanggal,
                             'REASON' => $request->deskripsi[$id] ?? null,
+                            'IS_SHOW' => (int) ($request->is_show[$id] ?? 1) === 1 ? 1 : 0,
                             'CREATED_AT' => now(),
                             'USER_ID' => Auth::user()->id
                         ]);

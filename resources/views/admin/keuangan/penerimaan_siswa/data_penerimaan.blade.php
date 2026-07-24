@@ -528,16 +528,32 @@
 
             dariTanggal.datepicker({
                 format: "dd-mm-yyyy",
-                autoclose: true
+                autoclose: true,
+                clearBtn: true,
+                language: "id"
             }).on('changeDate', function (e) {
-                sampaiTanggal.datepicker('setStartDate', e.date);
+                if (e.date) {
+                    sampaiTanggal.datepicker('setStartDate', e.date);
+                } else {
+                    sampaiTanggal.datepicker('setStartDate', null);
+                }
+            }).on('clearDate', function () {
+                sampaiTanggal.datepicker('setStartDate', null);
             });
 
             sampaiTanggal.datepicker({
                 format: "dd-mm-yyyy",
-                autoclose: true
+                autoclose: true,
+                clearBtn: true,
+                language: "id"
             }).on('changeDate', function (e) {
-                dariTanggal.datepicker('setEndDate', e.date);
+                if (e.date) {
+                    dariTanggal.datepicker('setEndDate', e.date);
+                } else {
+                    dariTanggal.datepicker('setEndDate', null);
+                }
+            }).on('clearDate', function () {
+                dariTanggal.datepicker('setEndDate', null);
             });
 
             periodeMulai.datepicker({

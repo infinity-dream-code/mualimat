@@ -345,7 +345,7 @@
             date.daterangepicker({
                 startDate: startOfMonth,
                 endDate: today,
-                autoUpdateInput: true,
+                autoUpdateInput: false,
                 todayHighlight: true,
                 autoclose: true,
                 locale: {
@@ -359,14 +359,13 @@
                     daysOfWeek: ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"],
                     monthNames: ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"],
                     firstDay: 0,
-                },
-                maxDate: moment()
+                }
             }, function (start, end) {
                 let duration = end.diff(start, 'days');
                 if (duration > 365) {
                     warningAlert("Maksimal 365 hari.");
                     date.data('daterangepicker').setStartDate(start);
-                    date.data('daterangepicker').setEndDate(start.clone().add(6, 'days'));
+                    date.data('daterangepicker').setEndDate(start.clone().add(365, 'days'));
                 }
             });
 
@@ -375,6 +374,13 @@
                     $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
                 }
             });
+
+            date.on('cancel.daterangepicker', function (ev, picker) {
+                $(this).val('');
+            });
+
+            // default tampil awal bulan - hari ini, bisa dikosongkan via Batal
+            date.val(startOfMonth.format('DD-MM-YYYY') + ' - ' + today.format('DD-MM-YYYY'));
 
             function generateTableRow(data, tagihan) {
                 return data.map(s => {

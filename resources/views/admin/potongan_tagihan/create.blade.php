@@ -195,6 +195,7 @@
                                     <th>Potongan</th>
                                     <th>Tanggal</th>
                                     <th>Detail</th>
+                                    <th style="width:110px">Tampil</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -213,6 +214,12 @@
                                     <td>
                                     <textarea type="text" name="deskripsi[]" placeholder="Deskripsi"
                                               class="potongan-input form-control"></textarea>
+                                    </td>
+                                    <td>
+                                        <select name="is_show[]" class="form-select form-select-sm">
+                                            <option value="1" selected>Tampil</option>
+                                            <option value="0">Sembunyi</option>
+                                        </select>
                                     </td>
                                 </tr>
                                 </tbody>
@@ -265,7 +272,8 @@
 
             if (e.target === input && input.value.trim() !== "") {
                 const newRow = lastRow.cloneNode(true);
-                newRow.querySelectorAll("input").forEach(i => i.value = "");
+                newRow.querySelectorAll("input, textarea").forEach(i => i.value = "");
+                newRow.querySelectorAll("select").forEach(s => { s.value = "1"; });
                 // const newIndex = rows.length + 1;
                 // newRow.querySelector(".row-number").textContent = newIndex;
                 table.querySelector("tbody").appendChild(newRow);
@@ -365,14 +373,13 @@
                     daysOfWeek: ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"],
                     monthNames: ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"],
                     firstDay: 0,
-                },
-                maxDate: moment()
+                }
             }, function (start, end) {
                 let duration = end.diff(start, 'days');
                 if (duration > 365) {
                     warningAlert("Maksimal 365 hari.");
                     date.data('daterangepicker').setStartDate(start);
-                    date.data('daterangepicker').setEndDate(start.clone().add(6, 'days'));
+                    date.data('daterangepicker').setEndDate(start.clone().add(365, 'days'));
                 }
             });
 
@@ -384,8 +391,6 @@
 
             date.on('cancel.daterangepicker', function (ev, picker) {
                 $(this).val('');
-                // picker.setStartDate(moment().startOf('month'));
-                // picker.setEndDate(moment());
             });
 
             const inputTanggal = $('input[name="tanggal[]"]');
