@@ -133,21 +133,16 @@
                                 </div>
                                 @enderror
                             </div>
-                            @if(($useMathFallback ?? false) === false && filled(config('services.turnstile.site_key')) && config('services.turnstile.enabled', true) && !in_array(request()->getHost(), ['localhost', '127.0.0.1'], true) && request()->hasHeader('CF-Ray'))
+                            @if(($useMathFallback ?? false) === false && filled(config('services.turnstile.site_key')) && config('services.turnstile.enabled', true) && !in_array(request()->getHost(), ['localhost', '127.0.0.1'], true))
                             <div class="mb-3 text-center">
                                 <div class="cf-turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}" data-language="id"></div>
                                 @error('turnstile')
                                     <div class="text-danger small mt-2">{{ $message }}</div>
                                 @enderror
-                            </div>
-                            @endif
-                            @if(($useMathFallback ?? false) === false && !request()->hasHeader('CF-Ray') && filled(config('services.turnstile.site_key')) && config('services.turnstile.enabled', true) && !in_array(request()->getHost(), ['localhost', '127.0.0.1'], true))
-                                <div class="mb-3">
-                                    <div class="alert alert-info py-2 mb-0">
-                                        Akses intranet/direct: captcha Cloudflare dilewati.
-                                        <a href="{{ route('login', ['cf_fallback' => 1]) }}" class="ms-1">Mode captcha manual</a>
-                                    </div>
+                                <div class="mt-2">
+                                    <a href="{{ route('login', ['cf_fallback' => 1]) }}" class="small">Captcha tidak muncul? Pakai mode manual</a>
                                 </div>
+                            </div>
                             @endif
                             @if(($useMathFallback ?? false) === true)
                                 <input type="hidden" name="cf_fallback" value="1">
@@ -194,12 +189,22 @@
         </div>
     </div>
 
-    @if(($useMathFallback ?? false) === false)
+    @php
+        $showTurnstileWidget = ($useMathFallback ?? false) === false
+            && filled(config('services.turnstile.site_key'))
+            && config('services.turnstile.enabled', true)
+            && !in_array(request()->getHost(), ['localhost', '127.0.0.1'], true);
+    @endphp
+    @if($showTurnstileWidget)
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer onerror="window.handleTurnstileLoadError && window.handleTurnstileLoadError()"></script>
     @endif
 
     <script>
         window.handleTurnstileLoadError = function () {
+            @if(!$showTurnstileWidget)
+            return;
+            @endif
+
             const storageKey = 'cf_login_fail_count';
             const currentFail = Math.max(0, parseInt(localStorage.getItem(storageKey) || '0', 10));
             const nextFail = Math.max(0, currentFail + 1);

@@ -226,10 +226,6 @@ class LoginController extends Controller
             return false;
         }
 
-        if (!$this->requestUsesCloudflareEdge()) {
-            return false;
-        }
-
         $host = request()->getHost();
 
         if (
@@ -241,15 +237,6 @@ class LoginController extends Controller
         }
 
         return true;
-    }
-
-    protected function requestUsesCloudflareEdge(): bool
-    {
-        $request = request();
-
-        return filled($request->header("CF-Ray"))
-            || filled($request->header("CF-Connecting-IP"))
-            || filled($request->header("CF-Visitor"));
     }
 
     protected function shouldUseMathFallback(?Request $request = null): bool
