@@ -224,12 +224,12 @@ PotonganTagihanController extends Controller
                             )->endOfDay();
                             if ($startDate && $endDate) {
                                 $colName &&
-                                ($filters[] = [
-                                    $colName,
-                                    $startDate,
-                                    $endDate,
-                                    "whereBetween",
-                                ]);
+                                    ($filters[] = [
+                                        $colName,
+                                        $startDate,
+                                        $endDate,
+                                        "whereBetween",
+                                    ]);
                             }
                         }
                     } elseif ($key == "tanggal-potongan") {
@@ -252,12 +252,12 @@ PotonganTagihanController extends Controller
                             )->endOfDay();
                             if ($startDate && $endDate) {
                                 $colName &&
-                                ($filters[] = [
-                                    $colName,
-                                    $startDate,
-                                    $endDate,
-                                    "whereBetween",
-                                ]);
+                                    ($filters[] = [
+                                        $colName,
+                                        $startDate,
+                                        $endDate,
+                                        "whereBetween",
+                                    ]);
                             }
                         }
                     } elseif ($key == "kelas") {
@@ -294,23 +294,23 @@ PotonganTagihanController extends Controller
                                 $filter[1] === "in"
                                     ? $query->whereIn($filter[0], $filter[2])
                                     : $query->where(
-                                    $filter[0],
-                                    $filter[1],
-                                    $filter[2],
-                                );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                 break;
 
                             case 4:
                                 $filter[3] === "whereBetween"
                                     ? $query->whereBetween($filter[0], [
-                                    $filter[1],
-                                    $filter[2],
-                                ])
+                                        $filter[1],
+                                        $filter[2],
+                                    ])
                                     : $query->{$filter[3]}(
-                                    $filter[0],
-                                    $filter[1],
-                                    $filter[2],
-                                );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                 break;
                         }
                     }
@@ -339,8 +339,7 @@ PotonganTagihanController extends Controller
             ]),
         );
 
-        $query = ScctbillCut::
-        leftJoin("scctbill", "scctbill_cut.AA", "scctbill.AA")
+        $query = ScctbillCut::leftJoin("scctbill", "scctbill_cut.AA", "scctbill.AA")
             ->leftJoin(
                 "scctcust",
                 "scctcust.CUSTID",
@@ -348,7 +347,7 @@ PotonganTagihanController extends Controller
             )
             ->where("scctbill.PAIDST", 1)
             ->where("scctbill.FSTSBolehBayar", 1)
-            ->where("scctbill_cut.IS_SHOW", 1
+            ->where("scctbill_cut.IS_SHOW", 1)
             ->where(function ($q) {
                 $q->where("scctcust.STCUST", 1)
                     ->orWhere(function ($q2) {
@@ -498,22 +497,22 @@ PotonganTagihanController extends Controller
             return response()->json(["message" => "Tagihan yang dipilih tidak valid!"], 422);
         }
 
-//        $total = array_sum(
-//            array_map(function ($value) {
-//                if (!$value) {
-//                    return 0;
-//                }
-//                $clean = str_replace('.', '', $value);
-//
-//                return (int)$clean;
-//            }, $request['potongan'])
-//        );
-//
-//        if ($bill->BILLAM < $total) {
-//            $tagihan = 'Rp. ' . number_format($bill->BILLAM, 0, ',', '.');
-//            $potongan = 'Rp. ' . number_format($total, 0, ',', '.');
-//            return response()->json(["message" => "Total potongan tidak boleh lebih besar dari tagihan! <br> Tagihan : $tagihan <br> Potongan: $potongan"], 422);
-//        }
+        //        $total = array_sum(
+        //            array_map(function ($value) {
+        //                if (!$value) {
+        //                    return 0;
+        //                }
+        //                $clean = str_replace('.', '', $value);
+        //
+        //                return (int)$clean;
+        //            }, $request['potongan'])
+        //        );
+        //
+        //        if ($bill->BILLAM < $total) {
+        //            $tagihan = 'Rp. ' . number_format($bill->BILLAM, 0, ',', '.');
+        //            $potongan = 'Rp. ' . number_format($total, 0, ',', '.');
+        //            return response()->json(["message" => "Total potongan tidak boleh lebih besar dari tagihan! <br> Tagihan : $tagihan <br> Potongan: $potongan"], 422);
+        //        }
 
         foreach ($request->potongan as $id => $value) {
             $nominal = str_replace('.', '', $value);
@@ -537,7 +536,8 @@ PotonganTagihanController extends Controller
                     if ($nominal > 0) {
                         $tanggal = Carbon::createFromFormat(
                             "d-m-Y",
-                            $request->tanggal[$id]);
+                            $request->tanggal[$id]
+                        );
                         ScctbillCut::create([
                             'AA' => $item->AA,
                             'BILLNM' => $item->BILLNM,
