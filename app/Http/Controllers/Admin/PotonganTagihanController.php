@@ -157,7 +157,7 @@ PotonganTagihanController extends Controller
     public function getData(Request $request)
     {
         $draw = $request->get("draw");
-        $start = $request->get("start");
+        $start = (int) $request->get("start", 0);
         $rowperpage = $request->get("length");
 
         $columnIndex_arr = $request->get("order", []);
@@ -320,72 +320,44 @@ PotonganTagihanController extends Controller
 
         $whereAny = ["scctcust.nmcust", "scctcust.nocust", "scctbill_cut.REASON"];
 
-        $select = array_unique(
-            array_merge($whereAny, [
-                "scctbill.AA",
-                "scctbill.BILLNM",
-                "scctbill.BILLAM",
-                "scctbill.PAIDST",
-                "scctbill.PAIDDT",
-                "scctbill.BTA",
-                "scctbill.FUrutan",
-                "scctbill.FIDBANK",
-                "scctbill.FUrutan",
-                "scctbill.CUSTID",
-                "scctcust.CODE02",
-                "scctcust.DESC02",
-                "scctcust.DESC03",
-                "scctbill_cut.BILL_CUT"
-            ]),
-        );
-
-        $query = ScctbillCut::leftJoin("scctbill", "scctbill_cut.AA", "scctbill.AA")
-            ->leftJoin(
-                "scctcust",
-                "scctcust.CUSTID",
-                "scctbill.CUSTID",
-            )
-            ->where("scctbill.PAIDST", 1)
-            ->where("scctbill.FSTSBolehBayar", 1)
-            ->where("scctbill_cut.IS_SHOW", 1)
-            ->where(function ($q) {
-                $q->where("scctcust.STCUST", 1)
-                    ->orWhere(function ($q2) {
-                        $q2->where("scctcust.STCUST", 0)
-                            ->whereNotNull("scctbill_cut.REASON")
-                            ->where("scctbill_cut.REASON", "!=", "");
+        $baseQuery = function () use ($whereAny, $searchValue, $filterQuery) {
+            return ScctbillCut::query()
+                ->join("scctbill", "scctbill_cut.AA", "=", "scctbill.AA")
+                ->join("scctcust", "scctcust.CUSTID", "=", "scctbill.CUSTID")
+                ->where("scctbill.PAIDST", 1)
+                ->where("scctbill.FSTSBolehBayar", 1)
+                ->where("scctbill_cut.IS_SHOW", 1)
+                ->where(function ($q) {
+                    $q->where("scctcust.STCUST", 1)
+                        ->orWhere(function ($q2) {
+                            $q2->where("scctcust.STCUST", 0)
+                                ->whereNotNull("scctbill_cut.REASON")
+                                ->where("scctbill_cut.REASON", "!=", "");
+                        });
+                })
+                ->when(!blank($searchValue), function ($query) use ($whereAny, $searchValue) {
+                    $query->where(function ($q) use ($whereAny, $searchValue) {
+                        $sanitizeSearch = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $searchValue);
+                        foreach ($whereAny as $column) {
+                            $q->orWhere($column, 'like', '%' . $sanitizeSearch . '%');
+                        }
                     });
-            })
-            ->when(!blank($searchValue), function ($query) use ($whereAny, $searchValue) {
-                $query->where(function ($q) use ($whereAny, $searchValue) {
-                    $sanitizeSearch = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $searchValue);
-                    foreach ($whereAny as $column) {
-                        $q->orWhere($column, 'like', '%' . $sanitizeSearch . '%');
+                })
+                ->where(function ($query) use ($filterQuery) {
+                    if ($filterQuery) {
+                        $filterQuery($query);
                     }
                 });
-            })->where(function ($query) use ($filterQuery) {
-                if ($filterQuery) {
-                    $filterQuery($query);
-                }
-            });
+        };
 
-        //other join leftJoin('scctbill', function ($join) {
-        //            $join->on('scctbill_cut.AA', '=', "scctbill.AA")
-        //                ->where("scctbill.PAIDST", 1)
-        //                ->where("scctbill.FSTSBolehBayar", 1);
-        //        })
-        //            ->leftJoin(
-        //                "scctcust", function ($join) {
-        //                $join->on("scctbill.CUSTID", "=", "scctcust.CUSTID")
-        //                    ->where("scctcust.STCUST", 1);
-        //            })
+        $totalRecords = ScctbillCut::where("IS_SHOW", 1)->distinct('AA')->count('AA');
 
-        $totalRecords = ScctbillCut::distinct(['scctbill_cut.AA'])->count('scctbill_cut.AA');
+        $totalRecordswithFilter = $baseQuery()->distinct('scctbill_cut.AA')->count('scctbill_cut.AA');
 
-        $totalRecordswithFilter = (clone $query)->distinct(['scctbill_cut.AA'])->count('scctbill_cut.AA');
+        $rowperpage = $rowperpage == "poll" ? $totalRecordswithFilter : (int) $rowperpage;
 
-        $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
-        $records = (clone $query)
+        $orderedAAs = $baseQuery()
+            ->select('scctbill_cut.AA')
             ->groupBy('scctbill_cut.AA')
             ->orderBy('scctcust.nmcust', 'asc')
             ->orderByRaw("
@@ -406,13 +378,48 @@ PotonganTagihanController extends Controller
                 END
             ")
             ->orderBy($columnName, $columnSortOrder)
-            ->select($select)
-            ->addSelect(DB::raw("COALESCE(SUM(scctbill_cut.BILL_CUT), 0) as TOTAL_BILL_CUT"))
             ->skip($start)
             ->take($rowperpage)
-            ->get();
+            ->pluck('AA')
+            ->toArray();
 
-        $records = $records->map(function ($item, $index) use ($request) {
+        $records = collect();
+
+        if (!empty($orderedAAs)) {
+            $select = array_unique(
+                array_merge($whereAny, [
+                    "scctbill.AA",
+                    "scctbill.BILLNM",
+                    "scctbill.BILLAM",
+                    "scctbill.PAIDST",
+                    "scctbill.PAIDDT",
+                    "scctbill.BTA",
+                    "scctbill.FUrutan",
+                    "scctbill.FIDBANK",
+                    "scctbill.CUSTID",
+                    "scctcust.CODE02",
+                    "scctcust.DESC02",
+                    "scctcust.DESC03",
+                ]),
+            );
+
+            $rows = ScctbillCut::join("scctbill", "scctbill_cut.AA", "=", "scctbill.AA")
+                ->join("scctcust", "scctcust.CUSTID", "=", "scctbill.CUSTID")
+                ->whereIn("scctbill_cut.AA", $orderedAAs)
+                ->where("scctbill_cut.IS_SHOW", 1)
+                ->select($select)
+                ->addSelect(DB::raw("COALESCE(SUM(scctbill_cut.BILL_CUT), 0) as TOTAL_BILL_CUT"))
+                ->groupBy('scctbill.AA')
+                ->get()
+                ->keyBy('AA');
+
+            $records = collect($orderedAAs)
+                ->map(fn($aa) => $rows->get($aa))
+                ->filter()
+                ->values();
+        }
+
+        $records = $records->map(function ($item) {
             $item->NOVA = match (strtolower($item->CODE02)) {
                 "mts" => scctcust::showVAMTS($item->nocust),
                 "ma" => scctcust::showVAMA($item->nocust),
@@ -450,7 +457,7 @@ PotonganTagihanController extends Controller
             "draw" => intval($draw),
             "recordsTotal" => $totalRecords ?? 0,
             "recordsFiltered" => $totalRecordswithFilter ?? 0,
-            "data" => $records ?? [],
+            "data" => $records->values(),
         ];
         return response()->json($response);
     }
@@ -496,23 +503,6 @@ PotonganTagihanController extends Controller
         if (!$bill) {
             return response()->json(["message" => "Tagihan yang dipilih tidak valid!"], 422);
         }
-
-        //        $total = array_sum(
-        //            array_map(function ($value) {
-        //                if (!$value) {
-        //                    return 0;
-        //                }
-        //                $clean = str_replace('.', '', $value);
-        //
-        //                return (int)$clean;
-        //            }, $request['potongan'])
-        //        );
-        //
-        //        if ($bill->BILLAM < $total) {
-        //            $tagihan = 'Rp. ' . number_format($bill->BILLAM, 0, ',', '.');
-        //            $potongan = 'Rp. ' . number_format($total, 0, ',', '.');
-        //            return response()->json(["message" => "Total potongan tidak boleh lebih besar dari tagihan! <br> Tagihan : $tagihan <br> Potongan: $potongan"], 422);
-        //        }
 
         foreach ($request->potongan as $id => $value) {
             $nominal = str_replace('.', '', $value);
