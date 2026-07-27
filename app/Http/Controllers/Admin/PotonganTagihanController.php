@@ -348,7 +348,7 @@ PotonganTagihanController extends Controller
             )
             ->where("scctbill.PAIDST", 1)
             ->where("scctbill.FSTSBolehBayar", 1)
-            ->where("scctbill_cut.IS_SHOW", 1)
+            ->where("scctbill_cut.IS_SHOW", 1
             ->where(function ($q) {
                 $q->where("scctcust.STCUST", 1)
                     ->orWhere(function ($q2) {
