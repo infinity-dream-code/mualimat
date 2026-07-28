@@ -251,7 +251,7 @@
                         <div data-i18n="Rekap Saldo">Rekap Saldo</div>
                     </a>
                 </li>
-                <li class="menu-item {{ Request::is(['admin/rekap-saldo/saku']) ? 'active' : '' }}">
+                <li class="menu-item {{ Request::is(['admin/rekap-saldo-saku']) ? 'active' : '' }}">
                     <a href="{{route('admin.rekap-saldo-saku.index')}}" class="menu-link">
                         <div data-i18n="Rekap Saldo Saku">Rekap Saldo Saku</div>
                     </a>
