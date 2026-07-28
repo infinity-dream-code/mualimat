@@ -47,7 +47,7 @@ Route::prefix('approval-prestasi')
 
 Route::prefix("admin")
     ->name("admin.")
-    ->middleware(["auth","check.roles:admin"])
+    ->middleware(["auth", "check.roles:admin"])
     ->group(function () {
         Route::get("/", [AdminController::class, "index"])->name("index");
 
@@ -440,6 +440,7 @@ Route::prefix("admin")
             ->group(function () {
                 Route::get("get-data", "getData")->name("get-data");
                 Route::get("get-column", "getColumn")->name("get-column");
+                Route::get("cetak-kartu-siswa", "cetakKartuSiswa")->name("cetak-kartu-siswa");
                 Route::resource(
                     "",
                     \App\Http\Controllers\Admin\CekPelunasan\RekapCekPelunasanController::class,

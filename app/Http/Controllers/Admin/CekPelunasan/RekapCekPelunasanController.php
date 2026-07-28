@@ -10,9 +10,11 @@ use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
 use App\Models\scctbill;
 use App\Models\scctcust;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RekapCekPelunasanController extends Controller
 {
@@ -162,6 +164,7 @@ class RekapCekPelunasanController extends Controller
                         "siswa" => "scctcust.nmcust",
                         "custid" => "scctbill.CUSTID",
                         "metode_bayar" => "scctbill.FIDBANK",
+                        "status_bayar" => "scctbill.PAIDST",
                         default => null,
                     };
                     switch ($key) {
@@ -185,12 +188,12 @@ class RekapCekPelunasanController extends Controller
                                 )->endOfDay();
                                 if ($startDate && $endDate) {
                                     $colName &&
-                                    ($filters[] = [
-                                        $colName,
-                                        $startDate,
-                                        $endDate,
-                                        "whereBetween",
-                                    ]);
+                                        ($filters[] = [
+                                            $colName,
+                                            $startDate,
+                                            $endDate,
+                                            "whereBetween",
+                                        ]);
                                 }
                             }
                             break;
@@ -217,7 +220,7 @@ class RekapCekPelunasanController extends Controller
                             });
                             if (count($array) > 0) {
                                 $colName &&
-                                ($filters[] = [$colName, "in", $array]);
+                                    ($filters[] = [$colName, "in", $array]);
                             }
                             break;
                         case 'siswa':
@@ -226,6 +229,11 @@ class RekapCekPelunasanController extends Controller
                                 ? "scctcust.nocust"
                                 : $colName;
                             $colName && ($filters[] = [$colName, "like", $val]);
+                            break;
+                        case 'status_bayar':
+                            if ($val !== 'all') {
+                                $colName && ($filters[] = [$colName, "=", $val]);
+                            }
                             break;
                         default:
                             $colName && ($filters[] = [$colName, "=", $val]);
@@ -241,27 +249,27 @@ class RekapCekPelunasanController extends Controller
                             case 3:
                                 $filter[1] === "in"
                                     ? $query->whereIn(
-                                    $filter[0],
-                                    $filter[2],
-                                )
+                                        $filter[0],
+                                        $filter[2],
+                                    )
                                     : $query->where(
-                                    $filter[0],
-                                    $filter[1],
-                                    $filter[2],
-                                );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                 break;
 
                             case 4:
                                 $filter[3] === "whereBetween"
                                     ? $query->whereBetween($filter[0], [
-                                    $filter[1],
-                                    $filter[2],
-                                ])
+                                        $filter[1],
+                                        $filter[2],
+                                    ])
                                     : $query->{$filter[3]}(
-                                    $filter[0],
-                                    $filter[1],
-                                    $filter[2],
-                                );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                 break;
                         }
                     }
@@ -311,7 +319,7 @@ class RekapCekPelunasanController extends Controller
 
         $totalRecordswithFilter = scctcust::where("scctcust.STCUST", 1)
             ->where(function ($query) use ($filtersiswaQuery) {
-                if ($filtersiswaQuery){
+                if ($filtersiswaQuery) {
                     $filtersiswaQuery($query);
                 }
             })
@@ -331,7 +339,7 @@ class RekapCekPelunasanController extends Controller
                     $filterQuery($query);
                 }
             })
-            ->orderBy($columnName, $columnSortOrder)
+            ->orderBy('scctcust.nmcust', 'asc')
             ->select($select)
             ->addSelect(DB::raw('COALESCE(MIN(scctbill.PAIDST), 0) as status_kelunasan'))
             ->addSelect(
@@ -365,5 +373,60 @@ class RekapCekPelunasanController extends Controller
             "data" => $records ?? [],
         ];
         return response()->json($response);
+    }
+
+    /**
+     * Cetak Kartu Siswa dengan urutan berdasarkan FUrutan ASC
+     */
+    public function cetakKartuSiswa(Request $request)
+    {
+        try {
+            $custid = $request->input('custid');
+            if (!$custid) {
+                return response()->json(['error' => 'Siswa tidak ditemukan'], 422);
+            }
+
+            $siswa = scctcust::where('CUSTID', $custid)->first();
+            if (!$siswa) {
+                return response()->json(['error' => 'Siswa tidak ditemukan'], 422);
+            }
+
+            // Ambil tagihan siswa dengan urutan berdasarkan FUrutan ASC
+            $tagihans = scctbill::where('CUSTID', $custid)
+                ->where('FSTSBolehBayar', 1)
+                ->orderBy('FUrutan', 'asc')
+                ->get();
+
+            if ($tagihans->isEmpty()) {
+                return response()->json(['error' => 'Tagihan tidak ditemukan'], 422);
+            }
+
+            // Hitung total tagihan
+            $totalTagihan = $tagihans->sum('BILLAM');
+            $totalTerbayar = $tagihans->where('PAIDST', 1)->sum('BILLAM');
+            $sisaTagihan = $totalTagihan - $totalTerbayar;
+
+            $nova = match (strtolower($siswa->CODE02)) {
+                'mts' => scctcust::showVAMTS($siswa->NOCUST),
+                'ma' => scctcust::showVAMA($siswa->NOCUST),
+                default => '',
+            };
+
+            $pdf = Pdf::loadView('cetak.kartu-siswa', [
+                'siswa' => $siswa,
+                'tagihans' => $tagihans,
+                'nova' => $nova,
+                'totalTagihan' => $totalTagihan,
+                'totalTerbayar' => $totalTerbayar,
+                'sisaTagihan' => $sisaTagihan,
+            ]);
+
+            return $pdf->download('kartu-siswa-' . $siswa->nocust . '.pdf');
+        } catch (\Exception $e) {
+            Log::error('Error cetak kartu siswa: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Gagal mencetak kartu siswa: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
