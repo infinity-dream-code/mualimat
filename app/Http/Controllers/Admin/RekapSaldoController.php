@@ -11,6 +11,7 @@ use App\Models\sccttran;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RekapSaldoController extends Controller
 {
@@ -107,42 +108,60 @@ class RekapSaldoController extends Controller
 
     public function getDataRekap(Request $request)
     {
-        $periode = $request->filter["periode"] ?? null;
-        $unit = $request->filter["unit"] ?? null;
-        $kelas = $request->filter["kelas"] ?? null;
-
-        if (
-            $periode == null ||
-            !preg_match('/^\d{6}$/', $periode) ||
-            !checkdate(substr($periode, 4, 2), 1, substr($periode, 0, 4))
-        ) {
-            return response()->json([
-                "error" => "Periode is not valid or defined!",
-                "message" => "Silahkan pilih periode terlebih dahulu"
-            ], 422);
-        }
-
-        $kelas = strtolower(trim($kelas ?? ''));
-        $unit  = strtolower(trim($unit ?? ''));
-
-        if (($kelas === '' || $kelas === 'all') && ($unit === '' || $unit === 'all')) {
-            return response()->json([
-                "error" => "Filter tidak valid!",
-                "message" => "Silahkan pilih satu Unit atau satu kelas!"
-            ], 422);
-        }
-
-        $request["draw"] = 2;
-        $request["start"] = 0;
-        $request["length"] = "poll";
-
         try {
+            Log::info('=== getDataRekap START ===');
+            Log::info('Request filter: ' . json_encode($request->filter));
+
+            $periode = $request->filter["periode"] ?? null;
+            $unit = $request->filter["unit"] ?? null;
+            $kelas = $request->filter["kelas"] ?? null;
+
+            Log::info('periode: ' . $periode);
+            Log::info('unit: ' . $unit);
+            Log::info('kelas: ' . $kelas);
+
+            if (
+                $periode == null ||
+                !preg_match('/^\d{6}$/', $periode) ||
+                !checkdate(substr($periode, 4, 2), 1, substr($periode, 0, 4))
+            ) {
+                Log::warning('Periode invalid: ' . $periode);
+                return response()->json([
+                    "error" => "Periode is not valid or defined!",
+                    "message" => "Silahkan pilih periode terlebih dahulu"
+                ], 422);
+            }
+
+            $kelas = strtolower(trim($kelas ?? ''));
+            $unit  = strtolower(trim($unit ?? ''));
+
+            Log::info('kelas after trim: ' . $kelas);
+            Log::info('unit after trim: ' . $unit);
+
+            if (($kelas === '' || $kelas === 'all') && ($unit === '' || $unit === 'all')) {
+                Log::warning('Filter tidak valid - unit dan kelas all');
+                return response()->json([
+                    "error" => "Filter tidak valid!",
+                    "message" => "Silahkan pilih satu Unit atau satu kelas!"
+                ], 422);
+            }
+
+            $request["draw"] = 2;
+            $request["start"] = 0;
+            $request["length"] = "poll";
+
             $filter = $request;
             $saldos = $this->getData($filter);
 
+            Log::info('getData response: ' . json_encode($saldos));
+
             $saldos = json_decode(json_encode($saldos), true);
-            $saldos = $saldos["original"]["data"];
+            $saldos = $saldos["original"]["data"] ?? [];
+
+            Log::info('saldos count: ' . count($saldos));
+
             if (!$saldos) {
+                Log::warning('Data saldo kosong');
                 return response()->json(
                     ["message" => "Data saldo kosong"],
                     422,
@@ -153,6 +172,8 @@ class RekapSaldoController extends Controller
                 "data" => $saldos,
             ], 200);
         } catch (\Throwable $e) {
+            Log::error('Error in getDataRekap: ' . $e->getMessage());
+            Log::error('Trace: ' . $e->getTraceAsString());
             return response()->json(
                 [
                     "message" => "Data Saldo Tidak Ditemukan",
@@ -165,223 +186,260 @@ class RekapSaldoController extends Controller
 
     public function getData(Request $request)
     {
-        $draw = $request->get("draw");
-        $records = [];
-        $totalRecords = 0;
-        $totalRecordswithFilter = 0;
+        try {
+            Log::info('=== getData START ===');
+            Log::info('Request filter: ' . json_encode($request->filter));
 
-        if (
-            $request->filter["periode"] != null &&
-            preg_match('/^\d{6}$/', $request->filter["periode"])
-        ) {
-            $start = $request->get("start");
-            $rowperpage = $request->get("length");
+            $draw = $request->get("draw");
+            $records = [];
+            $totalRecords = 0;
+            $totalRecordswithFilter = 0;
 
-            $columnIndex_arr = $request->get("order", []);
-            $columnName_arr = $request->get("columns", []);
-            $order_arr = $request->get("order", []);
-            $search_arr = $request->get("search", []);
-            $searchValue = $search_arr["value"] ?? "";
+            $periode = $request->filter["periode"] ?? null;
+            Log::info('periode in getData: ' . $periode);
 
-            $columnName = "scctcust.nmcust";
-            $columnSortOrder = "asc";
+            if (
+                $periode != null &&
+                preg_match('/^\d{6}$/', $periode)
+            ) {
+                $start = $request->get("start");
+                $rowperpage = $request->get("length");
 
-            if (!empty($order_arr)) {
-                $columnIndex = $columnIndex_arr[0]["column"] ?? null;
-                if (
-                    $columnIndex !== null &&
-                    !empty($columnName_arr[$columnIndex]["data"]) &&
-                    $columnName_arr[$columnIndex]["data"] !== "no"
-                ) {
-                    $columnName = $columnName_arr[$columnIndex]["data"];
-                    $columnSortOrder = $order_arr[0]["dir"] ?? "desc";
-                }
-            }
+                $columnIndex_arr = $request->get("order", []);
+                $columnName_arr = $request->get("columns", []);
+                $order_arr = $request->get("order", []);
+                $search_arr = $request->get("search", []);
+                $searchValue = $search_arr["value"] ?? "";
 
-            if ($columnName === "opening_balance") {
-                $columnName = DB::raw("(COALESCE(opening.opening_kredit, 0) - COALESCE(opening.opening_debet, 0))");
-            } elseif ($columnName === "current_net") {
-                $columnName = DB::raw("(COALESCE(current.current_kredit, 0) - COALESCE(current.current_debet, 0))");
-            } elseif ($columnName === "closing_balance") {
-                $columnName = DB::raw("((COALESCE(opening.opening_kredit, 0) - COALESCE(opening.opening_debet, 0)) + (COALESCE(current.current_kredit, 0) - COALESCE(current.current_debet, 0)))");
-            } elseif (!str_contains($columnName, ".")) {
-                $columnName = "scctcust." . $columnName;
-            }
+                $columnName = "scctcust.nmcust";
+                $columnSortOrder = "asc";
 
-            $filters = [];
-            $filterQuery = null;
-
-            $filter = $request->input("filter");
-            if ($filter) {
-                foreach ($filter as $key => $val) {
+                if (!empty($order_arr)) {
+                    $columnIndex = $columnIndex_arr[0]["column"] ?? null;
                     if (
-                        is_array($val) ||
-                        (strtolower($val) != "all" &&
-                            $val !== null &&
-                            $val !== "")
+                        $columnIndex !== null &&
+                        !empty($columnName_arr[$columnIndex]["data"]) &&
+                        $columnName_arr[$columnIndex]["data"] !== "no"
                     ) {
-                        $colName = match ($key) {
-                            "unit" => "scctcust.CODE01",
-                            "kelas" => "scctcust.DESC02",
-                            "siswa" => "scctcust.nmcust",
-                            default => null,
+                        $columnName = $columnName_arr[$columnIndex]["data"];
+                        $columnSortOrder = $order_arr[0]["dir"] ?? "desc";
+                    }
+                }
+
+                Log::info('columnName: ' . $columnName);
+                Log::info('columnSortOrder: ' . $columnSortOrder);
+
+                if ($columnName === "opening_balance") {
+                    $columnName = DB::raw("(COALESCE(opening.opening_kredit, 0) - COALESCE(opening.opening_debet, 0))");
+                } elseif ($columnName === "current_net") {
+                    $columnName = DB::raw("(COALESCE(current.current_kredit, 0) - COALESCE(current.current_debet, 0))");
+                } elseif ($columnName === "closing_balance") {
+                    $columnName = DB::raw("((COALESCE(opening.opening_kredit, 0) - COALESCE(opening.opening_debet, 0)) + (COALESCE(current.current_kredit, 0) - COALESCE(current.current_debet, 0)))");
+                } elseif (!str_contains($columnName, ".")) {
+                    $columnName = "scctcust." . $columnName;
+                }
+
+                $filters = [];
+                $filterQuery = null;
+
+                $filter = $request->input("filter");
+                if ($filter) {
+                    foreach ($filter as $key => $val) {
+                        if (
+                            is_array($val) ||
+                            (strtolower($val) != "all" &&
+                                $val !== null &&
+                                $val !== "")
+                        ) {
+                            $colName = match ($key) {
+                                "unit" => "scctcust.CODE01",
+                                "kelas" => "scctcust.DESC02",
+                                "siswa" => "scctcust.nmcust",
+                                default => null,
+                            };
+                            if ($key == "kelas") {
+                                $val = explode("~", $val);
+                                if (count($val) == 3) {
+                                    $filters[] = ["scctcust.CODE02", "=", $val[0]];
+                                    $filters[] = ["scctcust.DESC02", "=", $val[1]];
+                                    $filters[] = ["scctcust.DESC03", "=", $val[2]];
+                                }
+                            } elseif ($key == "siswa") {
+                                $val = is_numeric($val) ? $val : "%" . $val . "%";
+                                $colName = is_numeric($val)
+                                    ? "scctcust.nocust"
+                                    : $colName;
+                                $colName && ($filters[] = [$colName, "like", $val]);
+                            } else {
+                                $colName && ($filters[] = [$colName, "=", $val]);
+                            }
+                        }
+                    }
+
+                    if (!empty($filters)) {
+                        $filterQuery = function ($query) use ($filters) {
+                            foreach ($filters as $filter) {
+                                switch (count($filter)) {
+                                    case 3:
+                                        $filter[1] === "in"
+                                            ? $query->whereIn(
+                                                $filter[0],
+                                                $filter[2],
+                                            )
+                                            : $query->where(
+                                                $filter[0],
+                                                $filter[1],
+                                                $filter[2],
+                                            );
+                                        break;
+
+                                    case 4:
+                                        $filter[3] === "whereBetween"
+                                            ? $query->whereBetween($filter[0], [
+                                                $filter[1],
+                                                $filter[2],
+                                            ])
+                                            : $query->{$filter[3]}(
+                                                $filter[0],
+                                                $filter[1],
+                                                $filter[2],
+                                            );
+                                        break;
+                                }
+                            }
                         };
-                        if ($key == "kelas") {
-                            $val = explode("~", $val);
-                            if (count($val) == 3) {
-                                $filters[] = ["scctcust.CODE02", "=", $val[0]];
-                                $filters[] = ["scctcust.DESC02", "=", $val[1]];
-                                $filters[] = ["scctcust.DESC03", "=", $val[2]];
-                            }
-                        } elseif ($key == "siswa") {
-                            $val = is_numeric($val) ? $val : "%" . $val . "%";
-                            $colName = is_numeric($val)
-                                ? "scctcust.nocust"
-                                : $colName;
-                            $colName && ($filters[] = [$colName, "like", $val]);
-                        } else {
-                            $colName && ($filters[] = [$colName, "=", $val]);
-                        }
                     }
                 }
 
-                if (!empty($filters)) {
-                    $filterQuery = function ($query) use ($filters) {
-                        foreach ($filters as $filter) {
-                            switch (count($filter)) {
-                                case 3:
-                                    $filter[1] === "in"
-                                        ? $query->whereIn(
-                                            $filter[0],
-                                            $filter[2],
-                                        )
-                                        : $query->where(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
-                                    break;
+                $whereAny = ["scctcust.nmcust", "scctcust.nocust"];
 
-                                case 4:
-                                    $filter[3] === "whereBetween"
-                                        ? $query->whereBetween($filter[0], [
-                                            $filter[1],
-                                            $filter[2],
-                                        ])
-                                        : $query->{$filter[3]}(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
-                                    break;
-                            }
+                $select = array_unique(
+                    array_merge($whereAny, [
+                        "scctcust.CODE02",
+                        "scctcust.DESC02",
+                        "scctcust.CUSTID",
+                    ]),
+                );
+
+                $monthStart = Carbon::createFromFormat('Ym', $periode)->startOfMonth();
+                $monthEnd = Carbon::createFromFormat('Ym', $periode)->endOfMonth();
+
+                Log::info('monthStart: ' . $monthStart);
+                Log::info('monthEnd: ' . $monthEnd);
+
+                $openingAgg = sccttran::query()
+                    ->select([
+                        'CUSTID',
+                        DB::raw('COALESCE(SUM(KREDIT), 0) AS opening_kredit'),
+                        DB::raw('COALESCE(SUM(DEBET), 0) AS opening_debet'),
+                    ])
+                    ->where('TRXDATE', '<', $monthStart)
+                    ->where('FLAG', 'VA')
+                    ->groupBy('CUSTID');
+
+                $currentAgg = sccttran::query()
+                    ->select([
+                        'CUSTID',
+                        DB::raw('COALESCE(SUM(KREDIT), 0) AS current_kredit'),
+                        DB::raw('COALESCE(SUM(DEBET), 0) AS current_debet'),
+                    ])
+                    ->whereBetween('TRXDATE', [$monthStart, $monthEnd])
+                    ->where('FLAG', 'VA')
+                    ->groupBy('CUSTID');
+
+                $query = scctcust::query()
+                    ->where("scctcust.STCUST", 1)
+                    ->leftJoinSub($openingAgg, 'opening', function ($join) {
+                        $join->on('opening.CUSTID', '=', 'scctcust.CUSTID');
+                    })
+                    ->leftJoinSub($currentAgg, 'current', function ($join) {
+                        $join->on('current.CUSTID', '=', 'scctcust.CUSTID');
+                    })
+                    ->where(function ($query) use ($filterQuery) {
+                        if ($filterQuery) {
+                            $filterQuery($query);
                         }
+                    });
+
+                if (!blank($searchValue)) {
+                    $query->where(function ($q) use ($whereAny, $searchValue) {
+                        $sanitizeSearch = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $searchValue);
+                        foreach ($whereAny as $column) {
+                            $q->orWhere($column, 'like', '%' . $sanitizeSearch . '%');
+                        }
+                    });
+                }
+
+                $totalRecords = scctcust::select("count(*) as allcount")
+                    ->where("scctcust.STCUST", 1)
+                    ->count();
+
+                Log::info('totalRecords: ' . $totalRecords);
+
+                $totalRecordswithFilter = (clone $query)->select("count(*) as allcount")->count();
+
+                Log::info('totalRecordswithFilter: ' . $totalRecordswithFilter);
+
+                $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
+                $records = (clone $query)
+                    ->select($select)
+                    ->addSelect([
+                        DB::raw('COALESCE(opening.opening_kredit, 0) AS OPENING_KREDIT'),
+                        DB::raw('COALESCE(opening.opening_debet, 0) AS OPENING_DEBET'),
+                        DB::raw('COALESCE(current.current_kredit, 0) AS KREDIT_BULAN'),
+                        DB::raw('COALESCE(current.current_debet, 0) AS DEBET_BULAN'),
+                    ])
+                    ->orderBy($columnName, $columnSortOrder)
+                    ->skip($start)
+                    ->take($rowperpage)
+                    ->get();
+
+                Log::info('records count: ' . $records->count());
+
+                $records = $records->map(function ($item, $index) {
+                    $item->NOVA = match (strtolower($item->CODE02)) {
+                        "mts" => scctcust::showVAMTS($item->nocust),
+                        "ma" => scctcust::showVAMA($item->nocust),
+                        default => "",
                     };
-                }
-            }
 
-            $whereAny = ["scctcust.nmcust", "scctcust.nocust"];
+                    $item['opening_balance'] = $item['OPENING_KREDIT'] - $item['OPENING_DEBET'];
+                    $item['current_net'] = $item['KREDIT_BULAN'] - $item['DEBET_BULAN'];
+                    $item['closing_balance'] = $item['opening_balance'] + $item['current_net'];
 
-            $select = array_unique(
-                array_merge($whereAny, [
-                    "scctcust.CODE02",
-                    "scctcust.DESC02",
-                    "scctcust.CUSTID",
-                ]),
-            );
+                    $item->item_id = $item["CUSTID"];
 
-            $periode = $request->filter["periode"];
-            $monthStart = Carbon::createFromFormat('Ym', $periode)->startOfMonth();
-            $monthEnd = Carbon::createFromFormat('Ym', $periode)->endOfMonth();
+                    Log::info('item: ' . $item->nocust . ' - opening: ' . $item['opening_balance'] . ' - current: ' . $item['current_net'] . ' - closing: ' . $item['closing_balance']);
 
-            $openingAgg = sccttran::query()
-                ->select([
-                    'CUSTID',
-                    DB::raw('COALESCE(SUM(KREDIT), 0) AS opening_kredit'),
-                    DB::raw('COALESCE(SUM(DEBET), 0) AS opening_debet'),
-                ])
-                ->where('TRXDATE', '<', $monthStart)
-                ->where('FLAG', 'VA')
-                ->groupBy('CUSTID');
-
-            $currentAgg = sccttran::query()
-                ->select([
-                    'CUSTID',
-                    DB::raw('COALESCE(SUM(KREDIT), 0) AS current_kredit'),
-                    DB::raw('COALESCE(SUM(DEBET), 0) AS current_debet'),
-                ])
-                ->whereBetween('TRXDATE', [$monthStart, $monthEnd])
-                ->where('FLAG', 'VA')
-                ->groupBy('CUSTID');
-
-            $query = scctcust::query()
-                ->where("scctcust.STCUST", 1)
-                ->leftJoinSub($openingAgg, 'opening', function ($join) {
-                    $join->on('opening.CUSTID', '=', 'scctcust.CUSTID');
-                })
-                ->leftJoinSub($currentAgg, 'current', function ($join) {
-                    $join->on('current.CUSTID', '=', 'scctcust.CUSTID');
-                })
-                ->where(function ($query) use ($filterQuery) {
-                    if ($filterQuery) {
-                        $filterQuery($query);
-                    }
+                    return $item;
                 });
 
-            if (!blank($searchValue)) {
-                $query->where(function ($q) use ($whereAny, $searchValue) {
-                    $sanitizeSearch = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $searchValue);
-                    foreach ($whereAny as $column) {
-                        $q->orWhere($column, 'like', '%' . $sanitizeSearch . '%');
-                    }
-                });
+                $records = $records->toArray();
+            } else {
+                Log::warning('Periode tidak valid di getData: ' . $periode);
             }
 
-            $totalRecords = scctcust::select("count(*) as allcount")
-                ->where("scctcust.STCUST", 1)
-                ->count();
+            $response = [
+                "draw" => intval($draw),
+                "recordsTotal" => $totalRecords ?? 0,
+                "recordsFiltered" => $totalRecordswithFilter ?? 0,
+                "data" => $records ?? [],
+            ];
 
-            $totalRecordswithFilter = (clone $query)->select("count(*) as allcount")->count();
+            Log::info('response: ' . json_encode($response));
+            Log::info('=== getData END ===');
 
-            $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
-            $records = (clone $query)
-                ->select($select)
-                ->addSelect([
-                    DB::raw('COALESCE(opening.opening_kredit, 0) AS OPENING_KREDIT'),
-                    DB::raw('COALESCE(opening.opening_debet, 0) AS OPENING_DEBET'),
-                    DB::raw('COALESCE(current.current_kredit, 0) AS KREDIT_BULAN'),
-                    DB::raw('COALESCE(current.current_debet, 0) AS DEBET_BULAN'),
-                ])
-                ->orderBy($columnName, $columnSortOrder)
-                ->skip($start)
-                ->take($rowperpage)
-                ->get();
-
-            $records = $records->map(function ($item, $index) {
-                $item->NOVA = match (strtolower($item->CODE02)) {
-                    "mts" => scctcust::showVAMTS($item->nocust),
-                    "ma" => scctcust::showVAMA($item->nocust),
-                    default => "",
-                };
-
-                $item['opening_balance'] = $item['OPENING_KREDIT'] - $item['OPENING_DEBET'];
-                $item['current_net'] = $item['KREDIT_BULAN'] - $item['DEBET_BULAN'];
-                $item['closing_balance'] = $item['opening_balance'] + $item['current_net'];
-
-                $item->item_id = $item["CUSTID"];
-
-                return $item;
-            });
-
-            $records = $records->toArray();
+            return response()->json($response);
+        } catch (\Throwable $e) {
+            Log::error('Error in getData: ' . $e->getMessage());
+            Log::error('Trace: ' . $e->getTraceAsString());
+            return response()->json([
+                "draw" => intval($request->get("draw", 1)),
+                "recordsTotal" => 0,
+                "recordsFiltered" => 0,
+                "data" => [],
+                "error" => $e->getMessage()
+            ], 500);
         }
-
-        $response = [
-            "draw" => intval($draw),
-            "recordsTotal" => $totalRecords ?? 0,
-            "recordsFiltered" => $totalRecordswithFilter ?? 0,
-            "data" => $records ?? [],
-        ];
-        return response()->json($response);
     }
 }
