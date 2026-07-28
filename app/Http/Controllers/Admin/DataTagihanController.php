@@ -81,6 +81,14 @@ class DataTagihanController extends Controller
                 "exportable" => true,
             ],
             [
+                "data" => "FTGLTagihan",
+                "name" => "Tgl Buat Tagihan",
+                "searchable" => true,
+                "orderable" => true,
+                "columnType" => "date",
+                "exportable" => true,
+            ],
+            [
                 "data" => "BILLAM",
                 "name" => "Tagihan",
                 "searchable" => true,
@@ -100,7 +108,7 @@ class DataTagihanController extends Controller
             ],
             [
                 "data" => "FUrutan",
-                "name" => "urutan",
+                "name" => "Urutan",
                 "orderable" => true,
                 "exportable" => true,
             ],
@@ -144,8 +152,6 @@ class DataTagihanController extends Controller
     public function cetak(Request $request)
     {
         ini_set("max_execution_time", 300);
-        //        $pdf = Pdf::loadView('cetak.data-penerimaan')->setPaper('a4', 'landscape');
-        //        return $pdf->download('rekap-tagihan.pdf');
 
         try {
             $filters = [];
@@ -187,12 +193,12 @@ class DataTagihanController extends Controller
                                 )->endOfDay();
                                 if ($startDate && $endDate) {
                                     $colName &&
-                                    ($filters[] = [
-                                        $colName,
-                                        $startDate,
-                                        $endDate,
-                                        "whereBetween",
-                                    ]);
+                                        ($filters[] = [
+                                            $colName,
+                                            $startDate,
+                                            $endDate,
+                                            "whereBetween",
+                                        ]);
                                 }
                             }
                         } elseif ($key == "siswa") {
@@ -247,6 +253,7 @@ class DataTagihanController extends Controller
                                 "scctcust.nocust",
                                 "scctbill.AA",
                                 "scctbill.BILLNM",
+                                "scctbill.FTGLTagihan",
                                 "scctbill.BILLAM",
                                 "scctbill.PAIDST",
                                 "scctbill.PAIDDT",
@@ -274,12 +281,6 @@ class DataTagihanController extends Controller
                         return $item;
                     });
             }
-
-            //            dd($posts[0]['tagihan']);
-            //            return  view('pdf.data_penerimaan.rekap_penerimaan', ['posts' => $posts]);
-
-            //            $view = view('cetak.data-penerimaan', compact('posts'))->render();
-            //            return response()->json(['html' => $view]);
 
             if ($posts) {
                 $pdf = Pdf::loadView("cetak.data-tagihan", [
@@ -351,7 +352,7 @@ class DataTagihanController extends Controller
                             });
                             if (count($array) > 0) {
                                 $colName &&
-                                ($filters[] = [$colName, "in", $array]);
+                                    ($filters[] = [$colName, "in", $array]);
                             }
                             $post = $array;
                         } elseif ($key == "siswa") {
@@ -394,7 +395,6 @@ class DataTagihanController extends Controller
                             $query->whereIn("tagihan", $post);
                         }
                     })
-                    //                    ->orderBy('urut', 'asc')
                     ->orderByRaw(
                         "
                         CASE
@@ -420,26 +420,26 @@ class DataTagihanController extends Controller
                                     case 3:
                                         $filter[1] === "in"
                                             ? $query->whereIn(
-                                            $filter[0],
-                                            $filter[2],
-                                        )
+                                                $filter[0],
+                                                $filter[2],
+                                            )
                                             : $query->where(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                                $filter[0],
+                                                $filter[1],
+                                                $filter[2],
+                                            );
                                         break;
                                     case 4:
                                         $filter[3] === "whereBetween"
                                             ? $query->whereBetween($filter[0], [
-                                            $filter[1],
-                                            $filter[2],
-                                        ])
+                                                $filter[1],
+                                                $filter[2],
+                                            ])
                                             : $query->{$filter[3]}(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                                $filter[0],
+                                                $filter[1],
+                                                $filter[2],
+                                            );
                                         break;
                                 }
                             }
@@ -451,27 +451,27 @@ class DataTagihanController extends Controller
                                 case 3:
                                     $filter[1] === "in"
                                         ? $query->whereIn(
-                                        $filter[0],
-                                        $filter[2],
-                                    )
+                                            $filter[0],
+                                            $filter[2],
+                                        )
                                         : $query->where(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                     break;
 
                                 case 4:
                                     $filter[3] === "whereBetween"
                                         ? $query->whereBetween($filter[0], [
-                                        $filter[1],
-                                        $filter[2],
-                                    ])
+                                            $filter[1],
+                                            $filter[2],
+                                        ])
                                         : $query->{$filter[3]}(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                     break;
                             }
                         }
@@ -524,7 +524,6 @@ class DataTagihanController extends Controller
                     return in_array($value, $zeroColumns, true);
                 });
 
-                //                $customPaper = [0, 0, 1684, 842];
                 $customPaper = [0, 0, 935.43, 595.28];
 
                 $pdf = Pdf::loadView("cetak.rekap-tagihan", [
@@ -537,16 +536,14 @@ class DataTagihanController extends Controller
                     ->setOptions([
                         "isHtml5ParserEnabled" => true,
                         "isPhpEnabled" => true,
-                        //                        'dpi' => 96,
                     ])
-                    //                    ->setPaper('a4', 'landscape');
                     ->setPaper($customPaper);
                 return $pdf->download("rekap-tagihan.pdf");
             } catch (\Exception $e) {
                 return response()->json(
                     [
                         "message" =>
-                            "Tidak dapat mencetak rekap tagihan!<br> *Silahkan hubungi administrator",
+                        "Tidak dapat mencetak rekap tagihan!<br> *Silahkan hubungi administrator",
                         "error" => $e,
                     ],
                     422,
@@ -556,20 +553,11 @@ class DataTagihanController extends Controller
             return response()->json(
                 [
                     "message" =>
-                        "Tidak dapat mencetak rekap tagihan!<br> *Kelas Harus Diisi, silahkan pilih salah satu kelas",
+                    "Tidak dapat mencetak rekap tagihan!<br> *Kelas Harus Diisi, silahkan pilih salah satu kelas",
                 ],
                 422,
             );
         }
-        //        $sqlWithPlaceholders = $records->toSql();
-        //
-        //        $bindings = $records->getBindings();
-        //
-        //        $fullSql = Str::replaceArray('?', array_map(function ($b) {
-        //            return is_numeric($b) ? $b : "'" . addslashes($b) . "'";
-        //        }, $bindings), $sqlWithPlaceholders);
-
-        //        dd($records);
     }
 
     public function cetakKartuSiswa(Request $request)
@@ -695,12 +683,12 @@ class DataTagihanController extends Controller
                             )->endOfDay();
                             if ($startDate && $endDate) {
                                 $colName &&
-                                ($filters[] = [
-                                    $colName,
-                                    $startDate,
-                                    $endDate,
-                                    "whereBetween",
-                                ]);
+                                    ($filters[] = [
+                                        $colName,
+                                        $startDate,
+                                        $endDate,
+                                        "whereBetween",
+                                    ]);
                             }
                         }
                     } elseif ($key == "kelas") {
@@ -737,23 +725,23 @@ class DataTagihanController extends Controller
                                 $filter[1] === "in"
                                     ? $query->whereIn($filter[0], $filter[2])
                                     : $query->where(
-                                    $filter[0],
-                                    $filter[1],
-                                    $filter[2],
-                                );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                 break;
 
                             case 4:
                                 $filter[3] === "whereBetween"
                                     ? $query->whereBetween($filter[0], [
-                                    $filter[1],
-                                    $filter[2],
-                                ])
+                                        $filter[1],
+                                        $filter[2],
+                                    ])
                                     : $query->{$filter[3]}(
-                                    $filter[0],
-                                    $filter[1],
-                                    $filter[2],
-                                );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                 break;
                         }
                     }
@@ -767,13 +755,13 @@ class DataTagihanController extends Controller
             array_merge($whereAny, [
                 "scctbill.AA",
                 "scctbill.BILLNM",
+                "scctbill.FTGLTagihan",
                 "scctbill.BILLAM",
                 "scctbill.PAIDST",
                 "scctbill.PAIDDT",
                 "scctbill.BTA",
                 "scctbill.FUrutan",
                 "scctbill.FIDBANK",
-                "scctbill.FUrutan",
                 "scctbill.CUSTID",
                 "scctcust.CODE02",
                 "scctcust.DESC02",
@@ -819,7 +807,6 @@ class DataTagihanController extends Controller
                     END
                 ");
 
-        // Total records
         $totalRecords = scctbill::where("scctbill.PAIDST", 0)
             ->where("scctbill.FSTSBolehBayar", 1)
             ->count();
@@ -904,7 +891,7 @@ class DataTagihanController extends Controller
                             });
                             if (count($array) > 0) {
                                 $colName &&
-                                ($filters[] = [$colName, "in", $array]);
+                                    ($filters[] = [$colName, "in", $array]);
                             }
                             $post = $array;
                         } elseif ($key == "siswa") {
@@ -947,7 +934,6 @@ class DataTagihanController extends Controller
                             $query->whereIn("tagihan", $post);
                         }
                     })
-                    //                    ->orderBy('urut', 'asc')
                     ->orderByRaw(
                         "
                         CASE
@@ -973,26 +959,26 @@ class DataTagihanController extends Controller
                                     case 3:
                                         $filter[1] === "in"
                                             ? $query->whereIn(
-                                            $filter[0],
-                                            $filter[2],
-                                        )
+                                                $filter[0],
+                                                $filter[2],
+                                            )
                                             : $query->where(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                                $filter[0],
+                                                $filter[1],
+                                                $filter[2],
+                                            );
                                         break;
                                     case 4:
                                         $filter[3] === "whereBetween"
                                             ? $query->whereBetween($filter[0], [
-                                            $filter[1],
-                                            $filter[2],
-                                        ])
+                                                $filter[1],
+                                                $filter[2],
+                                            ])
                                             : $query->{$filter[3]}(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                                $filter[0],
+                                                $filter[1],
+                                                $filter[2],
+                                            );
                                         break;
                                 }
                             }
@@ -1004,27 +990,27 @@ class DataTagihanController extends Controller
                                 case 3:
                                     $filter[1] === "in"
                                         ? $query->whereIn(
-                                        $filter[0],
-                                        $filter[2],
-                                    )
+                                            $filter[0],
+                                            $filter[2],
+                                        )
                                         : $query->where(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                     break;
 
                                 case 4:
                                     $filter[3] === "whereBetween"
                                         ? $query->whereBetween($filter[0], [
-                                        $filter[1],
-                                        $filter[2],
-                                    ])
+                                            $filter[1],
+                                            $filter[2],
+                                        ])
                                         : $query->{$filter[3]}(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                     break;
                             }
                         }
@@ -1071,13 +1057,12 @@ class DataTagihanController extends Controller
 
                 $mstTagihan = $mstTagihan->pluck("tagihan");
 
-                $zeroColumns = $zeroColumns->toArray(); // <-- always convert
+                $zeroColumns = $zeroColumns->toArray();
 
                 $filteredMstTagihan = $mstTagihan->reject(function ($value) use ($zeroColumns) {
                     return in_array($value, $zeroColumns, true);
                 });
 
-                //                $customPaper = [0, 0, 1684, 842];
                 $customPaper = [0, 0, 935.43, 595.28];
 
                 $data = [
@@ -1087,12 +1072,12 @@ class DataTagihanController extends Controller
                     "tanggalMulai" => $tanggalMulai,
                     "tanggalSelesai" => $tanggalSelesai,
                 ];
-                 return response()->json($data, 200);
+                return response()->json($data, 200);
             } catch (\Exception $e) {
                 return response()->json(
                     [
                         "message" =>
-                            "Tidak dapat mencetak rekap tagihan!<br> *Silahkan hubungi administrator",
+                        "Tidak dapat mencetak rekap tagihan!<br> *Silahkan hubungi administrator",
                         "error" => $e,
                     ],
                     422,
@@ -1102,7 +1087,7 @@ class DataTagihanController extends Controller
             return response()->json(
                 [
                     "message" =>
-                        "Tidak dapat mencetak rekap tagihan!<br> *Kelas Harus Diisi, silahkan pilih salah satu kelas",
+                    "Tidak dapat mencetak rekap tagihan!<br> *Kelas Harus Diisi, silahkan pilih salah satu kelas",
                 ],
                 422,
             );
