@@ -244,7 +244,6 @@
             if (select2.length) {
                 select2.each(function () {
                     let $this = $(this);
-                    // select2Focus($this);
                     $this.wrap('<div class="position-relative"></div>').select2({
                         placeholder: 'Select value',
                         dropdownParent: $this.parent()
@@ -473,7 +472,6 @@
             }
 
             $(document).on('click', '.btn-print-rekap', async function (e) {
-                // warningAlert("Sedang dalam perbaikan");
                 loadingAlert(`Membuat Rekap ... <br> Proses ini membutuhkan waktu beberapa saat<br><hr>
                     <p><span class="badge badge-dot bg-danger me-1"></span> Pastikan browser anda tidak memblokir <i>POP-UP</i>! </p>
                 `);
