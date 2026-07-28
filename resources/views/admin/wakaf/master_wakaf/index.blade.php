@@ -78,9 +78,9 @@
         <li class="breadcrumb-item">
             <a href="{{ route('admin.index') }}" class="text-hover-primary">Beranda</a>
         </li>
-        <li class="breadcrumb-item">{{ $title ?? 'Infaq' }}</li>
-        <li class="breadcrumb-item">{{ $mainTitle ?? 'Infaq' }}</li>
-        <li class="breadcrumb-item active">{{ $dataTitle ?? 'Master Infaq' }}</li>
+        <li class="breadcrumb-item">Infaq</li>
+        <li class="breadcrumb-item">Infaq</li>
+        <li class="breadcrumb-item active">Master Infaq</li>
     </ul>
 
     <div class="card">
@@ -94,7 +94,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label" for="filter[nama]">Nama Infaq</label>
-                            <input type="text" class="form-control" id="filter[nama]" name="filter[nama]" placeholder="Cari nama sumbangan" value="{{ request('filter.nama', '') }}">
+                            <input type="text" class="form-control" id="filter[nama]" name="filter[nama]" placeholder="Cari nama Infaq" value="{{ request('filter.nama', '') }}">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label" for="filter[status]">Status</label>

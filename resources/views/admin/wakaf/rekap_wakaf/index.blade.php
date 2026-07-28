@@ -20,9 +20,9 @@
         <li class="breadcrumb-item">
             <a href="{{ route('admin.index') }}" class="text-hover-primary">Beranda</a>
         </li>
-        <li class="breadcrumb-item">{{ $title ?? 'Infaq' }}</li>
-        <li class="breadcrumb-item">{{ $mainTitle ?? 'Infaq' }}</li>
-        <li class="breadcrumb-item active">{{ $dataTitle ?? 'Rekap Infaq' }}</li>
+        <li class="breadcrumb-item">Infaq</li>
+        <li class="breadcrumb-item">Infaq</li>
+        <li class="breadcrumb-item active">Master Infaq</li>
     </ul>
 
     <div class="card">
