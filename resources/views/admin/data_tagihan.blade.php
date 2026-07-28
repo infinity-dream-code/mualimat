@@ -81,7 +81,7 @@
                             <div class="mb-5">
                                 <label class="form-label" for="filter[tanggal-pembuatan]">Tanggal Pembuatan</label>
                                 <input type="text" class="form-control form-control"
-                                       placeholder="Pilih Tanggal" id="filter[tanggal-pembuatan]"
+                                       placeholder="Pilih Rentang Tanggal" id="filter[tanggal-pembuatan]"
                                        name="filter[tanggal-pembuatan]">
                             </div>
                             <div class="col mb-5">
