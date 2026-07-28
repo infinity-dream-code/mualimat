@@ -39,7 +39,6 @@ class DataPenerimaanController extends Controller
                 "columnType" => "row",
                 "exportable" => true,
             ],
-            //            ['data' => 'item_id', 'name' => 'ITEM ID', 'visible' => false],
             [
                 "data" => "nocust",
                 "name" => "NIS",
@@ -71,8 +70,22 @@ class DataPenerimaanController extends Controller
                 "exportable" => true,
             ],
             [
+                "data" => "DESC03",
+                "name" => "Kelompok",
+                "searchable" => true,
+                "orderable" => true,
+                "exportable" => true,
+            ],
+            [
                 "data" => "BILLNM",
                 "name" => "Nama Tagihan",
+                "searchable" => true,
+                "orderable" => true,
+                "exportable" => true,
+            ],
+            [
+                "data" => "FUrutan",
+                "name" => "Urutan Tagihan",
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
@@ -211,8 +224,8 @@ class DataPenerimaanController extends Controller
         $search_arr = $request->get("search", []);
         $searchValue = $search_arr["value"] ?? "";
 
-        $columnName = "BILLAC";
-        $columnSortOrder = "DESC";
+        $columnName = "scctcust.nmcust";
+        $columnSortOrder = "asc";
 
         if (!empty($order_arr)) {
             $columnIndex = $columnIndex_arr[0]["column"] ?? null;
@@ -373,6 +386,7 @@ class DataPenerimaanController extends Controller
                 "scctbill.FUrutan",
                 "scctcust.CODE02",
                 "scctcust.DESC02",
+                "scctcust.DESC03",
             ]),
         );
 
@@ -420,6 +434,7 @@ class DataPenerimaanController extends Controller
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
         $records = (clone $query)
             ->orderBy($columnName, $columnSortOrder)
+            ->orderBy("scctbill.FUrutan", "desc")
             ->select($select)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
             ->skip($start)
@@ -609,8 +624,6 @@ class DataPenerimaanController extends Controller
                         $query->whereIn("tagihan", $post);
                     }
                 })
-                //                    ->orderByRaw('kode IS NULL')
-                //                    ->orderBy('kode', 'asc')
                 ->orderByRaw(
                     "
                         CASE
@@ -703,7 +716,6 @@ class DataPenerimaanController extends Controller
                 );
             }
 
-            //            $records = $records->get();
             $records = DB::table(DB::raw("({$records->toSql()}) as sub"))
                 ->mergeBindings($records)
                 ->where(function ($q) use ($mstTagihan) {
@@ -755,9 +767,7 @@ class DataPenerimaanController extends Controller
                 ->setOptions([
                     "isHtml5ParserEnabled" => true,
                     "isPhpEnabled" => true,
-                    //                        'dpi' => 96,
                 ])
-                //                    ->setPaper('a4', 'landscape');
                 ->setPaper($customPaper);
 
             return $pdf->download("rekap-penerimaan.pdf");
@@ -771,15 +781,6 @@ class DataPenerimaanController extends Controller
                 422,
             );
         }
-        //        $sqlWithPlaceholders = $records->toSql();
-        //
-        //        $bindings = $records->getBindings();
-        //
-        //        $fullSql = Str::replaceArray('?', array_map(function ($b) {
-        //            return is_numeric($b) ? $b : "'" . addslashes($b) . "'";
-        //        }, $bindings), $sqlWithPlaceholders);
-
-        //        dd($records);
     }
 
     public function getDataRekap(Request $request)
@@ -1014,7 +1015,6 @@ class DataPenerimaanController extends Controller
                         ),
                     );
                 }
-
 
                 $records = $records->get();
 
