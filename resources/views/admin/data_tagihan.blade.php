@@ -79,10 +79,10 @@
                                 </select>
                             </div>
                             <div class="mb-5">
-                                <label class="form-label" for="dari-tanggal">Periode</label>
+                                <label class="form-label" for="filter[tanggal-pembuatan]">Tanggal Pembuatan</label>
                                 <input type="text" class="form-control form-control"
-                                       placeholder="periode" id="filter[periode]"
-                                       name="filter[periode]">
+                                       placeholder="Pilih Tanggal" id="filter[tanggal-pembuatan]"
+                                       name="filter[tanggal-pembuatan]">
                             </div>
                             <div class="col mb-5">
                                 <label class="form-label" for="post">
@@ -178,10 +178,6 @@
                                 <span class="ri-file-text-line me-2"></span>
                                 Cetak Rekap
                             </button>
-                            {{--                            <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">--}}
-                            {{--                                <span class="ri-profile-line me-2"></span>--}}
-                            {{--                                Cetak Kartu Siswa--}}
-                            {{--                            </button>--}}
                             <button type="reset" class="btn btn-secondary" disabled>
                                 <span class="ri-reset-left-line me-2"></span>
                                 Reset
@@ -234,7 +230,6 @@
             fixedHeader: false,
             pageLength: 10,
             lengthMenu: [10, 25, 50, 75, 100],
-            // select: true,
             buttons: ['copy', 'excel', 'pdf'],
         };
 
@@ -262,18 +257,26 @@
                 }
             }
 
-            const periode = $('input[name="filter[periode]"]');
-            periode.datepicker({
-                format: "yyyymm",
-                startView: "months",
-                minViewMode: "months",
-                autoclose: true
+            const tanggalPembuatan = $('input[name="filter[tanggal-pembuatan]"]');
+            tanggalPembuatan.daterangepicker({
+                autoUpdateInput: false,
+                locale: {
+                    format: 'DD-MM-YYYY',
+                    cancelLabel: 'Clear'
+                }
+            });
+
+            tanggalPembuatan.on('apply.daterangepicker', function(ev, picker) {
+                $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
+            });
+
+            tanggalPembuatan.on('cancel.daterangepicker', function(ev, picker) {
+                $(this).val('');
             });
 
             if (select2.length) {
                 select2.each(function () {
                     let $this = $(this);
-                    // select2Focus($this);
                     $this.wrap('<div class="position-relative"></div>').select2({
                         placeholder: 'Select value',
                         dropdownParent: $this.parent()
@@ -341,18 +344,8 @@
                         row[tagihan[key]] = Number(s[tagihan[key]] ?? 0);
                         total += Number(s[tagihan[key]] ?? 0);
                     });
-                    // row['TOTAL'] = Number(total);
                     return row;
                 });
-            }
-
-            function parseDDMMYYYY(str) {
-                if (!str) return null;
-
-                const [dd, mm, yyyy] = str.split("-").map(Number);
-                if (!dd || !mm || !yyyy) return null;
-
-                return new Date(yyyy, mm, dd);
             }
 
             async function exportExcel(groupedData, params, tagihans = []) {
@@ -521,7 +514,6 @@
                             row.getCell(totalColIndex).numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
                             row.getCell(totalColIndex).font = {bold: true};
                             row.getCell(totalColIndex).border = fullBorder();
-                            // ws.getColumn(totalColIndex).width = Math.max(12, headerText.length + 4);
                         }
                     }
 
@@ -637,7 +629,5 @@
                 }
             });
         });
-
-
     </script>
 @endsection
