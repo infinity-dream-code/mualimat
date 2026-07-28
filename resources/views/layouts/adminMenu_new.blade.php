@@ -202,6 +202,7 @@
             'admin/rekap-penerimaan-harian',
             'admin/rekap-cek-pelunasan',
             'admin/rekap-saldo',
+            'admin/rekap-saldo-saku',
             'admin/cek-pelunasan',
             'admin/potongan-tagihan*',
         ]) ? 'active open' : '' }}">
