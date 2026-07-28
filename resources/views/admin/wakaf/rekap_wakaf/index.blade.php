@@ -20,9 +20,9 @@
         <li class="breadcrumb-item">
             <a href="{{ route('admin.index') }}" class="text-hover-primary">Beranda</a>
         </li>
-        <li class="breadcrumb-item">{{ $title ?? 'Wakaf' }}</li>
-        <li class="breadcrumb-item">{{ $mainTitle ?? 'Wakaf' }}</li>
-        <li class="breadcrumb-item active">{{ $dataTitle ?? 'Rekap Wakaf' }}</li>
+        <li class="breadcrumb-item">{{ $title ?? 'Infaq' }}</li>
+        <li class="breadcrumb-item">{{ $mainTitle ?? 'Infaq' }}</li>
+        <li class="breadcrumb-item active">{{ $dataTitle ?? 'Rekap Infaq' }}</li>
     </ul>
 
     <div class="card">
@@ -35,7 +35,7 @@
                     <h5>Filter</h5>
                     <div class="row">
                         <div class="col-lg-6 mb-3">
-                            <label class="form-label" for="filter[wakaf_id]">Nama Wakaf</label>
+                            <label class="form-label" for="filter[wakaf_id]">Nama Infaq</label>
                             <select class="form-select" id="filter[wakaf_id]" name="filter[wakaf_id]"
                                     data-control="select2" data-placeholder="Pilih nama wakaf">
                                 <option value="all" @selected(request('filter.wakaf_id', 'all') === 'all')>Semua</option>
@@ -47,12 +47,12 @@
                             </select>
                         </div>
                         <div class="col-lg-6 mb-3">
-                            <label class="form-label" for="filter[nama]">Cari Nama Wakaf</label>
+                            <label class="form-label" for="filter[nama]">Cari Nama Infaq</label>
                             <input type="text" class="form-control" id="filter[nama]" name="filter[nama]"
-                                   placeholder="Ketik nama wakaf" value="{{ request('filter.nama', '') }}">
+                                   placeholder="Ketik nama Infaq" value="{{ request('filter.nama', '') }}">
                         </div>
                         <div class="col-lg-6 mb-3">
-                            <label class="form-label" for="filter[status]">Status Wakaf</label>
+                            <label class="form-label" for="filter[status]">Status Infaq</label>
                             <select class="form-select" id="filter[status]" name="filter[status]">
                                 @php($filterStatus = (string) request('filter.status', 'all'))
                                 <option value="all" @selected($filterStatus === 'all')>Semua</option>
@@ -129,7 +129,7 @@
                 select2.each(function () {
                     const $this = $(this);
                     $this.wrap('<div class="position-relative"></div>').select2({
-                        placeholder: 'Pilih nama wakaf',
+                        placeholder: 'Pilih nama Infaq',
                         dropdownParent: $this.parent(),
                         minimumResultsForSearch: 0,
                         allowClear: true,

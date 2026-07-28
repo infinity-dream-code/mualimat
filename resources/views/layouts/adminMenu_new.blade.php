@@ -273,17 +273,17 @@
         <li class="menu-item {{ Request::is(['admin/wakaf*']) ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon ri ri-hand-heart-line"></i>
-                <div data-i18n="Wakaf">Wakaf</div>
+                <div data-i18n="Wakaf">Infaq</div>
             </a>
             <ul class="menu-sub">
                 <li class="menu-item {{ Request::is(['admin/wakaf/master-wakaf*']) ? 'active' : '' }}">
                     <a href="{{ route('admin.wakaf.master-wakaf.index') }}" class="menu-link">
-                        <div data-i18n="Master Wakaf">Master Wakaf</div>
+                        <div data-i18n="Master Wakaf">Master Infaq</div>
                     </a>
                 </li>
                 <li class="menu-item {{ Request::is(['admin/wakaf/rekap-wakaf*']) ? 'active' : '' }}">
                     <a href="{{ route('admin.wakaf.rekap-wakaf.index') }}" class="menu-link">
-                        <div data-i18n="Rekap Wakaf">Rekap Wakaf</div>
+                        <div data-i18n="Rekap Wakaf">Rekap Infaq</div>
                     </a>
                 </li>
             </ul>

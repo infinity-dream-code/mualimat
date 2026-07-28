@@ -78,9 +78,9 @@
         <li class="breadcrumb-item">
             <a href="{{ route('admin.index') }}" class="text-hover-primary">Beranda</a>
         </li>
-        <li class="breadcrumb-item">{{ $title ?? 'Wakaf' }}</li>
-        <li class="breadcrumb-item">{{ $mainTitle ?? 'Wakaf' }}</li>
-        <li class="breadcrumb-item active">{{ $dataTitle ?? 'Master Wakaf' }}</li>
+        <li class="breadcrumb-item">{{ $title ?? 'Infaq' }}</li>
+        <li class="breadcrumb-item">{{ $mainTitle ?? 'Infaq' }}</li>
+        <li class="breadcrumb-item active">{{ $dataTitle ?? 'Master Infaq' }}</li>
     </ul>
 
     <div class="card">
@@ -176,7 +176,7 @@
                     return;
                 }
 
-                loadingAlert('Mengubah status wakaf...');
+                loadingAlert('Mengubah status Infaq...');
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                 const url = '{{ route('admin.wakaf.master-wakaf.toggle-status', ':id') }}'.replace(':id', itemId);
 
