@@ -72,7 +72,7 @@
 
 @section('content')
     <h3 class="page-heading d-flex text-gray-900 fw-bold flex-column justify-content-center my-0">
-        {{($dataTitle??($mainTitle??($title??'')))}}
+        Master Infaq
     </h3>
     <ul class="breadcrumb breadcrumb-style2">
         <li class="breadcrumb-item">
