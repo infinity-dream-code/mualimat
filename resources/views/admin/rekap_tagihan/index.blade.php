@@ -311,33 +311,45 @@
                 }
             });
 
-            function generateTableRow(data, kelas) {
+            // Baris export dibuat flat per tagihan (sesuai struktur data dari controller),
+            // termasuk kolom Urutan Tagihan dan redaksi Tanggal Buat Tagihan.
+            function generateTableRow(data) {
                 return data.map(s => {
-                    let row = {
-                        "Kode": s.KodeAkun,
-                        "Nama Post": s.NamaAkun,
-                        "Nama Tagihan": s.bill_name,
+                    return {
+                        "Tahun Pelajaran": s.BTA ?? "",
+                        "NIS": s.nocust ?? "",
+                        "Nama": s.nmcust ?? "",
+                        "Nama Tagihan": s.BILLNM ?? "",
+                        "Urutan Tagihan": Number(s.FUrutan ?? 0),
+                        "Tagihan": Number(s.BILLAM ?? 0),
+                        "Tanggal Buat Tagihan": s.FTGLTagihan ? parseServerDate(s.FTGLTagihan) ?? s.FTGLTagihan : "",
                     };
-
-                    kelas.forEach((it, i) => {
-                        let id = it.id;
-                        row[it.jenjang] = Number(s[id]);
-                    });
-
-                    return row;
                 });
             }
 
-            function parseDDMMYYYY(str) {
+            // FTGLTagihan bertipe datetime di MySQL, jadi dari Laravel biasanya
+            // datang sebagai "YYYY-MM-DD HH:mm:ss" atau ISO "YYYY-MM-DDTHH:mm:ss...".
+            // Fallback ke dd-mm-yyyy tetap disediakan untuk jaga-jaga.
+            function parseServerDate(str) {
                 if (!str) return null;
+                str = String(str);
 
-                const [dd, mm, yyyy] = str.split("-").map(Number);
-                if (!dd || !mm || !yyyy) return null;
+                let iso = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                if (iso) {
+                    const [, yyyy, mm, dd] = iso;
+                    return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+                }
 
-                return new Date(yyyy, mm, dd);
+                let dmy = str.match(/^(\d{2})-(\d{2})-(\d{4})/);
+                if (dmy) {
+                    const [, dd, mm, yyyy] = dmy;
+                    return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+                }
+
+                return null;
             }
 
-            async function exportExcel(groupedData, params, kelas = []) {
+            async function exportExcel(groupedData, params) {
                 const rows = groupedData;
                 if (!rows.length) return;
 
@@ -395,7 +407,6 @@
                     const headerText = String(cell.value || "");
                     let width = Math.max(12, headerText.length + 4);
                     ws.getColumn(colNumber).width = width;
-                    // console.log(width);
                 });
 
                 rows.forEach(r => {
@@ -421,26 +432,24 @@
                 totalRow.getCell(1).value = "TOTAL";
                 totalRow.getCell(1).font = { bold: true };
                 totalRow.getCell(1).border =  fullBorder();
-                headerRow.eachCell((cell, colNumber) => {
-                    const headerText = String(cell.value || "").toLowerCase();
-                    const jenjangs = kelas.map(b => b.jenjang.toLowerCase());
 
-                    const shouldSum = jenjangs.some(jenjang =>
-                        headerText.includes(jenjang)
-                    );
+                const tagihanColIndex = header.indexOf("Tagihan") + 1;
+                if (tagihanColIndex > 0) {
+                    const colLetter = ws.getColumn(tagihanColIndex).letter;
 
-                    totalRow.getCell(colNumber).font = { bold: true };
-                    totalRow.getCell(colNumber).border = fullBorder();
-
-                    if (!shouldSum) return;
-
-                    const colLetter = ws.getColumn(colNumber).letter;
-
-                    totalRow.getCell(colNumber).value = {
+                    totalRow.getCell(tagihanColIndex).value = {
                         formula: `SUM(${colLetter}${dataStartRow}:${colLetter}${dataEndRow})`
                     };
+                    totalRow.getCell(tagihanColIndex).font = { bold: true };
+                    totalRow.getCell(tagihanColIndex).border = fullBorder();
+                    totalRow.getCell(tagihanColIndex).numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
+                }
 
-                    totalRow.getCell(colNumber).numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
+                header.forEach((h, i) => {
+                    const colNumber = i + 1;
+                    if (colNumber === tagihanColIndex) return;
+                    totalRow.getCell(colNumber).font = { bold: true };
+                    totalRow.getCell(colNumber).border = fullBorder();
                 });
 
                 const buffer = await wb.xlsx.writeBuffer();
@@ -522,12 +531,17 @@
                             throw new Error('Response JSON tidak valid');
                         }
 
-                        if (!result?.data || !result?.kelas) {
+                        if (!result?.data) {
                             throw new Error('Data respon tidak lengkap');
                         }
 
-                        const tableRow = generateTableRow(result.data, result.kelas);
-                        await exportExcel(tableRow, params, result.kelas);
+                        if (result.data.length === 0) {
+                            warningAlert(result.message || 'Data tagihan tidak ditemukan');
+                            return;
+                        }
+
+                        const tableRow = generateTableRow(result.data);
+                        await exportExcel(tableRow, params);
                         successAlert('Sukses, Rekap telah dicetak');
                     } catch (error) {
                         console.error(error);

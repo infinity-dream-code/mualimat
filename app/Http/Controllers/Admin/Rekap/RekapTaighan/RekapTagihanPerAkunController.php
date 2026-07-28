@@ -219,6 +219,8 @@ class RekapTagihanPerAkunController extends Controller
 
         $whereAny = ["scctcust.nmcust", "scctcust.nocust"];
 
+        // DB::raw() dipisah dari array_unique() karena array_unique mencoba
+        // meng-cast tiap elemen ke string, dan objek Expression tidak bisa di-cast.
         $select = array_unique(
             array_merge($whereAny, [
                 "scctbill.AA",
@@ -229,68 +231,97 @@ class RekapTagihanPerAkunController extends Controller
                 "scctbill.BTA",
                 "scctbill.CUSTID",
                 "scctbill.FIDBANK",
-                DB::raw("COALESCE(scctbill.FUrutan, 0) as FUrutan"),
                 "scctcust.CODE02",
                 "scctcust.DESC02",
             ]),
         );
+        $select[] = DB::raw("COALESCE(scctbill.FUrutan, 0) as FUrutan");
 
-        $query = scctbill::leftJoin(
-            "scctcust",
-            "scctcust.CUSTID",
-            "scctbill.CUSTID",
-        )
-            ->where("scctbill.PAIDST", 0)
-            ->where("scctbill.FSTSBolehBayar", 1)
-            ->where("scctcust.STCUST", 1)
-            ->whereAny($whereAny, "like", "%" . $searchValue . "%")
-            ->where(function ($query) use ($filterQuery) {
-                if ($filterQuery) {
-                    $filterQuery($query);
-                }
+        try {
+            $query = scctbill::leftJoin(
+                "scctcust",
+                "scctcust.CUSTID",
+                "scctbill.CUSTID",
+            )
+                ->where("scctbill.PAIDST", 0)
+                ->where("scctbill.FSTSBolehBayar", 1)
+                ->where("scctcust.STCUST", 1)
+                ->where(function ($query) use ($whereAny, $searchValue) {
+                    foreach ($whereAny as $col) {
+                        $query->orWhere($col, "like", "%" . $searchValue . "%");
+                    }
+                })
+                ->where(function ($query) use ($filterQuery) {
+                    if ($filterQuery) {
+                        $filterQuery($query);
+                    }
+                });
+
+            // Total records
+            $totalRecords = scctbill::select("count(*) as allcount")
+                ->where("PAIDST", 0)
+                ->where("scctbill.FSTSBolehBayar", 1)
+                ->count();
+
+            $totalRecordswithFilter = (clone $query)->count();
+
+            $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
+
+            // Urut berdasarkan nama customer, lalu urutan tagihan (FUrutan) ascending
+            $records = (clone $query)
+                ->reorder()
+                ->orderBy('scctcust.nmcust', 'asc')
+                ->orderBy('scctbill.FUrutan', 'asc')
+                ->select($select)
+                ->where(function ($query) use ($whereAny, $searchValue) {
+                    foreach ($whereAny as $col) {
+                        $query->orWhere($col, "like", "%" . $searchValue . "%");
+                    }
+                })
+                ->skip($start)
+                ->take($rowperpage)
+                ->get();
+
+            $records = $records->map(function ($item, $index) use ($request) {
+                $item->NOVA = match (strtolower($item->CODE02)) {
+                    "mts" => scctcust::showVAMTS($item->nocust),
+                    "ma" => scctcust::showVAMA($item->nocust),
+                    default => "",
+                };
+
+                $item->item_id = $item["AA"];
+
+                return $item;
             });
 
-        // Total records
-        $totalRecords = scctbill::select("count(*) as allcount")
-            ->where("PAIDST", 0)
-            ->where("scctbill.FSTSBolehBayar", 1)
-            ->count();
+            $records->toArray();
 
-        $totalRecordswithFilter = (clone $query)->count();
+            $response = [
+                "draw" => intval($draw),
+                "recordsTotal" => $totalRecords ?? 0,
+                "recordsFiltered" => $totalRecordswithFilter ?? 0,
+                "data" => $records ?? [],
+            ];
+            return response()->json($response);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("RekapTagihan getData error: " . $e->getMessage(), [
+                "file" => $e->getFile(),
+                "line" => $e->getLine(),
+            ]);
 
-        $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
-
-        $records = (clone $query)
-            ->reorder()
-            ->orderBy('scctcust.nmcust', 'asc')
-            ->orderBy('scctbill.FUrutan', 'asc')
-            ->select($select)
-            ->whereAny($whereAny, "like", "%" . $searchValue . "%")
-            ->skip($start)
-            ->take($rowperpage)
-            ->get();
-
-        $records = $records->map(function ($item, $index) use ($request) {
-            $item->NOVA = match (strtolower($item->CODE02)) {
-                "mts" => scctcust::showVAMTS($item->nocust),
-                "ma" => scctcust::showVAMA($item->nocust),
-                default => "",
-            };
-
-            $item->item_id = $item["AA"];
-
-            return $item;
-        });
-
-        $records->toArray();
-
-        $response = [
-            "draw" => intval($draw),
-            "recordsTotal" => $totalRecords ?? 0,
-            "recordsFiltered" => $totalRecordswithFilter ?? 0,
-            "data" => $records ?? [],
-        ];
-        return response()->json($response);
+            return response()->json(
+                [
+                    "draw" => intval($draw),
+                    "recordsTotal" => 0,
+                    "recordsFiltered" => 0,
+                    "data" => [],
+                    "message" => "Gagal memuat data rekap tagihan",
+                    "error" => $e->getMessage(),
+                    "error_file" => $e->getFile() . ":" . $e->getLine(),
+                ],
+                500,
+            );
+        }
     }
 
     public function getRekapDataTagihan(Request $request)
@@ -402,6 +433,8 @@ class RekapTagihanPerAkunController extends Controller
             }
         }
 
+        // DB::raw() dipisah dari array_unique() karena array_unique mencoba
+        // meng-cast tiap elemen ke string, dan objek Expression tidak bisa di-cast.
         $select = array_unique([
             "scctbill.AA",
             "scctbill.BILLNM",
@@ -411,13 +444,13 @@ class RekapTagihanPerAkunController extends Controller
             "scctbill.BTA",
             "scctbill.CUSTID",
             "scctbill.FIDBANK",
-            DB::raw("COALESCE(scctbill.FUrutan, 0) as FUrutan"),
             "scctcust.nmcust",
             "scctcust.nocust",
             "scctcust.CODE02",
             "scctcust.DESC02",
             "scctcust.DESC03",
         ]);
+        $select[] = DB::raw("COALESCE(scctbill.FUrutan, 0) as FUrutan");
 
         try {
             $records = scctbill::leftJoin(
@@ -482,6 +515,7 @@ class RekapTagihanPerAkunController extends Controller
                         }
                     }
                 })
+                // Urut berdasarkan nama customer, lalu urutan tagihan (FUrutan) ascending
                 ->orderBy('scctcust.nmcust', 'asc')
                 ->orderBy('scctbill.FUrutan', 'asc')
                 ->select($select)
@@ -490,11 +524,15 @@ class RekapTagihanPerAkunController extends Controller
             if (!$records || $records->isEmpty()) {
                 return response()->json([
                     "data" => [],
+                    "kelas" => $kelas,
                     "message" => "Data tagihan tidak ditemukan"
                 ], 200);
             }
 
-            return response()->json(["data" => $records], 200);
+            return response()->json([
+                "data" => $records,
+                "kelas" => $kelas,
+            ], 200);
         } catch (\Throwable $e) {
             return response()->json(
                 [
