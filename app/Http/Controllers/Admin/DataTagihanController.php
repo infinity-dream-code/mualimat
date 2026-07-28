@@ -81,6 +81,13 @@ class DataTagihanController extends Controller
                 "exportable" => true,
             ],
             [
+                "data" => "BILLAC",
+                "name" => "Periode",
+                "searchable" => true,
+                "orderable" => true,
+                "exportable" => true,
+            ],
+            [
                 "data" => "FTGLTagihan",
                 "name" => "Tgl Buat Tagihan",
                 "searchable" => true,
@@ -779,6 +786,7 @@ class DataTagihanController extends Controller
             array_merge($whereAny, [
                 "scctbill.AA",
                 "scctbill.BILLNM",
+                "scctbill.BILLAC",
                 "scctbill.FTGLTagihan",
                 "scctbill.BILLAM",
                 "scctbill.PAIDST",
