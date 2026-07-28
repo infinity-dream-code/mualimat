@@ -385,7 +385,7 @@ class DataPenerimaanController extends Controller
                 "scctbill.BTA",
                 "scctbill.CUSTID",
                 "scctbill.FIDBANK",
-                "scctbill.FUrutan",
+                DB::raw("COALESCE(scctbill.FUrutan, 0) as FUrutan"), // PERUBAHAN DI SINI
                 "scctcust.CODE02",
                 "scctcust.DESC02",
                 "scctcust.DESC03",
