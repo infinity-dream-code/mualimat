@@ -388,12 +388,15 @@ class RekapCekPelunasanController extends Controller
                 return response()->json(['error' => 'Siswa tidak ditemukan'], 422);
             }
 
-            // Urut berdasarkan urutan tagihan (FUrutan) ascending.
-            // COALESCE dipakai supaya baris dengan FUrutan kosong (NULL)
-            // tetap konsisten diperlakukan sebagai urutan 0, bukan acak.
+            // HARCODE ORDER BY - SAMA PERSIS KAYAK QUERY DI NAVICAT
             $tagihans = scctbill::where('CUSTID', $custid)
                 ->where('FSTSBolehBayar', 1)
-                ->orderByRaw('COALESCE(FUrutan, 0) asc')
+                ->orderByRaw("
+                CASE 
+                    WHEN FUrutan IS NULL THEN 999999 
+                    ELSE FUrutan 
+                END ASC
+            ")
                 ->get();
 
             if ($tagihans->isEmpty()) {
