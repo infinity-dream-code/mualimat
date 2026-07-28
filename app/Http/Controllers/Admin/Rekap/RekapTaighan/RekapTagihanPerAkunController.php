@@ -77,7 +77,7 @@ class RekapTagihanPerAkunController extends Controller
                 "exportable" => true,
             ],
             [
-                "data" => "FUrutan",  // TAMBAHKAN INI
+                "data" => "FUrutan",
                 "name" => "Urutan Tagihan",
                 "searchable" => true,
                 "orderable" => true,
@@ -102,7 +102,7 @@ class RekapTagihanPerAkunController extends Controller
                 "exportable" => true,
             ],
             [
-                "data" => "FTGLTagihan",  // UBAH DARI PAIDDT MENJADI FTGLTagihan
+                "data" => "FTGLTagihan",
                 "name" => "Tanggal Buat Tagihan",
                 "columnType" => "date",
                 "searchable" => true,
@@ -224,11 +224,11 @@ class RekapTagihanPerAkunController extends Controller
                 "scctbill.BILLNM",
                 "scctbill.BILLAM",
                 "scctbill.PAIDST",
-                "scctbill.FTGLTagihan",  // TAMBAHKAN INI
+                "scctbill.FTGLTagihan",
                 "scctbill.BTA",
                 "scctbill.CUSTID",
                 "scctbill.FIDBANK",
-                DB::raw("COALESCE(scctbill.FUrutan, 0) as FUrutan"),  // UBAH INI
+                DB::raw("COALESCE(scctbill.FUrutan, 0) as FUrutan"),
                 "scctcust.CODE02",
                 "scctcust.DESC02",
             ]),
@@ -240,6 +240,7 @@ class RekapTagihanPerAkunController extends Controller
             "scctbill.CUSTID",
         )
             ->where("scctbill.PAIDST", 0)
+            ->where("scctbill.FSTSBolehBayar", 1)
             ->where("scctcust.STCUST", 1)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
             ->where(function ($query) use ($filterQuery) {
@@ -251,17 +252,17 @@ class RekapTagihanPerAkunController extends Controller
         // Total records
         $totalRecords = scctbill::select("count(*) as allcount")
             ->where("PAIDST", 0)
+            ->where("scctbill.FSTSBolehBayar", 1)
             ->count();
 
         $totalRecordswithFilter = (clone $query)->count();
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
 
-        // PERUBAHAN ORDER - nmcust ASC, FUrutan ASC
         $records = (clone $query)
             ->reorder()
-            ->orderBy('scctcust.nmcust', 'asc')     // Nama ASC
-            ->orderBy('scctbill.FUrutan', 'asc')    // FUrutan ASC
+            ->orderBy('scctcust.nmcust', 'asc')
+            ->orderBy('scctbill.FUrutan', 'asc')
             ->select($select)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
             ->skip($start)
@@ -290,6 +291,7 @@ class RekapTagihanPerAkunController extends Controller
         ];
         return response()->json($response);
     }
+
     public function getRekapDataTagihan(Request $request)
     {
         $request->validate(
@@ -402,174 +404,96 @@ class RekapTagihanPerAkunController extends Controller
             }
         }
 
-        $whereAny = [];
-
         $select = array_unique([
-            // ...$whereAny,
-            // "scctbill.*",
-            "u_akun.KodeAkun",
-            "u_akun.NamaAkun",
+            "scctbill.AA",
+            "scctbill.BILLNM",
+            "scctbill.BILLAM",
+            "scctbill.PAIDST",
+            "scctbill.FTGLTagihan",
+            "scctbill.BTA",
+            "scctbill.CUSTID",
+            "scctbill.FIDBANK",
+            DB::raw("COALESCE(scctbill.FUrutan, 0) as FUrutan"),
+            "scctcust.nmcust",
+            "scctcust.nocust",
+            "scctcust.CODE02",
+            "scctcust.DESC02",
+            "scctcust.DESC03",
         ]);
 
         try {
-            // $mstTagihan = mst_tagihan::select(["tagihan"])
-            //     ->where(function ($query) use ($post) {
-            //         if ($post) {
-            //             $query->whereIn("tagihan", $post);
-            //         }
-            //     })
-            //     //                    ->orderByRaw('kode IS NULL')
-            //     //                    ->orderBy('kode', 'asc')
-            //     ->orderByRaw(
-            //         "
-            //             CASE
-            //                 WHEN kode BETWEEN '07' AND '12' THEN 0
-            //                 WHEN kode BETWEEN '01' AND '06' THEN 1
-            //                 ELSE 2
-            //             END,
-            //             kode ASC
-            //         ",
-            //     )
-            //     ->get();
-
-            $kelas = mst_kelas::get();
-
-            $records = DB::connection('DATA_MYSQL')->table("u_akun")
-                ->join("scctbill_detail", function ($join) {
-                    $join->on(
-                        "u_akun.KodeAkun",
-                        "=",
-                        "scctbill_detail.KodePost",
-                    );
-                })
-                ->leftJoin("scctbill", function ($join) use ($filter_scctbill) {
-                    $join
-                        ->on("scctbill_detail.CUSTID", "=", "scctbill.CUSTID")
-                        ->on("scctbill_detail.BILLCD", "=", "scctbill.BILLCD")
-                        ->where("scctbill.PAIDST", 0)
-                        ->where("scctbill.FSTSBolehBayar", 1)
-                        ->whereNotNull("scctbill.PAIDDT")
-                        ->where(function ($query) use ($filter_scctbill) {
-                            foreach ($filter_scctbill as $filter) {
-                                switch (\count($filter)) {
-                                    case 3:
-                                        $filter[1] === "in"
-                                            ? $query->whereIn(
-                                                $filter[0],
-                                                $filter[2],
-                                            )
-                                            : $query->where(
-                                                $filter[0],
-                                                $filter[1],
-                                                $filter[2],
-                                            );
-                                        break;
-                                    case 4:
-                                        $filter[3] === "whereBetween"
-                                            ? $query->whereBetween($filter[0], [
-                                                $filter[1],
-                                                $filter[2],
-                                            ])
-                                            : $query->{$filter[3]}(
-                                                $filter[0],
-                                                $filter[1],
-                                                $filter[2],
-                                            );
-                                        break;
-                                }
-                            }
-                        });
-                })
-                ->leftJoin("scctcust", function ($join) {
-                    $join->on("scctcust.CUSTID", "=", "scctbill_detail.CUSTID");
-                })
-                // ->where(function ($query) use ($filter_main) {
-                //     foreach ($filter_main as $filter) {
-                //         switch (count($filter)) {
-                //             case 3:
-                //                 $filter[1] === "in"
-                //                     ? $query->whereIn($filter[0], $filter[2])
-                //                     : $query->where(
-                //                         $filter[0],
-                //                         $filter[1],
-                //                         $filter[2],
-                //                     );
-                //                 break;
-
-                //             case 4:
-                //                 $filter[3] === "whereBetween"
-                //                     ? $query->whereBetween($filter[0], [
-                //                         $filter[1],
-                //                         $filter[2],
-                //                     ])
-                //                     : $query->{$filter[3]}(
-                //                         $filter[0],
-                //                         $filter[1],
-                //                         $filter[2],
-                //                     );
-                //                 break;
-                //         }
-                //     }
-                // })
+            $records = scctbill::leftJoin(
+                "scctcust",
+                "scctcust.CUSTID",
+                "scctbill.CUSTID",
+            )
+                ->where("scctbill.PAIDST", 0)
+                ->where("scctbill.FSTSBolehBayar", 1)
                 ->where("scctcust.STCUST", 1)
-                ->select($select)
-                ->orderBy("u_akun.KodeAkun", "asc")
-                // ->orderBy("scctbill.BILLNM", "asc")
-                ->groupBy("u_akun.KodeAkun");
-
-            $records->addSelect(DB::raw("MAX(scctbill.BILLNM) as bill_name"));
-            foreach ($kelas as $val) {
-                $id_kelas = $val["id"];
-                $jenjang = $val["jenjang"];
-                $records->addSelect(
-                    DB::raw(
-                        "SUM(CASE WHEN scctcust.CODE03 = '{$id_kelas}' THEN scctbill.BILLAM ELSE 0 END) AS '{$id_kelas}'",
-                    ),
-                );
-            }
-
-            //            $records = $records->get();
-            $records = DB::connection('DATA_MYSQL')->table(DB::raw("({$records->toSql()}) as sub"))
-                ->mergeBindings($records)
-                ->where(function ($q) use ($kelas) {
-                    foreach ($kelas as $val) {
-                        $id_kelas = $val["id"];
-                        // $namaPost = $val["jenjang"];
-                        $q->orWhere($id_kelas, ">", 0);
+                ->where(function ($query) use ($filter_scctbill) {
+                    foreach ($filter_scctbill as $filter) {
+                        switch (count($filter)) {
+                            case 3:
+                                $filter[1] === "in"
+                                    ? $query->whereIn($filter[0], $filter[2])
+                                    : $query->where(
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
+                                break;
+                            case 4:
+                                $filter[3] === "whereBetween"
+                                    ? $query->whereBetween($filter[0], [
+                                        $filter[1],
+                                        $filter[2],
+                                    ])
+                                    : $query->{$filter[3]}(
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
+                                break;
+                        }
                     }
                 })
+                ->where(function ($query) use ($filter_main) {
+                    foreach ($filter_main as $filter) {
+                        switch (count($filter)) {
+                            case 3:
+                                $filter[1] === "in"
+                                    ? $query->whereIn($filter[0], $filter[2])
+                                    : $query->where(
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
+                                break;
+                            case 4:
+                                $filter[3] === "whereBetween"
+                                    ? $query->whereBetween($filter[0], [
+                                        $filter[1],
+                                        $filter[2],
+                                    ])
+                                    : $query->{$filter[3]}(
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
+                                break;
+                        }
+                    }
+                })
+                ->orderBy('scctcust.nmcust', 'asc')
+                ->orderBy('scctbill.FUrutan', 'asc')
+                ->select($select)
                 ->get();
 
-            if (!$records || !$kelas) {
-                throw new \Exception("Gagal mengambil data tagihan");
+            if (!$records || $records->isEmpty()) {
+                throw new \Exception("Data tagihan tidak ditemukan");
             }
 
-            $zeroColumns = [];
-            $filtered = $records->map(function ($item) use (
-                $records,
-                &$zeroColumns,
-            ) {
-                $zeroColumns = collect($item)
-                    ->keys()
-                    ->filter(function ($key) use ($records) {
-                        return $records
-                            ->pluck($key)
-                            ->every(fn($value) => $value == 0);
-                    });
-
-                return collect($item)->except($zeroColumns);
-            });
-
-            $zeroColumns = collect($zeroColumns);
-
-            $kelasClean = $kelas
-                ->reject(fn($item) => $zeroColumns->contains($item->id))
-                ->values();
-
-            return response()->json(
-                ["data" => $filtered, "kelas" => $kelasClean],
-                200,
-            );
+            return response()->json(["data" => $records], 200);
         } catch (\Throwable $e) {
             return response()->json(
                 [
