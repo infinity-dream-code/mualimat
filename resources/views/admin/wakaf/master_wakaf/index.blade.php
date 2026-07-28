@@ -85,7 +85,7 @@
 
     <div class="card">
         <div class="card-header header-elements">
-            <h5 class="mb-0 me-2">{{($dataTitle??$mainTitle)}}</h5>
+            <h5 class="mb-0 me-2">Master Infaq</h5>
         </div>
         <div class="card-body">
             <form id="filterForm">
