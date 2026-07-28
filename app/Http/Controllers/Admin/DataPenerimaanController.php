@@ -123,6 +123,7 @@ class DataPenerimaanController extends Controller
                 "orderable" => true,
                 "exportable" => true,
             ],
+
         ];
     }
 
@@ -375,7 +376,6 @@ class DataPenerimaanController extends Controller
 
         $whereAny = ["scctcust.nmcust", "scctcust.nocust"];
 
-        // PERBAIKAN: Pisahkan select biasa dengan DB::raw
         $select = array_unique(array_merge($whereAny, [
             "scctbill.AA",
             "scctbill.BILLNM",
@@ -437,6 +437,11 @@ class DataPenerimaanController extends Controller
                 "ma" => scctcust::showVAMA($item->nocust),
                 default => "",
             };
+
+            // Pastikan FUrutan selalu 0 jika null
+            if ($item->FUrutan === null) {
+                $item->FUrutan = 0;
+            }
 
             return $item;
         });
