@@ -287,12 +287,12 @@ class DataPenerimaanController extends Controller
                                 )->endOfDay();
                                 if ($startDate && $endDate) {
                                     $colName &&
-                                    ($filters[] = [
-                                        $colName,
-                                        $startDate,
-                                        $endDate,
-                                        "whereBetween",
-                                    ]);
+                                        ($filters[] = [
+                                            $colName,
+                                            $startDate,
+                                            $endDate,
+                                            "whereBetween",
+                                        ]);
                                 }
                             }
                             break;
@@ -319,7 +319,7 @@ class DataPenerimaanController extends Controller
                             });
                             if (count($array) > 0) {
                                 $colName &&
-                                ($filters[] = [$colName, "in", $array]);
+                                    ($filters[] = [$colName, "in", $array]);
                             }
                             break;
                         case 'siswa':
@@ -343,27 +343,27 @@ class DataPenerimaanController extends Controller
                             case 3:
                                 $filter[1] === "in"
                                     ? $query->whereIn(
-                                    $filter[0],
-                                    $filter[2],
-                                )
+                                        $filter[0],
+                                        $filter[2],
+                                    )
                                     : $query->where(
-                                    $filter[0],
-                                    $filter[1],
-                                    $filter[2],
-                                );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                 break;
 
                             case 4:
                                 $filter[3] === "whereBetween"
                                     ? $query->whereBetween($filter[0], [
-                                    $filter[1],
-                                    $filter[2],
-                                ])
+                                        $filter[1],
+                                        $filter[2],
+                                    ])
                                     : $query->{$filter[3]}(
-                                    $filter[0],
-                                    $filter[1],
-                                    $filter[2],
-                                );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                 break;
                         }
                     }
@@ -433,6 +433,7 @@ class DataPenerimaanController extends Controller
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
         $records = (clone $query)
+            ->reorder()
             ->orderBy($columnName, $columnSortOrder)
             ->orderBy("scctbill.FUrutan", "desc")
             ->select($select)
@@ -475,7 +476,7 @@ class DataPenerimaanController extends Controller
             return response()->json(
                 [
                     "message" =>
-                        'Tidak dapat mencetak rekap penerimaan!<br> <span class="text-danger">*</span>Tanggal transaksi pembayaran tidak boleh kosong',
+                    'Tidak dapat mencetak rekap penerimaan!<br> <span class="text-danger">*</span>Tanggal transaksi pembayaran tidak boleh kosong',
                 ],
                 422,
             );
@@ -490,7 +491,7 @@ class DataPenerimaanController extends Controller
             return response()->json(
                 [
                     "message" =>
-                        "Tidak dapat mencetak rekap penerimaan!<br> * Tingkat atau Kelas Harus Diisi, silahkan pilih salah satu tingkat atau kelas" .
+                    "Tidak dapat mencetak rekap penerimaan!<br> * Tingkat atau Kelas Harus Diisi, silahkan pilih salah satu tingkat atau kelas" .
                         $request->filter["unit"],
                 ],
                 422,
@@ -547,12 +548,12 @@ class DataPenerimaanController extends Controller
                                 )->endOfDay();
                                 if ($startDate && $endDate) {
                                     $colName &&
-                                    ($filters[] = [
-                                        $colName,
-                                        $startDate,
-                                        $endDate,
-                                        "whereBetween",
-                                    ]);
+                                        ($filters[] = [
+                                            $colName,
+                                            $startDate,
+                                            $endDate,
+                                            "whereBetween",
+                                        ]);
                                 }
                             }
                             break;
@@ -579,7 +580,7 @@ class DataPenerimaanController extends Controller
                             });
                             if (count($array) > 0) {
                                 $colName &&
-                                ($filters[] = [$colName, "in", $array]);
+                                    ($filters[] = [$colName, "in", $array]);
                             }
                             break;
                         case 'siswa':
@@ -650,26 +651,26 @@ class DataPenerimaanController extends Controller
                                     case 3:
                                         $filter[1] === "in"
                                             ? $query->whereIn(
-                                            $filter[0],
-                                            $filter[2],
-                                        )
+                                                $filter[0],
+                                                $filter[2],
+                                            )
                                             : $query->where(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                                $filter[0],
+                                                $filter[1],
+                                                $filter[2],
+                                            );
                                         break;
                                     case 4:
                                         $filter[3] === "whereBetween"
                                             ? $query->whereBetween($filter[0], [
-                                            $filter[1],
-                                            $filter[2],
-                                        ])
+                                                $filter[1],
+                                                $filter[2],
+                                            ])
                                             : $query->{$filter[3]}(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                                $filter[0],
+                                                $filter[1],
+                                                $filter[2],
+                                            );
                                         break;
                                 }
                             }
@@ -682,23 +683,23 @@ class DataPenerimaanController extends Controller
                                 $filter[1] === "in"
                                     ? $query->whereIn($filter[0], $filter[2])
                                     : $query->where(
-                                    $filter[0],
-                                    $filter[1],
-                                    $filter[2],
-                                );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                 break;
 
                             case 4:
                                 $filter[3] === "whereBetween"
                                     ? $query->whereBetween($filter[0], [
-                                    $filter[1],
-                                    $filter[2],
-                                ])
+                                        $filter[1],
+                                        $filter[2],
+                                    ])
                                     : $query->{$filter[3]}(
-                                    $filter[0],
-                                    $filter[1],
-                                    $filter[2],
-                                );
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
                                 break;
                         }
                     }
@@ -775,7 +776,7 @@ class DataPenerimaanController extends Controller
             return response()->json(
                 [
                     "message" =>
-                        "Tidak dapat mencetak rekap penerimaan!<br> *Silahkan hubungi administrator",
+                    "Tidak dapat mencetak rekap penerimaan!<br> *Silahkan hubungi administrator",
                     "error" => $e->getMessage(),
                 ],
                 422,
@@ -842,12 +843,12 @@ class DataPenerimaanController extends Controller
                                     )->endOfDay();
                                     if ($startDate && $endDate) {
                                         $colName &&
-                                        ($filters[] = [
-                                            $colName,
-                                            $startDate,
-                                            $endDate,
-                                            "whereBetween",
-                                        ]);
+                                            ($filters[] = [
+                                                $colName,
+                                                $startDate,
+                                                $endDate,
+                                                "whereBetween",
+                                            ]);
                                     }
                                 }
                                 break;
@@ -875,7 +876,7 @@ class DataPenerimaanController extends Controller
                                 });
                                 if (count($array) > 0) {
                                     $colName &&
-                                    ($filters[] = [$colName, "in", $array]);
+                                        ($filters[] = [$colName, "in", $array]);
                                 }
                                 break;
                             case 'siswa':
@@ -946,26 +947,26 @@ class DataPenerimaanController extends Controller
                                     case 3:
                                         $filter[1] === "in"
                                             ? $query->whereIn(
-                                            $filter[0],
-                                            $filter[2],
-                                        )
+                                                $filter[0],
+                                                $filter[2],
+                                            )
                                             : $query->where(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                                $filter[0],
+                                                $filter[1],
+                                                $filter[2],
+                                            );
                                         break;
                                     case 4:
                                         $filter[3] === "whereBetween"
                                             ? $query->whereBetween($filter[0], [
-                                            $filter[1],
-                                            $filter[2],
-                                        ])
+                                                $filter[1],
+                                                $filter[2],
+                                            ])
                                             : $query->{$filter[3]}(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
+                                                $filter[0],
+                                                $filter[1],
+                                                $filter[2],
+                                            );
                                         break;
                                 }
                             }
@@ -977,27 +978,27 @@ class DataPenerimaanController extends Controller
                                 case 3:
                                     $filter[1] === "in"
                                         ? $query->whereIn(
-                                        $filter[0],
-                                        $filter[2],
-                                    )
+                                            $filter[0],
+                                            $filter[2],
+                                        )
                                         : $query->where(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                     break;
 
                                 case 4:
                                     $filter[3] === "whereBetween"
                                         ? $query->whereBetween($filter[0], [
-                                        $filter[1],
-                                        $filter[2],
-                                    ])
+                                            $filter[1],
+                                            $filter[2],
+                                        ])
                                         : $query->{$filter[3]}(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                     break;
                             }
                         }
@@ -1064,7 +1065,7 @@ class DataPenerimaanController extends Controller
                 return response()->json(
                     [
                         "message" =>
-                            "Tidak dapat mencetak rekap penerimaan!<br> *Silahkan hubungi administrator",
+                        "Tidak dapat mencetak rekap penerimaan!<br> *Silahkan hubungi administrator",
                         "error" => $e->getMessage(),
                     ],
                     422,
@@ -1074,7 +1075,7 @@ class DataPenerimaanController extends Controller
             return response()->json(
                 [
                     "message" =>
-                        "Tidak dapat mencetak rekap penerimaan!<br> *Kelas Harus Diisi, silahkan pilih salah satu kelas",
+                    "Tidak dapat mencetak rekap penerimaan!<br> *Kelas Harus Diisi, silahkan pilih salah satu kelas",
                 ],
                 422,
             );
