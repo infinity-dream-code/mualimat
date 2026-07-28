@@ -1,203 +1,84 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>KARTU TAGIHAN SISWA</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            font-size: 12px;
-        }
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        .header h1 {
-            font-size: 18px;
-            margin: 0;
-        }
-        .header p {
-            margin: 5px 0;
-            font-size: 11px;
-        }
-        .info-siswa {
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            padding: 10px;
-        }
-        .info-siswa table {
-            width: 100%;
-        }
-        .info-siswa td {
-            padding: 3px 5px;
-            font-size: 12px;
-        }
-        .info-siswa .label {
-            font-weight: bold;
-            width: 120px;
-        }
-        table.tagihan {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-        }
-        table.tagihan th {
-            background-color: #f0f0f0;
-            border: 1px solid #000;
-            padding: 6px 8px;
-            text-align: center;
-            font-size: 11px;
-        }
-        table.tagihan td {
-            border: 1px solid #000;
-            padding: 5px 8px;
-            text-align: center;
-            font-size: 11px;
-        }
-        table.tagihan td.text-left {
-            text-align: left;
-        }
-        table.tagihan td.text-right {
-            text-align: right;
-        }
-        .total-section {
-            margin-top: 15px;
-            border-top: 2px solid #000;
-            padding-top: 10px;
-        }
-        .total-section table {
-            width: 100%;
-            max-width: 400px;
-            margin-left: auto;
-        }
-        .total-section td {
-            padding: 3px 8px;
-            font-size: 12px;
-        }
-        .total-section .label {
-            font-weight: bold;
-        }
-        .total-section .amount {
-            text-align: right;
-        }
-        .footer {
-            margin-top: 30px;
-            text-align: right;
-            font-size: 11px;
-        }
-        .footer .line {
-            margin-top: 30px;
-            border-top: 1px solid #000;
-            width: 200px;
-            margin-left: auto;
-            padding-top: 5px;
-        }
-        .status-lunas {
-            color: green;
-            font-weight: bold;
-        }
-        .status-belum {
-            color: red;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Mu'allimaat Muhammadiyah Yogyakarta</h1>
-        <p>Jl. Suronatan Blok NG II No.653, Notoprajan, Ngampilan, Kota Yogyakarta</p>
-        <p>No. Telp: 0823 2883 2011, E-mail: pengaduan.muallimaat@gmail.com</p>
-        <h2 style="margin-top:15px;">KARTU TAGIHAN SISWA</h2>
-    </div>
-
-    <div class="info-siswa">
-        <table>
-            <tr>
-                <td class="label">NIS</td>
-                <td>: {{ $siswa->nocust ?? '-' }}</td>
-                <td class="label">Kelas</td>
-                <td>: {{ $siswa->DESC02 ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td class="label">NOVA</td>
-                <td>: {{ $nova ?? '-' }}</td>
-                <td class="label">Unit</td>
-                <td>: {{ $siswa->CODE02 ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td class="label">Nama Siswa</td>
-                <td>: {{ $siswa->nmcust ?? '-' }}</td>
-                <td class="label">Angkatan</td>
-                <td>: {{ $siswa->DESC04 ?? '-' }}</td>
-            </tr>
-        </table>
-    </div>
-
-    <table class="tagihan">
-        <thead>
-            <tr>
-                <th style="width:30px;">#</th>
-                <th>Tahun Akademik</th>
-                <th>Nama Tagihan</th>
-                <th style="width:120px;">Jumlah</th>
-                <th style="width:120px;">Status</th>
-            </tr>
+@extends('layouts.export.kop_file')
+@php use Carbon\Carbon; @endphp
+@section('title', 'Kartu Tagihan ' . ($siswa->nocust ?? '') . ' - ' . ($siswa->nmcust ?? ''))
+@section('content')
+    <table width="100%">
+        <tr>
+            <td colspan="2" align="center">
+                <h4>KARTU TAGIHAN SISWA</h4>
+            </td>
+        </tr>
+    </table>
+    @php
+        $nis = !($siswa->nocust === '' || is_null($siswa->nocust) || !is_numeric($siswa->nocust));
+    @endphp
+    <table width="100%" class="main-table">
+        <tr>
+            <td style="width: auto" class="border-right-0">{{ $nis ? 'NIS' : 'No Daft' }}</td>
+            <td class="border-left-0">
+                :<strong> {{ $nis ? $siswa->nocust : ($siswa->NUM2ND ?? '-') }}</strong>
+            </td>
+            <td style="width: auto" class="border-right-0">Kelas</td>
+            <td class="border-left-0">:<strong> {{ $siswa->DESC02 ?? '' }} - {{ $siswa->DESC03 ?? '' }}</strong></td>
+        </tr>
+        <tr>
+            <td style="width: auto" class="border-right-0">NOVA</td>
+            <td class="border-left-0">
+                :<strong> {{ $nova ?? '' }}</strong>
+            </td>
+            <td style="width: auto" class="border-right-0">Unit</td>
+            <td class="border-left-0">:<strong> {{ $siswa->CODE02 ?? '' }}</strong></td>
+        </tr>
+        <tr>
+            <td class="border-right-0">Nama Siswa</td>
+            <td class="border-left-0">:<strong> {{ $siswa->nmcust ?? '' }} </strong></td>
+            <td class="border-right-0">Angkatan</td>
+            <td class="border-left-0">:<strong> {{ $siswa->DESC04 ?? '' }}</strong></td>
+        </tr>
+    </table>
+    <table width="100%" class="table-border main-table">
+        <thead class="table-border" style="background-color: #ededed;">
+        <tr>
+            <th>#</th>
+            <th>Tahun Akademik</th>
+            <th>Nama Tagihan</th>
+            <th>Jumlah</th>
+            <th>Status</th>
+        </tr>
         </thead>
         <tbody>
-            @forelse($tagihans as $index => $tagihan)
+        @forelse($tagihans as $tagihan)
             <tr>
-                <td>{{ $index + 1 }}</td>
-                <td class="text-left">{{ $tagihan->BTA ?? '-' }}</td>
-                <td class="text-left">
-                    {{ $tagihan->BILLNM ?? '-' }}
-                    @if(isset($tagihan->FUrutan))
-                        <span style="font-size:9px;color:#999;"> (Urutan: {{ $tagihan->FUrutan }})</span>
-                    @endif
-                </td>
-                <td class="text-right">Rp. {{ number_format($tagihan->BILLAM ?? 0, 0, ',', '.') }}</td>
-                <td>
-                    @if(($tagihan->PAIDST ?? 0) == 1)
-                        <span class="status-lunas">LUNAS</span>
-                    @else
-                        <span class="status-belum">BELUM LUNAS</span>
-                    @endif
+                <th scope="row">{{ $loop->index + 1 }}</th>
+                <td>{{ $tagihan->BTA ?? '-' }}</td>
+                <td>{{ $tagihan->BILLNM ?? '-' }}</td>
+                <td align="right">@rupiah($tagihan->BILLAM ?? 0)</td>
+                <td align="center">
+                    {!! ($tagihan->PAIDST ?? 0) == 0
+                        ? '<span style="color:red;">BELUM LUNAS</span>'
+                        : '<span style="color:green;">LUNAS</span>' !!}
                 </td>
             </tr>
-            @empty
+        @empty
             <tr>
-                <td colspan="5" style="text-align:center;">Tidak ada tagihan</td>
+                <td colspan="5" align="center">Tidak ada tagihan</td>
             </tr>
-            @endforelse
+        @endforelse
         </tbody>
+        <tfoot style="background-color: #ededed; font-weight: bold;">
+        <tr>
+            <td colspan="3">Total Tagihan</td>
+            <td align="right">@rupiah($totalTagihan ?? 0)</td>
+            <td rowspan="3"></td>
+        </tr>
+        <tr>
+            <td colspan="3">Total Tagihan Terbayar</td>
+            <td align="right">@rupiah($totalTerbayar ?? 0)</td>
+        </tr>
+        <tr>
+            <td colspan="3">Total Sisa Tagihan</td>
+            <td align="right">@rupiah($sisaTagihan ?? 0)</td>
+        </tr>
+        </tfoot>
     </table>
-
-    <div class="total-section">
-        <table>
-            <tr>
-                <td class="label">Total Tagihan</td>
-                <td class="amount">Rp. {{ number_format($totalTagihan ?? 0, 0, ',', '.') }}</td>
-            </tr>
-            <tr>
-                <td class="label">Total Tagihan Terbayar</td>
-                <td class="amount">Rp. {{ number_format($totalTerbayar ?? 0, 0, ',', '.') }}</td>
-            </tr>
-            <tr>
-                <td class="label" style="font-size:14px;">Total Sisa Tagihan</td>
-                <td class="amount" style="font-size:14px; font-weight:bold; color:red;">Rp. {{ number_format($sisaTagihan ?? 0, 0, ',', '.') }}</td>
-            </tr>
-        </table>
-    </div>
-
-    <div class="footer">
-        <div>
-            YOGYAKARTA, {{ strtoupper(\Carbon\Carbon::now()->translatedFormat('l, d F Y')) }}
-        </div>
-        <div class="line">
-            ADMIN
-        </div>
-    </div>
-</body>
-</html>
+@endsection
