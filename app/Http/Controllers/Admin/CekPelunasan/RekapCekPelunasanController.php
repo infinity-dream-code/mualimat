@@ -388,15 +388,10 @@ class RekapCekPelunasanController extends Controller
                 return response()->json(['error' => 'Siswa tidak ditemukan'], 422);
             }
 
-            // HARCODE ORDER BY - SAMA PERSIS KAYAK QUERY DI NAVICAT
+            // SAMA PERSIS KAYAK QUERY NAVICAT
             $tagihans = scctbill::where('CUSTID', $custid)
                 ->where('FSTSBolehBayar', 1)
-                ->orderByRaw("
-                CASE 
-                    WHEN FUrutan IS NULL THEN 999999 
-                    ELSE FUrutan 
-                END ASC
-            ")
+                ->orderByRaw("CASE WHEN FUrutan IS NULL THEN 999999 ELSE FUrutan END ASC")
                 ->get();
 
             if ($tagihans->isEmpty()) {
