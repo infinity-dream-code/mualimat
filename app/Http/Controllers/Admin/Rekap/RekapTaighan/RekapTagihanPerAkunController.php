@@ -40,6 +40,7 @@ class RekapTagihanPerAkunController extends Controller
             ->orderBy("thn_aka", "desc")
             ->get();
         $data["kelas"] = mst_kelas::get();
+        $data["unit"] = mst_sekolah::get();
 
         return view("admin.rekap_tagihan.index", $data);
     }
@@ -307,14 +308,12 @@ class RekapTagihanPerAkunController extends Controller
         );
 
         $filters = [];
-        $filterQuery = null;
         $filter_scctbill = [];
         $post = false;
         $kelas = [];
         $unit = false;
-        $tanggalMulai = null;
-        $tanggalSelesai = null;
         $filter = $request->input("filter");
+
         if ($filter) {
             foreach ($filter as $key => $val) {
                 if (
@@ -323,8 +322,7 @@ class RekapTagihanPerAkunController extends Controller
                 ) {
                     $colName = match ($key) {
                         "dari_tanggal",
-                        "sampai_tanggal"
-                        => "scctbill.FTGLTagihan",
+                        "sampai_tanggal" => "scctbill.FTGLTagihan",
                         "tanggal-transaksi" => "scctbill.PAIDDT",
                         "tahun_akademik" => "scctbill.BTA",
                         "post" => "scctbill.BILLNM",
@@ -335,7 +333,32 @@ class RekapTagihanPerAkunController extends Controller
                         default => null,
                     };
 
-                    if ($key == "tanggal-transaksi") {
+                    if ($key == "kelas") {
+                        $val = explode("~", $val);
+                        $kelas = $val;
+                        if (count($val) == 3) {
+                            $filters[] = ["scctcust.CODE02", "=", $val[0]];
+                            $filters[] = ["scctcust.DESC02", "=", $val[1]];
+                            $filters[] = ["scctcust.DESC03", "=", $val[2]];
+                        }
+                    } elseif ($key == "post") {
+                        $array = array_filter($val, function ($value) {
+                            return $value !== "all";
+                        });
+                        if (count($array) > 0) {
+                            $colName && ($filters[] = [$colName, "in", $array]);
+                        }
+                        $post = $array;
+                    } elseif ($key === "unit") {
+                        $unit = mst_sekolah::where("CODE01", $val)->first();
+                        $colName && ($filters[] = [$colName, "=", $val]);
+                    } elseif ($key == "siswa") {
+                        $val = is_numeric($val) ? $val : "%" . $val . "%";
+                        $colName = is_numeric($val)
+                            ? "scctcust.nocust"
+                            : $colName;
+                        $colName && ($filters[] = [$colName, "like", $val]);
+                    } elseif ($key == "tanggal-transaksi") {
                         if (
                             preg_match(
                                 '/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/',
@@ -362,31 +385,6 @@ class RekapTagihanPerAkunController extends Controller
                                     ]);
                             }
                         }
-                    } elseif ($key == "kelas") {
-                        $val = explode("~", $val);
-                        $kelas = $val;
-                        if (count($val) == 3) {
-                            $filters[] = ["scctcust.CODE02", "=", $val[0]];
-                            $filters[] = ["scctcust.DESC02", "=", $val[1]];
-                            $filters[] = ["scctcust.DESC03", "=", $val[2]];
-                        }
-                    } elseif ($key == "post") {
-                        $array = array_filter($val, function ($value) {
-                            return $value !== "all";
-                        });
-                        if (count($array) > 0) {
-                            $colName && ($filters[] = [$colName, "in", $array]);
-                        }
-                        $post = $array;
-                    } elseif ($key === "unit") {
-                        $unit = mst_sekolah::where("CODE01", $val)->first();
-                        $colName && ($filters[] = [$colName, "=", $val]);
-                    } elseif ($key == "siswa") {
-                        $val = is_numeric($val) ? $val : "%" . $val . "%";
-                        $colName = is_numeric($val)
-                            ? "scctcust.nocust"
-                            : $colName;
-                        $colName && ($filters[] = [$colName, "like", $val]);
                     } else {
                         $colName && ($filters[] = [$colName, "=", $val]);
                     }
@@ -490,7 +488,10 @@ class RekapTagihanPerAkunController extends Controller
                 ->get();
 
             if (!$records || $records->isEmpty()) {
-                throw new \Exception("Data tagihan tidak ditemukan");
+                return response()->json([
+                    "data" => [],
+                    "message" => "Data tagihan tidak ditemukan"
+                ], 200);
             }
 
             return response()->json(["data" => $records], 200);
