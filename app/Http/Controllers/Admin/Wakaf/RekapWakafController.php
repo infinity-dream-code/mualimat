@@ -36,7 +36,7 @@ class RekapWakafController extends Controller
     {
         return [
             ['data' => null, 'name' => 'no', 'columnType' => 'row', 'className' => 'text-center', 'duplicate' => false, 'exportable' => true],
-            ['data' => 'nmsumbangan', 'name' => 'Nama Wakaf', 'searchable' => true, 'orderable' => true, 'duplicate' => false, 'exportable' => true],
+            ['data' => 'nmsumbangan', 'name' => 'Nama Infaq', 'searchable' => true, 'orderable' => true, 'duplicate' => false, 'exportable' => true],
             ['data' => 'trxdate', 'name' => 'Tanggal', 'columnType' => 'timestamp', 'searchable' => false, 'orderable' => true, 'duplicate' => false, 'exportable' => true],
             [
                 'data' => 'stcust',
