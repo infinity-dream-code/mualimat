@@ -521,5 +521,5 @@ Route::prefix("rekap-saldo-saku")
         Route::get("get-data", "getData")->name("get-data");
         Route::get("get-column", "getColumn")->name("get-column");
         Route::get("get-data-rekap", "getDataRekap")->name("get-data-rekap");
-        Route::resource("", \App\Http\Controllers\Admin\RekapSaldoSakuController::class)->parameters(["" => "id"]);
+        Route::resource("", \App\Http\Controllers\Admin\RekapSaldoSakuController::class);
     });
