@@ -375,9 +375,6 @@ class RekapCekPelunasanController extends Controller
         return response()->json($response);
     }
 
-    /**
-     * Cetak Kartu Siswa dengan urutan berdasarkan FUrutan ASC
-     */
     public function cetakKartuSiswa(Request $request)
     {
         try {
@@ -391,11 +388,8 @@ class RekapCekPelunasanController extends Controller
                 return response()->json(['error' => 'Siswa tidak ditemukan'], 422);
             }
 
-            // Ambil tagihan siswa dengan urutan berdasarkan FUrutan ASC
-            // Dan urutkan juga berdasarkan FUrutan yang NULL diakhir
             $tagihans = scctbill::where('CUSTID', $custid)
                 ->where('FSTSBolehBayar', 1)
-                ->orderByRaw('CASE WHEN FUrutan IS NULL THEN 1 ELSE 0 END')
                 ->orderBy('FUrutan', 'asc')
                 ->get();
 
@@ -403,7 +397,6 @@ class RekapCekPelunasanController extends Controller
                 return response()->json(['error' => 'Tagihan tidak ditemukan'], 422);
             }
 
-            // Hitung total tagihan
             $totalTagihan = $tagihans->sum('BILLAM');
             $totalTerbayar = $tagihans->where('PAIDST', 1)->sum('BILLAM');
             $sisaTagihan = $totalTagihan - $totalTerbayar;

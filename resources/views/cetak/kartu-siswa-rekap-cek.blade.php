@@ -147,11 +147,16 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($tagihans as $index => $tagihan)
+            @forelse($tagihans as $index => $tagihan)
             <tr>
                 <td>{{ $index + 1 }}</td>
                 <td class="text-left">{{ $tagihan->BTA ?? '-' }}</td>
-                <td class="text-left">{{ $tagihan->BILLNM ?? '-' }}</td>
+                <td class="text-left">
+                    {{ $tagihan->BILLNM ?? '-' }}
+                    @if(isset($tagihan->FUrutan))
+                        <span style="font-size:9px;color:#999;"> (Urutan: {{ $tagihan->FUrutan }})</span>
+                    @endif
+                </td>
                 <td class="text-right">Rp. {{ number_format($tagihan->BILLAM ?? 0, 0, ',', '.') }}</td>
                 <td>
                     @if(($tagihan->PAIDST ?? 0) == 1)
@@ -161,7 +166,11 @@
                     @endif
                 </td>
             </tr>
-            @endforeach
+            @empty
+            <tr>
+                <td colspan="5" style="text-align:center;">Tidak ada tagihan</td>
+            </tr>
+            @endforelse
         </tbody>
     </table>
 
