@@ -514,3 +514,12 @@ Route::prefix("admin")
                 });
             });
     });
+Route::prefix("rekap-saldo-saku")
+    ->name("rekap-saldo-saku.")
+    ->controller(\App\Http\Controllers\Admin\RekapSaldoSakuController::class)
+    ->group(function () {
+        Route::get("get-data", "getData")->name("get-data");
+        Route::get("get-column", "getColumn")->name("get-column");
+        Route::get("get-data-rekap", "getDataRekap")->name("get-data-rekap");
+        Route::resource("", \App\Http\Controllers\Admin\RekapSaldoSakuController::class)->parameters(["" => "id"]);
+    });
