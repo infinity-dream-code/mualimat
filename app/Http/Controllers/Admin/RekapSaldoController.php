@@ -5,9 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\mst_kelas;
 use App\Models\mst_sekolah;
-use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
-use App\Models\scctbill;
 use App\Models\scctcust;
 use App\Models\sccttran;
 use Carbon\Carbon;
@@ -113,7 +111,8 @@ class RekapSaldoController extends Controller
         $unit = $request->filter["unit"] ?? null;
         $kelas = $request->filter["kelas"] ?? null;
 
-        if ($periode == null ||
+        if (
+            $periode == null ||
             !preg_match('/^\d{6}$/', $periode) ||
             !checkdate(substr($periode, 4, 2), 1, substr($periode, 0, 4))
         ) {
@@ -153,8 +152,7 @@ class RekapSaldoController extends Controller
             return response()->json([
                 "data" => $saldos,
             ], 200);
-        } catch
-        (\Throwable $e) {
+        } catch (\Throwable $e) {
             return response()->json(
                 [
                     "message" => "Data Saldo Tidak Ditemukan",
@@ -168,12 +166,13 @@ class RekapSaldoController extends Controller
     public function getData(Request $request)
     {
         $draw = $request->get("draw");
+        $records = [];
+        $totalRecords = 0;
+        $totalRecordswithFilter = 0;
+
         if (
             $request->filter["periode"] != null &&
-            preg_match(
-                '/^\d{6}$/',
-                $request->filter["periode"],
-            )
+            preg_match('/^\d{6}$/', $request->filter["periode"])
         ) {
             $start = $request->get("start");
             $rowperpage = $request->get("length");
@@ -185,7 +184,7 @@ class RekapSaldoController extends Controller
             $searchValue = $search_arr["value"] ?? "";
 
             $columnName = "scctcust.nmcust";
-            $columnSortOrder = "DESC";
+            $columnSortOrder = "asc";
 
             if (!empty($order_arr)) {
                 $columnIndex = $columnIndex_arr[0]["column"] ?? null;
@@ -197,6 +196,16 @@ class RekapSaldoController extends Controller
                     $columnName = $columnName_arr[$columnIndex]["data"];
                     $columnSortOrder = $order_arr[0]["dir"] ?? "desc";
                 }
+            }
+
+            if ($columnName === "opening_balance") {
+                $columnName = DB::raw("(COALESCE(opening.opening_kredit, 0) - COALESCE(opening.opening_debet, 0))");
+            } elseif ($columnName === "current_net") {
+                $columnName = DB::raw("(COALESCE(current.current_kredit, 0) - COALESCE(current.current_debet, 0))");
+            } elseif ($columnName === "closing_balance") {
+                $columnName = DB::raw("((COALESCE(opening.opening_kredit, 0) - COALESCE(opening.opening_debet, 0)) + (COALESCE(current.current_kredit, 0) - COALESCE(current.current_debet, 0)))");
+            } elseif (!str_contains($columnName, ".")) {
+                $columnName = "scctcust." . $columnName;
             }
 
             $filters = [];
@@ -243,27 +252,27 @@ class RekapSaldoController extends Controller
                                 case 3:
                                     $filter[1] === "in"
                                         ? $query->whereIn(
-                                        $filter[0],
-                                        $filter[2],
-                                    )
+                                            $filter[0],
+                                            $filter[2],
+                                        )
                                         : $query->where(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                     break;
 
                                 case 4:
                                     $filter[3] === "whereBetween"
                                         ? $query->whereBetween($filter[0], [
-                                        $filter[1],
-                                        $filter[2],
-                                    ])
+                                            $filter[1],
+                                            $filter[2],
+                                        ])
                                         : $query->{$filter[3]}(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
                                     break;
                             }
                         }
@@ -285,14 +294,47 @@ class RekapSaldoController extends Controller
             $monthStart = Carbon::createFromFormat('Ym', $periode)->startOfMonth();
             $monthEnd = Carbon::createFromFormat('Ym', $periode)->endOfMonth();
 
-            $query = scctcust::where("scctcust.STCUST", 1
-            )->where(function ($query) use ($filterQuery) {
-                if ($filterQuery) {
-                    $filterQuery($query);
-                }
-            });
+            $openingAgg = sccttran::query()
+                ->select([
+                    'CUSTID',
+                    DB::raw('COALESCE(SUM(KREDIT), 0) AS opening_kredit'),
+                    DB::raw('COALESCE(SUM(DEBET), 0) AS opening_debet'),
+                ])
+                ->where('TRXDATE', '<', $monthStart)
+                ->groupBy('CUSTID');
 
-            // Total records
+            $currentAgg = sccttran::query()
+                ->select([
+                    'CUSTID',
+                    DB::raw('COALESCE(SUM(KREDIT), 0) AS current_kredit'),
+                    DB::raw('COALESCE(SUM(DEBET), 0) AS current_debet'),
+                ])
+                ->whereBetween('TRXDATE', [$monthStart, $monthEnd])
+                ->groupBy('CUSTID');
+
+            $query = scctcust::query()
+                ->where("scctcust.STCUST", 1)
+                ->leftJoinSub($openingAgg, 'opening', function ($join) {
+                    $join->on('opening.CUSTID', '=', 'scctcust.CUSTID');
+                })
+                ->leftJoinSub($currentAgg, 'current', function ($join) {
+                    $join->on('current.CUSTID', '=', 'scctcust.CUSTID');
+                })
+                ->where(function ($query) use ($filterQuery) {
+                    if ($filterQuery) {
+                        $filterQuery($query);
+                    }
+                });
+
+            if (!blank($searchValue)) {
+                $query->where(function ($q) use ($whereAny, $searchValue) {
+                    $sanitizeSearch = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $searchValue);
+                    foreach ($whereAny as $column) {
+                        $q->orWhere($column, 'like', '%' . $sanitizeSearch . '%');
+                    }
+                });
+            }
+
             $totalRecords = scctcust::select("count(*) as allcount")
                 ->where("scctcust.STCUST", 1)
                 ->count();
@@ -301,35 +343,19 @@ class RekapSaldoController extends Controller
 
             $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
             $records = (clone $query)
-                ->orderBy($columnName, $columnSortOrder)
                 ->select($select)
                 ->addSelect([
-                    'OPENING_KREDIT' => sccttran::whereColumn('sccttran.CUSTID', 'scctcust.CUSTID')
-                        ->where('sccttran.TRXDATE', '<', $monthStart)
-                        ->selectRaw('COALESCE(SUM(sccttran.KREDIT), 0) as OPENING_KREDIT'),
-                    'OPENING_DEBET' => sccttran::whereColumn('sccttran.CUSTID', 'scctcust.CUSTID')
-                        ->where('sccttran.TRXDATE', '<', $monthStart)
-                        ->selectRaw('COALESCE(SUM(sccttran.DEBET), 0) as OPENING_DEBET'),
-                    'KREDIT_BULAN' => sccttran::whereColumn('sccttran.CUSTID', 'scctcust.CUSTID')
-                        ->whereBetween('TRXDATE', [$monthStart, $monthEnd])
-                        ->selectRaw('COALESCE(SUM(sccttran.KREDIT), 0) as KREDIT_BULAN'),
-                    'DEBET_BULAN' => sccttran::whereColumn('sccttran.CUSTID', 'scctcust.CUSTID')
-                        ->whereBetween('TRXDATE', [$monthStart, $monthEnd])
-                        ->selectRaw('COALESCE(SUM(sccttran.DEBET), 0) as DEBET_BULAN')
+                    DB::raw('COALESCE(opening.opening_kredit, 0) AS OPENING_KREDIT'),
+                    DB::raw('COALESCE(opening.opening_debet, 0) AS OPENING_DEBET'),
+                    DB::raw('COALESCE(current.current_kredit, 0) AS KREDIT_BULAN'),
+                    DB::raw('COALESCE(current.current_debet, 0) AS DEBET_BULAN'),
                 ])
-                ->when(!blank($searchValue), function ($query) use ($whereAny, $searchValue) {
-                    $query->where(function ($q) use ($whereAny, $searchValue) {
-                        $sanitizeSearch = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $searchValue);
-                        foreach ($whereAny as $column) {
-                            $q->orWhere($column, 'like', '%' . $sanitizeSearch . '%');
-                        }
-                    });
-                })
+                ->orderBy($columnName, $columnSortOrder)
                 ->skip($start)
                 ->take($rowperpage)
                 ->get();
 
-            $records = $records->map(function ($item, $index) use ($request, $monthStart, $monthEnd) {
+            $records = $records->map(function ($item, $index) {
                 $item->NOVA = match (strtolower($item->CODE02)) {
                     "mts" => scctcust::showVAMTS($item->nocust),
                     "ma" => scctcust::showVAMA($item->nocust),
@@ -345,17 +371,14 @@ class RekapSaldoController extends Controller
                 return $item;
             });
 
-            $records->toArray();
+            $records = $records->toArray();
         }
-
-//        $tran = sccttran::where('TRXDATE', '>=', $monthStart)->where('TRXDATE', '<=', $monthEnd)->limit(10)->get();
 
         $response = [
             "draw" => intval($draw),
             "recordsTotal" => $totalRecords ?? 0,
             "recordsFiltered" => $totalRecordswithFilter ?? 0,
             "data" => $records ?? [],
-            "tran" => $tran ?? [],
         ];
         return response()->json($response);
     }
