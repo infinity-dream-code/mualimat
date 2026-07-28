@@ -71,7 +71,7 @@ class DataPenerimaanController extends Controller
             ],
             [
                 "data" => "DESC03",
-                "name" => "Kelompok",
+                "name" => "Kelompok", // Kolom kelompok sudah ada di sini
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
@@ -404,23 +404,7 @@ class DataPenerimaanController extends Controller
                 if ($filterQuery) {
                     $filterQuery($query);
                 }
-            })->orderByRaw("
-                    CASE
-                        WHEN scctbill.BILLNM LIKE '%JULI%' THEN 1
-                        WHEN scctbill.BILLNM LIKE '%AGUSTUS%' THEN 2
-                        WHEN scctbill.BILLNM LIKE '%SEPTEMBER%' THEN 3
-                        WHEN scctbill.BILLNM LIKE '%OKTOBER%' THEN 4
-                        WHEN scctbill.BILLNM LIKE '%NOVEMBER%' THEN 5
-                        WHEN scctbill.BILLNM LIKE '%DESEMBER%' THEN 6
-                        WHEN scctbill.BILLNM LIKE '%JANUARI%' THEN 7
-                        WHEN scctbill.BILLNM LIKE '%FEBRUARI%' THEN 8
-                        WHEN scctbill.BILLNM LIKE '%MARET%' THEN 9
-                        WHEN scctbill.BILLNM LIKE '%APRIL%' THEN 10
-                        WHEN scctbill.BILLNM LIKE '%MEI%' THEN 11
-                        WHEN scctbill.BILLNM LIKE '%JUNI%' THEN 12
-                        ELSE 999
-                    END
-                ");
+            });
 
         // Total records
         $totalRecords = scctbill::select("count(*) as allcount")
@@ -432,10 +416,12 @@ class DataPenerimaanController extends Controller
         $totalRecordswithFilter = (clone $query)->count();
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
+
+        // PERUBAHAN DI SINI - Hapus orderByRaw dan urutkan sesuai kebutuhan
         $records = (clone $query)
             ->reorder()
-            ->orderBy($columnName, $columnSortOrder)
-            ->orderBy("scctbill.FUrutan", "desc")
+            ->orderBy('scctcust.nmcust', 'asc')     // Nama ASC
+            ->orderBy('scctbill.FUrutan', 'desc')    // FUrutan DESC dalam setiap nama
             ->select($select)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
             ->skip($start)
@@ -462,7 +448,6 @@ class DataPenerimaanController extends Controller
         ];
         return response()->json($response);
     }
-
     public function cetakRekapPenerimaan(Request $request)
     {
         if (
