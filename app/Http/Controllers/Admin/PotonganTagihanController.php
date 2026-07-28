@@ -120,6 +120,17 @@ PotonganTagihanController extends Controller
                 "duplicate" => true
             ],
             [
+                "data" => "PAIDST",
+                "name" => "Status",
+                "searchable" => true,
+                "orderable" => true,
+                "exportable" => true,
+                "columnType" => "boolean",
+                "trueVal" => "LUNAS",
+                "falseVal" => "BELUM LUNAS",
+                "duplicate" => true
+            ],
+            [
                 "data" => "PAIDDT",
                 "name" => "Tanggal Bayar",
                 "columnType" => "timestamp",
@@ -153,7 +164,6 @@ PotonganTagihanController extends Controller
             ],
         ];
     }
-
     public function getData(Request $request)
     {
         $draw = $request->get("draw");
