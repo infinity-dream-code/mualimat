@@ -375,22 +375,23 @@ class DataPenerimaanController extends Controller
 
         $whereAny = ["scctcust.nmcust", "scctcust.nocust"];
 
-        $select = array_unique(
-            array_merge($whereAny, [
-                "scctbill.AA",
-                "scctbill.BILLNM",
-                "scctbill.BILLAM",
-                "scctbill.PAIDST",
-                "scctbill.PAIDDT",
-                "scctbill.BTA",
-                "scctbill.CUSTID",
-                "scctbill.FIDBANK",
-                DB::raw("COALESCE(scctbill.FUrutan, 0) as FUrutan"), // PERUBAHAN DI SINI
-                "scctcust.CODE02",
-                "scctcust.DESC02",
-                "scctcust.DESC03",
-            ]),
-        );
+        // PERBAIKAN: Pisahkan select biasa dengan DB::raw
+        $select = array_unique(array_merge($whereAny, [
+            "scctbill.AA",
+            "scctbill.BILLNM",
+            "scctbill.BILLAM",
+            "scctbill.PAIDST",
+            "scctbill.PAIDDT",
+            "scctbill.BTA",
+            "scctbill.CUSTID",
+            "scctbill.FIDBANK",
+            "scctcust.CODE02",
+            "scctcust.DESC02",
+            "scctcust.DESC03",
+        ]));
+
+        // Tambahkan COALESCE secara terpisah
+        $select[] = DB::raw("COALESCE(scctbill.FUrutan, 0) as FUrutan");
 
         $query = scctbill::leftJoin(
             "scctcust",
@@ -419,11 +420,11 @@ class DataPenerimaanController extends Controller
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
 
-        // PERUBAHAN DI SINI - order by nmcust DESC dan FUrutan DESC
+        // order by nmcust DESC dan FUrutan DESC
         $records = (clone $query)
             ->reorder()
-            ->orderBy('scctcust.nmcust', 'desc')     // Nama DESC (Z-A)
-            ->orderBy('scctbill.FUrutan', 'desc')    // FUrutan DESC (terbesar ke terkecil)
+            ->orderBy('scctcust.nmcust', 'desc')
+            ->orderBy('scctbill.FUrutan', 'desc')
             ->select($select)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
             ->skip($start)
