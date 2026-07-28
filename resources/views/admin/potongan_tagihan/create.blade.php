@@ -3,6 +3,18 @@
 @section('style')
     <link rel="stylesheet" href="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.css')}}">
     <link rel="stylesheet" href="{{asset('main/libs/bootstrap-datepicker/bootstrap-datepicker.css')}}">
+    <style>
+        .dataTables_info {
+            display: none !important;
+        }
+        #table-info .badge-selected {
+            background: rgba(124, 58, 237, 0.15);
+            color: #7C3AED;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+    </style>
 @endsection
 @section('content')
     <h3 class="page-heading d-flex text-gray-900 fw-bold flex-column justify-content-center my-0">
@@ -278,9 +290,17 @@
             const totalAll = table.rows().count();
             const selectedEntries = table.rows({ selected: true }).count();
 
-            document.getElementById('total-entries').textContent = totalEntries;
-            document.getElementById('total-all').textContent = totalAll;
-            document.getElementById('selected-entries').textContent = selectedEntries;
+            const infoEl = document.getElementById('table-info');
+            if (infoEl) {
+                infoEl.innerHTML = `
+                    <span id="total-entries">${totalEntries}</span> 
+                    entri (disaring dari 
+                    <span id="total-all">${totalAll}</span> 
+                    entri keseluruhan) 
+                    <span id="selected-entries" style="background:rgba(124,58,237,0.15);color:#7C3AED;padding:2px 10px;border-radius:12px;font-weight:600;">${selectedEntries}</span> 
+                    baris dipilih
+                `;
+            }
         }
 
         function handleAutoAppend(e, tableId, inputClass) {
@@ -338,6 +358,15 @@
         document.addEventListener("DOMContentLoaded", function () {
             if (dtOptions.dataUrl && dtOptions.columnUrl) {
                 getDT(dtOptions);
+
+                $(document).on('draw.dt', function () {
+                    setTimeout(updateTableInfo, 100);
+                });
+
+                $(document).on('click', 'tbody tr', function () {
+                    setTimeout(updateTableInfo, 100);
+                });
+
                 if (dtOptions.formId) {
                     let filterForm = $(`#${dtOptions.formId}`);
                     filterForm.on('submit', function (e) {
@@ -429,8 +458,6 @@
             document.addEventListener("blur", function (e) {
                 inputTables.forEach(({id, inputClass}) => handleAutoRemove(e, id, inputClass));
             }, true);
-
-            setInterval(updateTableInfo, 1000);
 
             document.getElementById('simpan-potongan').addEventListener('click', async function (e) {
                 e.preventDefault();
