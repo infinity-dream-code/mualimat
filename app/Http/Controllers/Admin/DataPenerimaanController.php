@@ -89,6 +89,7 @@ class DataPenerimaanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
+                "defaultContent" => "0",  // Tambahkan ini untuk menampilkan 0 jika null
             ],
             [
                 "data" => "BILLAM",
