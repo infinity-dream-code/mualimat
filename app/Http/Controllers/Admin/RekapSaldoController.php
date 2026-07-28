@@ -334,7 +334,6 @@ class RekapSaldoController extends Controller
                         DB::raw('COALESCE(SUM(DEBET), 0) AS opening_debet'),
                     ])
                     ->where('TRXDATE', '<', $monthStart)
-                    ->where('FLAG', 'VA')
                     ->groupBy('CUSTID');
 
                 $currentAgg = sccttran::query()
@@ -344,7 +343,6 @@ class RekapSaldoController extends Controller
                         DB::raw('COALESCE(SUM(DEBET), 0) AS current_debet'),
                     ])
                     ->whereBetween('TRXDATE', [$monthStart, $monthEnd])
-                    ->where('FLAG', 'VA')
                     ->groupBy('CUSTID');
 
                 $query = scctcust::query()
