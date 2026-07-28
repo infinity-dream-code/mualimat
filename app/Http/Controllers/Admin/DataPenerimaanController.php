@@ -217,17 +217,17 @@ class DataPenerimaanController extends Controller
         $draw = $request->get("draw");
         $start = $request->get("start");
         $rowperpage = $request->get("length");
-    
+
         $columnIndex_arr = $request->get("order", []);
         $columnName_arr = $request->get("columns", []);
         $order_arr = $request->get("order", []);
         $search_arr = $request->get("search", []);
         $searchValue = $search_arr["value"] ?? "";
-    
+
         // Biarkan untuk sorting manual dari DataTable
         $columnName = "scctcust.nmcust";
         $columnSortOrder = "asc";
-    
+
         if (!empty($order_arr)) {
             $columnIndex = $columnIndex_arr[0]["column"] ?? null;
             if (
@@ -239,10 +239,10 @@ class DataPenerimaanController extends Controller
                 $columnSortOrder = $order_arr[0]["dir"] ?? "desc";
             }
         }
-    
+
         $filters = [];
         $filterQuery = null;
-    
+
         $filter = $request->input("filter");
         if ($filter) {
             foreach ($filter as $key => $val) {
@@ -276,7 +276,7 @@ class DataPenerimaanController extends Controller
                                 )
                             ) {
                                 $val = preg_replace("/[-\/~]/", "-", $val);
-    
+
                                 [$startDate, $endDate] = explode(" - ", $val);
                                 $startDate = Carbon::createFromFormat(
                                     "d-m-Y",
@@ -336,7 +336,7 @@ class DataPenerimaanController extends Controller
                     }
                 }
             }
-    
+
             if (!empty($filters)) {
                 $filterQuery = function ($query) use ($filters) {
                     foreach ($filters as $filter) {
@@ -353,7 +353,7 @@ class DataPenerimaanController extends Controller
                                         $filter[2],
                                     );
                                 break;
-    
+
                             case 4:
                                 $filter[3] === "whereBetween"
                                     ? $query->whereBetween($filter[0], [
@@ -371,9 +371,9 @@ class DataPenerimaanController extends Controller
                 };
             }
         }
-    
+
         $whereAny = ["scctcust.nmcust", "scctcust.nocust"];
-    
+
         $select = array_unique(
             array_merge($whereAny, [
                 "scctbill.AA",
@@ -390,7 +390,7 @@ class DataPenerimaanController extends Controller
                 "scctcust.DESC03",
             ]),
         );
-    
+
         $query = scctbill::leftJoin(
             "scctcust",
             "scctcust.CUSTID",
@@ -406,41 +406,41 @@ class DataPenerimaanController extends Controller
                     $filterQuery($query);
                 }
             });
-    
+
         // Total records
         $totalRecords = scctbill::select("count(*) as allcount")
             ->where("PAIDST", 1)
             ->where("scctbill.FSTSBolehBayar", 1)
             ->where("PAIDDT", "!=", null)
             ->count();
-    
+
         $totalRecordswithFilter = (clone $query)->count();
-    
+
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
-        
-        // PERUBAHAN DI SINI
+
+        // PERUBAHAN DI SINI - order by nmcust DESC dan FUrutan DESC
         $records = (clone $query)
             ->reorder()
-            ->orderBy('scctcust.nmcust', 'asc')     // Nama ASC
-            ->orderBy('scctbill.FUrutan', 'desc')    // FUrutan DESC
+            ->orderBy('scctcust.nmcust', 'desc')     // Nama DESC (Z-A)
+            ->orderBy('scctbill.FUrutan', 'desc')    // FUrutan DESC (terbesar ke terkecil)
             ->select($select)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
             ->skip($start)
             ->take($rowperpage)
             ->get();
-    
+
         $records = $records->map(function ($item, $index) use ($request) {
             $item->NOVA = match (strtolower($item->CODE02)) {
                 "mts" => scctcust::showVAMTS($item->nocust),
                 "ma" => scctcust::showVAMA($item->nocust),
                 default => "",
             };
-    
+
             return $item;
         });
-    
+
         $records->toArray();
-    
+
         $response = [
             "draw" => intval($draw),
             "recordsTotal" => $totalRecords ?? 0,
@@ -450,7 +450,6 @@ class DataPenerimaanController extends Controller
         return response()->json($response);
     }
 
-    
     public function cetakRekapPenerimaan(Request $request)
     {
         if (
