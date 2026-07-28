@@ -321,10 +321,18 @@ class RekapSaldoController extends Controller
                 ->get();
 
             $records = $records->map(function ($item, $index) {
+                // Mapping kolom dari view ke format yang diharapkan DataTable
+                $item->nocust = $item->NOCUST ?? '';
+                $item->nmcust = $item->NMCUST ?? '';
+                $item->CODE02 = $item->CODE02 ?? '';
+                $item->DESC02 = $item->DESC02 ?? '';
+                $item->DESC03 = $item->DESC03 ?? '';
+                $item->STCUST = $item->STCUST ?? 0;
                 $item->opening_balance = 0;
                 $item->current_net = $item->SALDO ?? 0;
                 $item->closing_balance = $item->SALDO ?? 0;
                 $item->item_id = $item->CUSTID;
+
                 return $item;
             });
 
