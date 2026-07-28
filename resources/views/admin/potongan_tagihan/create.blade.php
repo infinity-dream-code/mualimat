@@ -203,7 +203,6 @@
                                     <th>Potongan</th>
                                     <th>Tanggal</th>
                                     <th>Detail</th>
-                                    <th style="width:110px">Tampil</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -220,14 +219,9 @@
                                                class="potongan-input form-control input-tanggal">
                                     </td>
                                     <td>
-                                    <textarea type="text" name="deskripsi[]" placeholder="Deskripsi"
-                                              class="potongan-input form-control"></textarea>
-                                    </td>
-                                    <td>
-                                        <select name="is_show[]" class="form-select form-select-sm">
-                                            <option value="1" selected>Tampil</option>
-                                            <option value="0">Sembunyi</option>
-                                        </select>
+                                        <textarea type="text" name="deskripsi[]" placeholder="Deskripsi"
+                                                  class="potongan-input form-control"></textarea>
+                                        <input type="hidden" name="is_show[]" value="1">
                                     </td>
                                 </tr>
                                 </tbody>
@@ -311,8 +305,13 @@
 
             if (e.target === input && input.value.trim() !== "") {
                 const newRow = lastRow.cloneNode(true);
-                newRow.querySelectorAll("input, textarea").forEach(i => i.value = "");
-                newRow.querySelectorAll("select").forEach(s => { s.value = "1"; });
+                newRow.querySelectorAll("input, textarea").forEach(i => {
+                    if (i.type === "hidden") {
+                        i.value = "1";
+                    } else {
+                        i.value = "";
+                    }
+                });
                 table.querySelector("tbody").appendChild(newRow);
                 $(newRow).find('.input-tanggal').datepicker({
                     format: "dd-mm-yyyy",
@@ -333,7 +332,11 @@
             });
             const firstRow = tableBody.querySelector('tr');
             firstRow.querySelectorAll('input').forEach(input => {
-                input.value = '';
+                if (input.type !== "hidden") {
+                    input.value = '';
+                } else {
+                    input.value = '1';
+                }
             });
         }
 
