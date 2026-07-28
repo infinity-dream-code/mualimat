@@ -40,7 +40,7 @@ class RekapWakafController extends Controller
             ['data' => 'trxdate', 'name' => 'Tanggal', 'columnType' => 'timestamp', 'searchable' => false, 'orderable' => true, 'duplicate' => false, 'exportable' => true],
             [
                 'data' => 'stcust',
-                'name' => 'Status Wakaf',
+                'name' => 'Status Infaq',
                 'columnType' => 'boolean',
                 'searchable' => false,
                 'orderable' => true,
