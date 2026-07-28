@@ -145,6 +145,12 @@ class DataTagihanController extends Controller
             ->get();
         $data["kelas"] = mst_kelas::get();
         $data["unit"] = mst_sekolah::get();
+        $data["periode"] = scctbill::select("BILLAC")
+            ->whereNotNull("BILLAC")
+            ->where("BILLAC", "!=", "")
+            ->distinct()
+            ->orderBy("BILLAC", "desc")
+            ->get();
 
         return view("admin.data_tagihan", $data);
     }
@@ -161,9 +167,10 @@ class DataTagihanController extends Controller
             if ($filter) {
                 foreach ($filter as $key => $val) {
                     if (
-                        strtolower($val) != "all" &&
-                        $val !== null &&
-                        $val !== ""
+                        is_array($val) ||
+                        (strtolower($val) != "all" &&
+                            $val !== null &&
+                            $val !== "")
                     ) {
                         $colName = match ($key) {
                             "tanggal-pembuatan" => "scctbill.FTGLTagihan",
@@ -171,6 +178,7 @@ class DataTagihanController extends Controller
                             "post" => "scctbill.BILLNM",
                             "kelas" => "scctcust.DESC02",
                             "siswa" => "scctcust.nmcust",
+                            "periode" => "scctbill.BILLAC",
                             default => null,
                         };
                         if ($key == "tanggal-pembuatan") {
@@ -201,6 +209,13 @@ class DataTagihanController extends Controller
                                         ]);
                                 }
                             }
+                        } elseif (in_array($key, ["post", "tahun_akademik", "periode"], true) && is_array($val)) {
+                            $array = array_filter($val, function ($value) {
+                                return $value !== "all";
+                            });
+                            if (count($array) > 0) {
+                                $colName && ($filters[] = [$colName, "in", $array]);
+                            }
                         } elseif ($key == "siswa") {
                             $val = is_numeric($val) ? $val : "%" . $val . "%";
                             $colName = is_numeric($val)
@@ -216,25 +231,32 @@ class DataTagihanController extends Controller
                 if (!empty($filters)) {
                     $filterQuery = function ($query) use ($filters) {
                         foreach ($filters as $filter) {
-                            if (count($filter) === 3) {
-                                $query->where(
-                                    $filter[0],
-                                    $filter[1],
-                                    $filter[2],
-                                );
-                            } elseif (count($filter) === 4) {
-                                if ($filter[3] == "whereBetween") {
-                                    $query->whereBetween($filter[0], [
-                                        $filter[1],
-                                        $filter[2],
-                                    ]);
-                                } else {
-                                    $query->{$filter[3]}(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
-                                }
+                            switch (count($filter)) {
+                                case 3:
+                                    $filter[1] === "in"
+                                        ? $query->whereIn(
+                                            $filter[0],
+                                            $filter[2],
+                                        )
+                                        : $query->where(
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
+                                    break;
+
+                                case 4:
+                                    $filter[3] === "whereBetween"
+                                        ? $query->whereBetween($filter[0], [
+                                            $filter[1],
+                                            $filter[2],
+                                        ])
+                                        : $query->{$filter[3]}(
+                                            $filter[0],
+                                            $filter[1],
+                                            $filter[2],
+                                        );
+                                    break;
                             }
                         }
                     };
@@ -346,7 +368,7 @@ class DataTagihanController extends Controller
                                 $filters[] = ["scctcust.DESC02", "=", $val[1]];
                                 $filters[] = ["scctcust.DESC03", "=", $val[2]];
                             }
-                        } elseif ($key == "post") {
+                        } elseif (in_array($key, ["post", "tahun_akademik", "periode"], true) && is_array($val)) {
                             $array = array_filter($val, function ($value) {
                                 return $value !== "all";
                             });
@@ -354,7 +376,9 @@ class DataTagihanController extends Controller
                                 $colName &&
                                     ($filters[] = [$colName, "in", $array]);
                             }
-                            $post = $array;
+                            if ($key == "post") {
+                                $post = $array;
+                            }
                         } elseif ($key == "siswa") {
                             $val = is_numeric($val) ? $val : "%" . $val . "%";
                             $colName = is_numeric($val)
@@ -698,7 +722,7 @@ class DataTagihanController extends Controller
                             $filters[] = ["scctcust.DESC02", "=", $val[1]];
                             $filters[] = ["scctcust.DESC03", "=", $val[2]];
                         }
-                    } elseif ($key == "post") {
+                    } elseif (in_array($key, ["post", "tahun_akademik", "periode"], true) && is_array($val)) {
                         $array = array_filter($val, function ($value) {
                             return $value !== "all";
                         });
@@ -885,7 +909,7 @@ class DataTagihanController extends Controller
                                 $filters[] = ["scctcust.DESC02", "=", $val[1]];
                                 $filters[] = ["scctcust.DESC03", "=", $val[2]];
                             }
-                        } elseif ($key == "post") {
+                        } elseif (in_array($key, ["post", "tahun_akademik", "periode"], true) && is_array($val)) {
                             $array = array_filter($val, function ($value) {
                                 return $value !== "all";
                             });
@@ -893,7 +917,9 @@ class DataTagihanController extends Controller
                                 $colName &&
                                     ($filters[] = [$colName, "in", $array]);
                             }
-                            $post = $array;
+                            if ($key == "post") {
+                                $post = $array;
+                            }
                         } elseif ($key == "siswa") {
                             $val = is_numeric($val) ? $val : "%" . $val . "%";
                             $colName = is_numeric($val)

@@ -64,9 +64,10 @@
                                     Tahun Akademik
                                 </label>
                                 <select class="form-select" id="filter[tahun_akademik]"
-                                        name="filter[tahun_akademik]"
+                                        name="filter[tahun_akademik][]"
                                         data-control="select2"
-                                        data-placeholder="Pilih Tahun Akademik">
+                                        data-placeholder="Pilih Tahun Akademik"
+                                        multiple="multiple">
                                     <option value="all">Semua</option>
                                     @isset($thn_aka)
                                         @foreach($thn_aka as $item)
@@ -98,6 +99,26 @@
                                         @foreach($post as $item)
                                             <option
                                                 value="{{$item->tagihan}}">{{$item->tagihan}}</option>
+                                        @endforeach
+                                    @else
+                                        <option>data kosong</option>
+                                    @endisset
+                                </select>
+                            </div>
+                            <div class="col mb-5">
+                                <label class="form-label" for="periode">
+                                    Periode
+                                </label>
+                                <select class="form-select" id="periode"
+                                        name="filter[periode][]"
+                                        data-control="select2"
+                                        data-placeholder="Pilih Periode"
+                                        multiple="multiple">
+                                    <option value="all">Semua</option>
+                                    @isset($periode)
+                                        @foreach($periode as $item)
+                                            <option
+                                                value="{{$item->BILLAC}}">{{$item->BILLAC}}</option>
                                         @endforeach
                                     @else
                                         <option>data kosong</option>
@@ -302,35 +323,38 @@
                 $kelasSelect.val('all').trigger('change.select2');
             });
 
-            const $postInput = $('#post');
-            $postInput.on('select2:select', function (e) {
-                if (e.params.data.id === 'all') {
-                    $('#post option').prop('selected', true);
-                    $postInput.trigger('change');
-                }
-            });
-
-            $postInput.on('select2:unselect', function (e) {
-                if (e.params.data.id === 'all') {
-                    let selected = $postInput.val() || [];
-                    if (selected.length > 0) {
-                        $postInput.val([selected[0]]).trigger('change');
-                    } else {
-                        $postInput.val(null).trigger('change');
+            function bindSelectAllToggle(selector) {
+                const $input = $(selector);
+                $input.on('select2:select', function (e) {
+                    if (e.params.data.id === 'all') {
+                        $input.find('option').prop('selected', true);
+                        $input.trigger('change');
                     }
-                }
-            });
-
-            $postInput.on('change', function () {
-                let selected = $postInput.val();
-                if (!selected || selected.length === 0) {
-                    let fallbackOption = $('#post option:not([value="all"])').first().val();
-                    console.log(fallbackOption)
-                    if (fallbackOption) {
-                        $postInput.val([fallbackOption]).trigger('change');
+                });
+                $input.on('select2:unselect', function (e) {
+                    if (e.params.data.id === 'all') {
+                        let selected = $input.val() || [];
+                        if (selected.length > 0) {
+                            $input.val([selected[0]]).trigger('change');
+                        } else {
+                            $input.val(null).trigger('change');
+                        }
                     }
-                }
-            });
+                });
+                $input.on('change', function () {
+                    let selected = $input.val();
+                    if (!selected || selected.length === 0) {
+                        let fallbackOption = $input.find('option:not([value="all"])').first().val();
+                        if (fallbackOption) {
+                            $input.val([fallbackOption]).trigger('change');
+                        }
+                    }
+                });
+            }
+
+            bindSelectAllToggle('#post');
+            bindSelectAllToggle('#periode');
+            bindSelectAllToggle('[name="filter[tahun_akademik][]"]');
 
             function generateTableRow(data, tagihan) {
                 return data.map(s => {
