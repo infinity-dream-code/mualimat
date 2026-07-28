@@ -362,9 +362,9 @@
         // })
 
         document.getElementById('cetak-kartu-siswa').addEventListener('click', function (e) {
-            e.preventDefault();
-            loadingAlert('Membuat Kartu Siswa');
-            let url = '{{route('admin.cek-pelunasan.cetak-kartu-siswa')}}';
+    e.preventDefault();
+    loadingAlert('Membuat Kartu Siswa');
+    let url = '{{route('admin.rekap-cek-pelunasan.cetak-kartu-siswa')}}';
             const form = new FormData(document.getElementById('filter-form'));
             const params = new URLSearchParams();
             for (const [key, value] of form.entries()) {
