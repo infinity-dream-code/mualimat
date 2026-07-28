@@ -131,6 +131,17 @@ PotonganTagihanController extends Controller
                 "duplicate" => true
             ],
             [
+                "data" => "STCUST",
+                "name" => "Status Siswa",
+                "searchable" => true,
+                "orderable" => true,
+                "exportable" => true,
+                "duplicate" => true,
+                "render" => function ($data) {
+                    return $data == 1 ? '1' : '0';
+                }
+            ],
+            [
                 "data" => "PAIDDT",
                 "name" => "Tanggal Bayar",
                 "columnType" => "timestamp",
@@ -394,6 +405,7 @@ PotonganTagihanController extends Controller
                     "scctbill.BILLNM",
                     "scctbill.BILLAM",
                     "scctbill.PAIDST",
+                    "scctcust.STCUST",
                     "scctbill.PAIDDT",
                     "scctbill.BTA",
                     "scctbill.FUrutan",
