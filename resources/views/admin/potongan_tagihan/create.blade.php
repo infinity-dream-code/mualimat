@@ -151,10 +151,6 @@
                                 <span class="ri-file-text-line me-2"></span>
                                 Simpan Potongan Tagihan
                             </button>
-                            {{--                            <button type="button" class="btn btn-facebook" id="cetak-kartu-siswa">--}}
-                            {{--                                <span class="ri-profile-line me-2"></span>--}}
-                            {{--                                Cetak Kartu Siswa--}}
-                            {{--                            </button>--}}
                             <button type="reset" class="btn btn-secondary" disabled>
                                 <span class="ri-reset-left-line me-2"></span>
                                 Reset
@@ -228,6 +224,16 @@
                     </form>
                 </div>
             </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="datatable-footer-info d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="datatable-info text-muted" id="table-info">
+                            <span id="total-entries">0</span> entri (disaring dari <span id="total-all">0</span> entri keseluruhan)
+                            <span id="selected-entries">0</span> baris dipilih
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 @endsection
@@ -264,6 +270,19 @@
             select: 'multi',
         };
 
+        function updateTableInfo() {
+            const table = DT[dtOptions.tableId];
+            if (!table) return;
+
+            const totalEntries = table.data().count();
+            const totalAll = table.rows().count();
+            const selectedEntries = table.rows({ selected: true }).count();
+
+            document.getElementById('total-entries').textContent = totalEntries;
+            document.getElementById('total-all').textContent = totalAll;
+            document.getElementById('selected-entries').textContent = selectedEntries;
+        }
+
         function handleAutoAppend(e, tableId, inputClass) {
             const table = document.getElementById(tableId);
             const rows = table.querySelectorAll("tbody tr");
@@ -274,8 +293,6 @@
                 const newRow = lastRow.cloneNode(true);
                 newRow.querySelectorAll("input, textarea").forEach(i => i.value = "");
                 newRow.querySelectorAll("select").forEach(s => { s.value = "1"; });
-                // const newIndex = rows.length + 1;
-                // newRow.querySelector(".row-number").textContent = newIndex;
                 table.querySelector("tbody").appendChild(newRow);
                 $(newRow).find('.input-tanggal').datepicker({
                     format: "dd-mm-yyyy",
@@ -315,7 +332,6 @@
             });
             if (inputVal === "" && rows.length > 1 && emptyRows.length > 1) {
                 row.remove();
-                // updateRowNumbers(tableId);
             }
         }
 
@@ -327,6 +343,7 @@
                     filterForm.on('submit', function (e) {
                         e.preventDefault();
                         dataReFilter(dtOptions.tableId);
+                        setTimeout(updateTableInfo, 500);
                     });
                     filterForm.on('reset', function (e) {
                         setTimeout(function () {
@@ -338,6 +355,7 @@
                                     $this.trigger('change');
                                 });
                             }
+                            setTimeout(updateTableInfo, 500);
                         }, 0)
                     });
                 }
@@ -346,7 +364,6 @@
             if (select2.length) {
                 select2.each(function () {
                     let $this = $(this);
-                    // select2Focus($this);
                     $this.wrap('<div class="position-relative"></div>').select2({
                         placeholder: 'Select value',
                         dropdownParent: $this.parent()
@@ -412,6 +429,8 @@
             document.addEventListener("blur", function (e) {
                 inputTables.forEach(({id, inputClass}) => handleAutoRemove(e, id, inputClass));
             }, true);
+
+            setInterval(updateTableInfo, 1000);
 
             document.getElementById('simpan-potongan').addEventListener('click', async function (e) {
                 e.preventDefault();
@@ -487,6 +506,7 @@
                     DT[`${dtOptions.tableId}`].rows().deselect();
                     resetDynamicTable('potongan-table');
                     successAlert(result['message']);
+                    setTimeout(updateTableInfo, 300);
                 } catch (error) {
                     if (error.status === 422) {
                         const errors = error.error || error.errors;
@@ -509,7 +529,6 @@
 
             })
         });
-
 
     </script>
 @endsection
