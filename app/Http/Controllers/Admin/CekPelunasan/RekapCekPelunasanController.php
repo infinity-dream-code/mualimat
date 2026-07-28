@@ -388,15 +388,34 @@ class RekapCekPelunasanController extends Controller
                 return response()->json(['error' => 'Siswa tidak ditemukan'], 422);
             }
 
-            // SAMA PERSIS KAYAK QUERY NAVICAT
-            $tagihans = scctbill::where('CUSTID', $custid)
-                ->where('FSTSBolehBayar', 1)
-                ->orderByRaw("CASE WHEN FUrutan IS NULL THEN 999999 ELSE FUrutan END ASC")
-                ->get();
+            // PAKAI RAW QUERY LANGSUNG SAMA PERSIS KAYAK NAVICAT
+            $tagihans = DB::select("
+            SELECT 
+                CUSTID,
+                BILLNM,
+                BILLAM,
+                PAIDST,
+                FUrutan,
+                FTGLTagihan,
+                BTA
+            FROM scctbill
+            WHERE CUSTID = ?
+                AND FSTSBolehBayar = 1
+            ORDER BY 
+                CASE 
+                    WHEN FUrutan IS NULL THEN 999999 
+                    ELSE FUrutan 
+                END ASC
+        ", [$custid]);
 
-            if ($tagihans->isEmpty()) {
+            if (empty($tagihans)) {
                 return response()->json(['error' => 'Tagihan tidak ditemukan'], 422);
             }
+
+            // Convert stdClass ke array biar gampang di blade
+            $tagihans = collect($tagihans)->map(function ($item) {
+                return (array) $item;
+            });
 
             $totalTagihan = $tagihans->sum('BILLAM');
             $totalTerbayar = $tagihans->where('PAIDST', 1)->sum('BILLAM');
