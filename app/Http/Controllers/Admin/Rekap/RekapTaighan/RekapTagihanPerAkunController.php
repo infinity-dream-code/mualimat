@@ -77,6 +77,14 @@ class RekapTagihanPerAkunController extends Controller
                 "exportable" => true,
             ],
             [
+                "data" => "FUrutan",  // TAMBAHKAN INI
+                "name" => "Urutan Tagihan",
+                "searchable" => true,
+                "orderable" => true,
+                "exportable" => true,
+                "defaultContent" => "0",
+            ],
+            [
                 "data" => "BILLAM",
                 "name" => "Tagihan",
                 "searchable" => true,
@@ -94,9 +102,9 @@ class RekapTagihanPerAkunController extends Controller
                 "exportable" => true,
             ],
             [
-                "data" => "PAIDDT",
-                "name" => "Tanggal Bayar",
-                "columnType" => "timestamp",
+                "data" => "FTGLTagihan",  // UBAH DARI PAIDDT MENJADI FTGLTagihan
+                "name" => "Tanggal Buat Tagihan",
+                "columnType" => "date",
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
@@ -116,8 +124,8 @@ class RekapTagihanPerAkunController extends Controller
         $search_arr = $request->get("search", []);
         $searchValue = $search_arr["value"] ?? "";
 
-        $columnName = "BILLAC";
-        $columnSortOrder = "DESC";
+        $columnName = "scctcust.nmcust";
+        $columnSortOrder = "asc";
 
         if (!empty($order_arr)) {
             $columnIndex = $columnIndex_arr[0]["column"] ?? null;
@@ -216,11 +224,11 @@ class RekapTagihanPerAkunController extends Controller
                 "scctbill.BILLNM",
                 "scctbill.BILLAM",
                 "scctbill.PAIDST",
-                "scctbill.PAIDDT",
+                "scctbill.FTGLTagihan",  // TAMBAHKAN INI
                 "scctbill.BTA",
                 "scctbill.CUSTID",
                 "scctbill.FIDBANK",
-                "scctbill.FUrutan",
+                DB::raw("COALESCE(scctbill.FUrutan, 0) as FUrutan"),  // UBAH INI
                 "scctcust.CODE02",
                 "scctcust.DESC02",
             ]),
@@ -232,44 +240,28 @@ class RekapTagihanPerAkunController extends Controller
             "scctbill.CUSTID",
         )
             ->where("scctbill.PAIDST", 0)
-            // ->where("scctbill.FSTSBolehBayar", 1)
             ->where("scctcust.STCUST", 1)
-            // ->where("scctbill.PAIDDT", "!=", null)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
             ->where(function ($query) use ($filterQuery) {
                 if ($filterQuery) {
                     $filterQuery($query);
                 }
-            })->orderByRaw("
-                CASE
-                    WHEN scctbill.BILLNM LIKE '%JULI%' THEN 1
-                    WHEN scctbill.BILLNM LIKE '%AGUSTUS%' THEN 2
-                    WHEN scctbill.BILLNM LIKE '%SEPTEMBER%' THEN 3
-                    WHEN scctbill.BILLNM LIKE '%OKTOBER%' THEN 4
-                    WHEN scctbill.BILLNM LIKE '%NOVEMBER%' THEN 5
-                    WHEN scctbill.BILLNM LIKE '%DESEMBER%' THEN 6
-                    WHEN scctbill.BILLNM LIKE '%JANUARI%' THEN 7
-                    WHEN scctbill.BILLNM LIKE '%FEBRUARI%' THEN 8
-                    WHEN scctbill.BILLNM LIKE '%MARET%' THEN 9
-                    WHEN scctbill.BILLNM LIKE '%APRIL%' THEN 10
-                    WHEN scctbill.BILLNM LIKE '%MEI%' THEN 11
-                    WHEN scctbill.BILLNM LIKE '%JUNI%' THEN 12
-                    ELSE 999
-                END
-            ");
+            });
 
         // Total records
         $totalRecords = scctbill::select("count(*) as allcount")
-            ->where("PAIDST", 1)
-            ->where("scctbill.FSTSBolehBayar", 1)
-            ->where("PAIDDT", "!=", null)
+            ->where("PAIDST", 0)
             ->count();
 
         $totalRecordswithFilter = (clone $query)->count();
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
+
+        // PERUBAHAN ORDER - nmcust ASC, FUrutan ASC
         $records = (clone $query)
-            ->orderBy($columnName, $columnSortOrder)
+            ->reorder()
+            ->orderBy('scctcust.nmcust', 'asc')     // Nama ASC
+            ->orderBy('scctbill.FUrutan', 'asc')    // FUrutan ASC
             ->select($select)
             ->whereAny($whereAny, "like", "%" . $searchValue . "%")
             ->skip($start)
@@ -298,7 +290,6 @@ class RekapTagihanPerAkunController extends Controller
         ];
         return response()->json($response);
     }
-
     public function getRekapDataTagihan(Request $request)
     {
         $request->validate(
@@ -307,9 +298,9 @@ class RekapTagihanPerAkunController extends Controller
             ],
             [
                 "filter.tahun_akademik.required" =>
-                    "Silahkan pilih satu tahun akademik terlebih dahulu",
+                "Silahkan pilih satu tahun akademik terlebih dahulu",
                 "filter.tahun_akademik.not_in" =>
-                    "silahkan pilih satu tahun akademik terlebih dahulu",
+                "silahkan pilih satu tahun akademik terlebih dahulu",
             ],
         );
 
@@ -331,7 +322,7 @@ class RekapTagihanPerAkunController extends Controller
                     $colName = match ($key) {
                         "dari_tanggal",
                         "sampai_tanggal"
-                            => "scctbill.FTGLTagihan",
+                        => "scctbill.FTGLTagihan",
                         "tanggal-transaksi" => "scctbill.PAIDDT",
                         "tahun_akademik" => "scctbill.BTA",
                         "post" => "scctbill.BILLNM",
@@ -583,7 +574,7 @@ class RekapTagihanPerAkunController extends Controller
             return response()->json(
                 [
                     "message" =>
-                        "Tidak dapat mencetak rekap tagihan!<br> *Silahkan hubungi administrator",
+                    "Tidak dapat mencetak rekap tagihan!<br> *Silahkan hubungi administrator",
                     "error" => $e->getMessage(),
                 ],
                 422,
