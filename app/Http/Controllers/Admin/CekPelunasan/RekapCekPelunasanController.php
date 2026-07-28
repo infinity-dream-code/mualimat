@@ -123,8 +123,8 @@ class RekapCekPelunasanController extends Controller
         $search_arr = $request->get("search", []);
         $searchValue = $search_arr["value"] ?? "";
 
-        $columnName = "BILLAC";
-        $columnSortOrder = "DESC";
+        $columnName = "scctcust.nmcust";
+        $columnSortOrder = "asc";
 
         if (!empty($order_arr)) {
             $columnIndex = $columnIndex_arr[0]["column"] ?? null;
@@ -353,9 +353,9 @@ class RekapCekPelunasanController extends Controller
             ->get();
 
         $records = $records->map(function ($item, $index) use ($request) {
-            $item->NOVA = match (strtolower($item->CODE02)) {
-                "mts" => scctcust::showVAMTS($item->nocust),
-                "ma" => scctcust::showVAMA($item->nocust),
+            $item->NOVA = match (strtolower($item->CODE02 ?? '')) {
+                "mts" => scctcust::showVAMTS($item->nocust ?? ''),
+                "ma" => scctcust::showVAMA($item->nocust ?? ''),
                 default => "",
             };
 
@@ -392,8 +392,10 @@ class RekapCekPelunasanController extends Controller
             }
 
             // Ambil tagihan siswa dengan urutan berdasarkan FUrutan ASC
+            // Dan urutkan juga berdasarkan FUrutan yang NULL diakhir
             $tagihans = scctbill::where('CUSTID', $custid)
                 ->where('FSTSBolehBayar', 1)
+                ->orderByRaw('CASE WHEN FUrutan IS NULL THEN 1 ELSE 0 END')
                 ->orderBy('FUrutan', 'asc')
                 ->get();
 
@@ -406,13 +408,13 @@ class RekapCekPelunasanController extends Controller
             $totalTerbayar = $tagihans->where('PAIDST', 1)->sum('BILLAM');
             $sisaTagihan = $totalTagihan - $totalTerbayar;
 
-            $nova = match (strtolower($siswa->CODE02)) {
-                'mts' => scctcust::showVAMTS($siswa->NOCUST),
-                'ma' => scctcust::showVAMA($siswa->NOCUST),
+            $nova = match (strtolower($siswa->CODE02 ?? '')) {
+                'mts' => scctcust::showVAMTS($siswa->NOCUST ?? ''),
+                'ma' => scctcust::showVAMA($siswa->NOCUST ?? ''),
                 default => '',
             };
 
-            $pdf = Pdf::loadView('cetak.kartu-siswa', [
+            $pdf = Pdf::loadView('cetak.kartu-siswa-rekap-cek', [
                 'siswa' => $siswa,
                 'tagihans' => $tagihans,
                 'nova' => $nova,
@@ -421,7 +423,7 @@ class RekapCekPelunasanController extends Controller
                 'sisaTagihan' => $sisaTagihan,
             ]);
 
-            return $pdf->download('kartu-siswa-' . $siswa->nocust . '.pdf');
+            return $pdf->download('kartu-siswa-' . ($siswa->nocust ?? '') . '.pdf');
         } catch (\Exception $e) {
             Log::error('Error cetak kartu siswa: ' . $e->getMessage());
             return response()->json([
