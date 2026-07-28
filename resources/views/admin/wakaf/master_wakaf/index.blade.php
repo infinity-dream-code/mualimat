@@ -93,7 +93,7 @@
                     <h5>Filter</h5>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label" for="filter[nama]">Nama Sumbangan</label>
+                            <label class="form-label" for="filter[nama]">Nama Infaq</label>
                             <input type="text" class="form-control" id="filter[nama]" name="filter[nama]" placeholder="Cari nama sumbangan" value="{{ request('filter.nama', '') }}">
                         </div>
                         <div class="col-md-6 mb-3">
