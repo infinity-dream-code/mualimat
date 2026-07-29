@@ -204,7 +204,7 @@ class RekapSaldoController extends Controller
             $search_arr = $request->get("search", []);
             $searchValue = $search_arr["value"] ?? "";
 
-            $columnName = "NMCUST";
+            $columnName = "scctcust.NMCUST";
             $columnSortOrder = "asc";
 
             if (!empty($order_arr)) {
@@ -219,12 +219,11 @@ class RekapSaldoController extends Controller
                 }
             }
 
-            // Mapping column untuk sorting
             $columnMap = [
-                "nocust" => "NOCUST",
-                "nmcust" => "NMCUST",
-                "CODE02" => "CODE02",
-                "DESC02" => "DESC02",
+                "nocust" => "scctcust.NOCUST",
+                "nmcust" => "scctcust.NMCUST",
+                "CODE02" => "scctcust.CODE02",
+                "DESC02" => "scctcust.DESC02",
                 "opening_balance" => "opening_balance",
                 "current_net" => "current_net",
                 "closing_balance" => "closing_balance",
@@ -233,6 +232,19 @@ class RekapSaldoController extends Controller
             if (isset($columnMap[$columnName])) {
                 $columnName = $columnMap[$columnName];
             }
+
+            $periode = $request->filter["periode"] ?? null;
+            $periodeStart = null;
+            $periodeEnd = null;
+
+            if ($periode && preg_match('/^\d{6}$/', $periode)) {
+                $periodeCarbon = Carbon::createFromFormat("Ym", $periode);
+                $periodeStart = $periodeCarbon->copy()->startOfMonth();
+                $periodeEnd = $periodeCarbon->copy()->endOfMonth();
+            }
+
+            Log::info('periodeStart: ' . ($periodeStart ? $periodeStart->toDateTimeString() : 'null'));
+            Log::info('periodeEnd: ' . ($periodeEnd ? $periodeEnd->toDateTimeString() : 'null'));
 
             $filters = [];
             $filterQuery = null;
@@ -247,22 +259,22 @@ class RekapSaldoController extends Controller
                             $val !== "")
                     ) {
                         $colName = match ($key) {
-                            "unit" => "CODE01",
-                            "kelas" => "DESC02",
-                            "siswa" => "NMCUST",
+                            "unit" => "scctcust.CODE01",
+                            "kelas" => "scctcust.DESC02",
+                            "siswa" => "scctcust.NMCUST",
                             default => null,
                         };
                         if ($key == "kelas") {
                             $val = explode("~", $val);
                             if (count($val) == 3) {
-                                $filters[] = ["CODE02", "=", $val[0]];
-                                $filters[] = ["DESC02", "=", $val[1]];
-                                $filters[] = ["DESC03", "=", $val[2]];
+                                $filters[] = ["scctcust.CODE02", "=", $val[0]];
+                                $filters[] = ["scctcust.DESC02", "=", $val[1]];
+                                $filters[] = ["scctcust.DESC03", "=", $val[2]];
                             }
                         } elseif ($key == "siswa") {
                             $val = is_numeric($val) ? $val : "%" . $val . "%";
                             $colName = is_numeric($val)
-                                ? "NOCUST"
+                                ? "scctcust.NOCUST"
                                 : $colName;
                             $colName && ($filters[] = [$colName, "like", $val]);
                         } else {
@@ -286,16 +298,48 @@ class RekapSaldoController extends Controller
                 }
             }
 
-            $whereAny = ["NMCUST", "NOCUST"];
+            $whereAny = ["scctcust.NMCUST", "scctcust.NOCUST"];
 
-            // Query dari view v_saldo_va
-            $query = DB::table('v_saldo_va')
-                ->where('STCUST', 1)
+            $tranSub = DB::table("sccttran")->select("CUSTID");
+
+            if ($periodeStart && $periodeEnd) {
+                $tranSub->selectRaw(
+                    "SUM(CASE WHEN TRXDATE < ? THEN KREDIT - DEBET ELSE 0 END) as opening_balance",
+                    [$periodeStart]
+                )->selectRaw(
+                    "SUM(CASE WHEN TRXDATE BETWEEN ? AND ? THEN KREDIT - DEBET ELSE 0 END) as current_net",
+                    [$periodeStart, $periodeEnd]
+                );
+            } else {
+                $tranSub->selectRaw("0 as opening_balance")
+                    ->selectRaw("SUM(KREDIT - DEBET) as current_net");
+            }
+
+            $tranSub->groupBy("CUSTID");
+
+            $query = DB::table("scctcust")
+                ->leftJoinSub($tranSub, "tran", function ($join) {
+                    $join->on("scctcust.CUSTID", "=", "tran.CUSTID");
+                })
+                ->where("scctcust.STCUST", 1)
                 ->where(function ($query) use ($filterQuery) {
                     if ($filterQuery) {
                         $filterQuery($query);
                     }
-                });
+                })
+                ->select([
+                    "scctcust.CUSTID",
+                    "scctcust.NOCUST",
+                    "scctcust.NMCUST",
+                    "scctcust.CODE01",
+                    "scctcust.CODE02",
+                    "scctcust.DESC02",
+                    "scctcust.DESC03",
+                    "scctcust.STCUST",
+                ])
+                ->selectRaw("COALESCE(tran.opening_balance, 0) as opening_balance")
+                ->selectRaw("COALESCE(tran.current_net, 0) as current_net")
+                ->selectRaw("COALESCE(tran.opening_balance, 0) + COALESCE(tran.current_net, 0) as closing_balance");
 
             if (!blank($searchValue)) {
                 $query->where(function ($q) use ($whereAny, $searchValue) {
@@ -306,8 +350,8 @@ class RekapSaldoController extends Controller
                 });
             }
 
-            $totalRecords = DB::table('v_saldo_va')
-                ->where('STCUST', 1)
+            $totalRecords = DB::table("scctcust")
+                ->where("STCUST", 1)
                 ->count();
 
             $totalRecordswithFilter = (clone $query)->count();
@@ -321,16 +365,15 @@ class RekapSaldoController extends Controller
                 ->get();
 
             $records = $records->map(function ($item, $index) {
-                // Mapping kolom dari view ke format yang diharapkan DataTable
                 $item->nocust = $item->NOCUST ?? '';
                 $item->nmcust = $item->NMCUST ?? '';
                 $item->CODE02 = $item->CODE02 ?? '';
                 $item->DESC02 = $item->DESC02 ?? '';
                 $item->DESC03 = $item->DESC03 ?? '';
                 $item->STCUST = $item->STCUST ?? 0;
-                $item->opening_balance = 0;
-                $item->current_net = $item->SALDO ?? 0;
-                $item->closing_balance = $item->SALDO ?? 0;
+                $item->opening_balance = $item->opening_balance ?? 0;
+                $item->current_net = $item->current_net ?? 0;
+                $item->closing_balance = $item->closing_balance ?? 0;
                 $item->item_id = $item->CUSTID;
 
                 return $item;
