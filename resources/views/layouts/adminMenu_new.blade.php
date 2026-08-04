@@ -96,16 +96,7 @@
                                 <div data-i18n="Buat Tagihan Excel">Buat Tagihan Excel</div>
                             </a>
                         </li>
-                        <li class="menu-item {{ Request::is(['admin/keuangan/tagihan-siswa/data-tagihan*']) ? 'active' : '' }}">
-                            <a href="{{ route('admin.keuangan.tagihan-siswa.data-tagihan.index') }}" class="menu-link">
-                                <div data-i18n="Data Tagihan">Data Tagihan</div>
-                            </a>
-                        </li>
-                        <li class="menu-item {{ Request::is(['admin/keuangan/tagihan-siswa/rekap-tagihan*']) ? 'active' : '' }}">
-                            <a href="{{ route('admin.keuangan.tagihan-siswa.rekap-tagihan.index') }}" class="menu-link">
-                                <div data-i18n="Rekap Tagihan">Rekap Tagihan</div>
-                            </a>
-                        </li>
+                       
                         <li class="menu-item {{ Request::is(['admin/keuangan/tagihan-siswa/copy-tagihan*']) ? 'active' : '' }}">
                             <a href="{{ route('admin.keuangan.tagihan-siswa.copy-tagihan.index') }}" class="menu-link">
                                 <div data-i18n="Copy Tagihan">Copy Tagihan</div>
@@ -118,23 +109,7 @@
                         <div data-i18n="Manual Pembayaran">Manual Pembayaran</div>
                     </a>
                 </li>
-                <li class="menu-item {{ Request::is(['admin/keuangan/penerimaan-siswa*']) ? 'active open' : '' }}">
-                    <a href="javascript:void(0);" class="menu-link menu-toggle">
-                        <div data-i18n="Penerimaan Siswa">Penerimaan Siswa</div>
-                    </a>
-                    <ul class="menu-sub">
-                        <li class="menu-item {{ Request::is(['admin/keuangan/penerimaan-siswa/data-penerimaan*']) ? 'active' : '' }}">
-                            <a href="{{ route('admin.keuangan.penerimaan-siswa.data-penerimaan.index') }}" class="menu-link">
-                                <div data-i18n="Data Penerimaan">Data Penerimaan</div>
-                            </a>
-                        </li>
-                        <li class="menu-item {{ Request::is(['admin/keuangan/penerimaan-siswa/rekap-penerimaan*']) ? 'active' : '' }}">
-                            <a href="{{ route('admin.keuangan.penerimaan-siswa.rekap-penerimaan.index') }}" class="menu-link">
-                                <div data-i18n="Rekap Penerimaan">Rekap Penerimaan</div>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
+                
                 <li class="menu-item {{ Request::is(['admin/keuangan/saldo*']) ? 'active open' : '' }}">
                     <a href="javascript:void(0);" class="menu-link menu-toggle">
                         <div data-i18n="Saldo">Saldo</div>
