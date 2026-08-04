@@ -19,8 +19,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
-class
-PotonganTagihanController extends Controller
+class PotonganTagihanController extends Controller
 {
     public string $title;
     public string $mainTitle;
@@ -175,6 +174,7 @@ PotonganTagihanController extends Controller
             ],
         ];
     }
+
     public function getData(Request $request)
     {
         $draw = $request->get("draw");
@@ -571,8 +571,8 @@ PotonganTagihanController extends Controller
     {
         $data["title"] = $this->title;
         $data["mainTitle"] = "Buat " . $this->mainTitle;
-        $data["columnsUrl"] = route("admin.data-penerimaan.get-column");
-        $data["datasUrl"] = route("admin.data-penerimaan.get-data");
+        $data["columnsUrl"] = $this->columnsUrl;
+        $data["datasUrl"] = $this->datasUrl;
         $data["post"] = mst_tagihan::select(["tagihan"])
             ->orderByRaw(
                 "
