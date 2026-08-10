@@ -495,6 +495,18 @@ Route::prefix("admin")
                     });
             });
 
+        Route::prefix("update-musrifah")
+            ->name("update-musrifah.")
+            ->controller(\App\Http\Controllers\Admin\UpdateMusrifahController::class)
+            ->group(function () {
+                Route::get("get-data", "getData")->name("get-data");
+                Route::get("get-column", "getColumn")->name("get-column");
+                Route::resource(
+                    "",
+                    \App\Http\Controllers\Admin\UpdateMusrifahController::class,
+                )->parameters(["" => "id"]);
+            });
+
         Route::prefix("rekap-saldo")
 
             ->name("rekap-saldo.")
