@@ -138,7 +138,7 @@ class UpdateMusrifahController extends Controller
                         'required',
                         'string',
                         'max:100',
-                        Rule::unique('sholat_user', 'username')->connection('DATA_MYSQL'),
+                        Rule::unique('DATA_MYSQL.sholat_user', 'username'),
                     ],
                     'nama' => ['required', 'string', 'max:255'],
                     'password' => ['required', 'string', 'min:1', 'max:128'],
@@ -190,8 +190,7 @@ class UpdateMusrifahController extends Controller
                         'required',
                         'string',
                         'max:100',
-                        Rule::unique('sholat_user', 'username')
-                            ->connection('DATA_MYSQL')
+                        Rule::unique('DATA_MYSQL.sholat_user', 'username')
                             ->ignore($user->idincrement, 'idincrement'),
                     ],
                     'nama' => ['required', 'string', 'max:255'],
