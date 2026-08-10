@@ -130,36 +130,36 @@ class UpdateMusrifahController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make(
-            $request->all(),
-            [
-                'username' => [
-                    'required',
-                    'string',
-                    'max:100',
-                    Rule::unique('sholat_user', 'username')->connection('DATA_MYSQL'),
-                ],
-                'nama' => ['required', 'string', 'max:255'],
-                'password' => ['required', 'string', 'min:4', 'max:128'],
-            ],
-            ValidationMessage::messages(),
-            array_merge(ValidationMessage::attributes(), [
-                'username' => 'Username',
-                'password' => 'Password',
-            ])
-        );
-
-        if ($validator->fails()) {
-            return response()->json(['message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
-        }
-
         try {
+            $validator = Validator::make(
+                $request->all(),
+                [
+                    'username' => [
+                        'required',
+                        'string',
+                        'max:100',
+                        Rule::unique('sholat_user', 'username')->connection('DATA_MYSQL'),
+                    ],
+                    'nama' => ['required', 'string', 'max:255'],
+                    'password' => ['required', 'string', 'min:1', 'max:128'],
+                ],
+                ValidationMessage::messages(),
+                array_merge(ValidationMessage::attributes(), [
+                    'username' => 'Username',
+                    'password' => 'Password',
+                ])
+            );
+
+            if ($validator->fails()) {
+                return response()->json(['message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
+            }
+
             DB::connection('DATA_MYSQL')->beginTransaction();
 
             sholat_user::create([
                 'username' => trim($request->username),
                 'nama' => trim($request->nama),
-                'password' => password_hash($request->password, PASSWORD_DEFAULT),
+                'password' => $this->hashPassword($request->password),
                 'role' => self::ROLE_MUSRIFAH,
             ]);
 
@@ -167,47 +167,47 @@ class UpdateMusrifahController extends Controller
 
             return response()->json(['message' => 'Data ' . $this->mainTitle . ' telah disimpan']);
         } catch (Exception $e) {
-            DB::connection('DATA_MYSQL')->rollBack();
+            $this->safeRollback();
             return response()->json(['message' => 'Data ' . $this->mainTitle . ' gagal disimpan', 'error' => $e->getMessage()], 422);
         }
     }
 
     public function update(Request $request, $id)
     {
-        $user = sholat_user::where('idincrement', $id)
-            ->where('role', self::ROLE_MUSRIFAH)
-            ->first();
-
-        if (!$user) {
-            return response()->json(['message' => 'Data Musrifah tidak ditemukan!'], 422);
-        }
-
-        $validator = Validator::make(
-            $request->all(),
-            [
-                'username' => [
-                    'required',
-                    'string',
-                    'max:100',
-                    Rule::unique('sholat_user', 'username')
-                        ->connection('DATA_MYSQL')
-                        ->ignore($user->idincrement, 'idincrement'),
-                ],
-                'nama' => ['required', 'string', 'max:255'],
-                'password' => ['nullable', 'string', 'min:4', 'max:128'],
-            ],
-            ValidationMessage::messages(),
-            array_merge(ValidationMessage::attributes(), [
-                'username' => 'Username',
-                'password' => 'Password',
-            ])
-        );
-
-        if ($validator->fails()) {
-            return response()->json(['message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
-        }
-
         try {
+            $user = sholat_user::where('idincrement', $id)
+                ->where('role', self::ROLE_MUSRIFAH)
+                ->first();
+
+            if (!$user) {
+                return response()->json(['message' => 'Data Musrifah tidak ditemukan!'], 422);
+            }
+
+            $validator = Validator::make(
+                $request->all(),
+                [
+                    'username' => [
+                        'required',
+                        'string',
+                        'max:100',
+                        Rule::unique('sholat_user', 'username')
+                            ->connection('DATA_MYSQL')
+                            ->ignore($user->idincrement, 'idincrement'),
+                    ],
+                    'nama' => ['required', 'string', 'max:255'],
+                    'password' => ['nullable', 'string', 'min:1', 'max:128'],
+                ],
+                ValidationMessage::messages(),
+                array_merge(ValidationMessage::attributes(), [
+                    'username' => 'Username',
+                    'password' => 'Password',
+                ])
+            );
+
+            if ($validator->fails()) {
+                return response()->json(['message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
+            }
+
             DB::connection('DATA_MYSQL')->beginTransaction();
 
             $payload = [
@@ -216,7 +216,7 @@ class UpdateMusrifahController extends Controller
             ];
 
             if ($request->filled('password')) {
-                $payload['password'] = password_hash($request->password, PASSWORD_DEFAULT);
+                $payload['password'] = $this->hashPassword($request->password);
             }
 
             $user->update($payload);
@@ -225,8 +225,27 @@ class UpdateMusrifahController extends Controller
 
             return response()->json(['message' => 'Data ' . $this->mainTitle . ' telah diubah']);
         } catch (Exception $e) {
-            DB::connection('DATA_MYSQL')->rollBack();
+            $this->safeRollback();
             return response()->json(['message' => 'Data ' . $this->mainTitle . ' gagal diubah', 'error' => $e->getMessage()], 422);
+        }
+    }
+
+    private function hashPassword(string $password): string
+    {
+        // Format password di tabel sholat_user memakai MD5 (32 karakter),
+        // contoh: md5('123') = 202cb962ac59075b964b07152d234b70
+        return md5($password);
+    }
+
+    private function safeRollback(): void
+    {
+        try {
+            $connection = DB::connection('DATA_MYSQL');
+            if ($connection->transactionLevel() > 0) {
+                $connection->rollBack();
+            }
+        } catch (Exception $e) {
+            // abaikan error rollback agar tidak menimpa pesan error utama
         }
     }
 
@@ -247,7 +266,7 @@ class UpdateMusrifahController extends Controller
 
             return response()->json(['message' => 'Data ' . $this->mainTitle . ' telah dihapus']);
         } catch (Exception $e) {
-            DB::connection('DATA_MYSQL')->rollBack();
+            $this->safeRollback();
             return response()->json(['message' => 'Data ' . $this->mainTitle . ' gagal dihapus', 'error' => $e->getMessage()], 422);
         }
     }

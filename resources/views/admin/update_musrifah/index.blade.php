@@ -341,7 +341,7 @@
                             419: 'Sesi anda sudah habis, silahkan login kembali',
                             500: 'Tidak dapat terhubung ke server',
                         };
-                        errorAlert(errorMessages[error.status] || 'Terjadi kesalahan, silahkan coba lagi');
+                        errorAlert(error.message || errorMessages[error.status] || 'Terjadi kesalahan, silahkan coba lagi');
                     }
                 });
         }
