@@ -26,7 +26,13 @@ Auth::routes([
 Route::get("/sso/login", [SsoLoginController::class, "login"])->name("sso.login");
 Route::get("/", [AuthController::class, "index"])->name("index");
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::get('/home', function () {
+    return redirect()->route('admin.index');
+})->name('home');
+
+Route::get('/admin/keep-alive', \App\Http\Controllers\Admin\KeepAliveController::class)
+    ->name('admin.keep-alive');
+
 Route::get("/reload-captcha", [AuthController::class, "reloadCaptcha"])->name(
     "reload-captcha",
 );

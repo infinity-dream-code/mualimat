@@ -867,7 +867,7 @@ async function dataTableCreate(options) {
                 }
             }, error: function (xhr, error, code) {
                 const descriptions = {
-                    '401': 'Sesi anda telah habis, silahkan login kembali!',
+                    '401': 'Permintaan gagal diproses. Silakan coba lagi.',
                     '404': 'Data tidak ditemukan!',
                     '500': 'Internal Server Error',
                 };

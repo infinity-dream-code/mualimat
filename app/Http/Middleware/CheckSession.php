@@ -9,16 +9,11 @@ use Symfony\Component\HttpFoundation\Response;
 class CheckSession
 {
     /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * Legacy middleware — jangan paksa redirect login.
+     * Auth + PersistentLogin yang menangani sesi.
      */
     public function handle($request, Closure $next)
     {
-        if (!session()->has('user')) {
-            return redirect()->route('login');
-        }
-
         return $next($request);
     }
 }

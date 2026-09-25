@@ -14,6 +14,7 @@
 
     <title>@yield('title', config('app.name')) - {{ config('app.name') }}</title>
     <meta name="csrf-token" content="{{ csrf_token() }}"/>
+    <meta name="keep-alive-url" content="{{ url('admin/keep-alive') }}"/>
     <meta name="description" content="Core system ICT "/>
 
     <!-- Favicon -->
@@ -288,6 +289,7 @@
         integrity="sha256-y3ibfOyBqlgBd+GzwFYQEVOZdNJD06HeDXihongBXKs=" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script src="{{asset('js/session-keepalive.js')}}"></script>
 <script src="https://cdn.jsdelivr.net/npm/perfect-scrollbar@1.5.6/dist/perfect-scrollbar.min.js"
         integrity="sha256-B69LaJOkADtiChnrAMKFvAyqbzM3Thpr6EyGtViOFG8=" crossorigin="anonymous"></script>
 <script src="{{asset('main/js/menu.js')}}"></script>
