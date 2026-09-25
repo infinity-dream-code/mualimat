@@ -256,17 +256,28 @@ class DataSiswaController extends Controller
 
         $musrifahNamaMap = [];
         if ($musrifahUsernames->isNotEmpty()) {
-            $musrifahNamaMap = sholat_user::query()
+            $musrifahRows = sholat_user::query()
                 ->where("role", "Musrifah")
-                ->whereIn("username", $musrifahUsernames->all())
-                ->pluck("nama", "username")
-                ->all();
+                ->where(function ($q) use ($musrifahUsernames) {
+                    foreach ($musrifahUsernames as $username) {
+                        $q->orWhereRaw("LOWER(TRIM(username)) = ?", [strtolower($username)]);
+                    }
+                })
+                ->get(["username", "nama"]);
+
+            foreach ($musrifahRows as $row) {
+                $key = strtolower(trim((string) $row->username));
+                $musrifahNamaMap[$key] = trim((string) ($row->nama ?? ""));
+            }
         }
 
         $records = $records->map(function ($item) use ($musrifahNamaMap) {
                 $row = $item->toArray();
                 $nis = trim((string) ($item->nocust ?? ''));
                 $musrifah = trim((string) ($item->musrifah ?? ''));
+                $musrifahNama = $musrifah !== ''
+                    ? ($musrifahNamaMap[strtolower($musrifah)] ?? '')
+                    : '';
                 $row["item_id"] = $item->CUSTID;
                 $row["nis"] = $item->nocust;
                 $row["va_spp"] = ($nis !== '' && $nis !== '-')
@@ -283,10 +294,9 @@ class DataSiswaController extends Controller
                 $row["ayah"] = $item->GENUS;
                 $row["no_wa"] = $item->NO_WA;
                 $row["musrifah"] = $musrifah;
-                $row["musrifah_nama"] = $musrifah !== '' ? ($musrifahNamaMap[$musrifah] ?? '') : '';
-                $row["musrifah_display"] = $row["musrifah_nama"] !== ''
-                    ? $row["musrifah_nama"]
-                    : $musrifah;
+                $row["musrifah_nama"] = $musrifahNama;
+                // Tampilkan nama musrifah; kalau nama kosong baru fallback username
+                $row["musrifah_display"] = $musrifahNama !== '' ? $musrifahNama : $musrifah;
                 $row["edit_siswa"] = true;
                 $row["set_status"] = true;
                 unset($row["CUSTID"]);
@@ -354,7 +364,7 @@ class DataSiswaController extends Controller
 
                 return [
                     "id" => $username,
-                    "text" => $nama !== "" ? "{$nama} ({$username})" : $username,
+                    "text" => $nama !== "" ? $nama : $username,
                 ];
             })
             ->values();

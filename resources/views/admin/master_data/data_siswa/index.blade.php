@@ -662,9 +662,7 @@
                 const $musrifah = $('#edit_siswa-musrifah');
                 $musrifah.empty();
                 if (musrifahUsername) {
-                    const label = musrifahNama
-                        ? `${musrifahNama} (${musrifahUsername})`
-                        : musrifahUsername;
+                    const label = musrifahNama || musrifahUsername;
                     $musrifah.append(new Option(label, musrifahUsername, true, true));
                 }
                 $musrifah.trigger('change');
