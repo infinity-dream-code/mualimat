@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\MasterData;
 use App\Http\Controllers\Controller;
 use App\Models\mst_sekolah;
 use App\Models\scctcust;
+use App\Models\sholat_user;
 use App\Models\ValidationMessage;
 use App\Support\FilterHandler;
 use Illuminate\Http\Request;
@@ -90,6 +91,7 @@ class DataSiswaController extends Controller
             ["data" => "DESC05", "name" => "Alamat", "searchable" => true, "orderable" => true, "exportable" => true],
             ["data" => "GENUS", "name" => "Orang Tua", "searchable" => true, "orderable" => true, "exportable" => true],
             ["data" => "NO_WA", "name" => "No WA", "searchable" => true, "orderable" => true, "exportable" => true],
+            ["data" => "musrifah_display", "name" => "Musrifah", "searchable" => true, "orderable" => false, "exportable" => true],
             ["data" => "STCUST", "name" => "Status (1/0)", "searchable" => true, "orderable" => true, "exportable" => true],
             [
                 "data" => "edit_siswa",
@@ -198,6 +200,7 @@ class DataSiswaController extends Controller
             "scctcust.NO_WA",
             "scctcust.CODE04",
             "scctcust.DESC05",
+            "scctcust.musrifah",
         ];
 
         $select = [
@@ -213,6 +216,7 @@ class DataSiswaController extends Controller
             "scctcust.DESC05",
             "scctcust.GENUS",
             "scctcust.NO_WA",
+            "scctcust.musrifah",
             "scctcust.STCUST",
         ];
 
@@ -241,10 +245,28 @@ class DataSiswaController extends Controller
             ->skip($start)
             ->take($length)
             ->select($select)
-            ->get()
-            ->map(function ($item) {
+            ->get();
+
+        $musrifahUsernames = $records
+            ->pluck("musrifah")
+            ->filter(fn ($v) => $v !== null && trim((string) $v) !== "")
+            ->map(fn ($v) => trim((string) $v))
+            ->unique()
+            ->values();
+
+        $musrifahNamaMap = [];
+        if ($musrifahUsernames->isNotEmpty()) {
+            $musrifahNamaMap = sholat_user::query()
+                ->where("role", "Musrifah")
+                ->whereIn("username", $musrifahUsernames->all())
+                ->pluck("nama", "username")
+                ->all();
+        }
+
+        $records = $records->map(function ($item) use ($musrifahNamaMap) {
                 $row = $item->toArray();
                 $nis = trim((string) ($item->nocust ?? ''));
+                $musrifah = trim((string) ($item->musrifah ?? ''));
                 $row["item_id"] = $item->CUSTID;
                 $row["nis"] = $item->nocust;
                 $row["va_spp"] = ($nis !== '' && $nis !== '-')
@@ -260,6 +282,11 @@ class DataSiswaController extends Controller
                 $row["alamat"] = $item->DESC05;
                 $row["ayah"] = $item->GENUS;
                 $row["no_wa"] = $item->NO_WA;
+                $row["musrifah"] = $musrifah;
+                $row["musrifah_nama"] = $musrifah !== '' ? ($musrifahNamaMap[$musrifah] ?? '') : '';
+                $row["musrifah_display"] = $row["musrifah_nama"] !== ''
+                    ? $row["musrifah_nama"]
+                    : $musrifah;
                 $row["edit_siswa"] = true;
                 $row["set_status"] = true;
                 unset($row["CUSTID"]);
@@ -302,6 +329,37 @@ class DataSiswaController extends Controller
             });
 
         return response()->json($siswa);
+    }
+
+    public function getMusrifahSelect2(Request $request)
+    {
+        $term = trim((string) ($request->get("term", $request->get("q", ""))));
+
+        $query = sholat_user::query()->where("role", "Musrifah");
+
+        if ($term !== "") {
+            $sanitized = str_replace(["\\", "%", "_"], ["\\\\", "\\%", "\\_"], $term);
+            $query->where(function ($q) use ($sanitized) {
+                $q->where("nama", "like", "%{$sanitized}%")
+                    ->orWhere("username", "like", "%{$sanitized}%");
+            });
+        }
+
+        $items = $query->orderBy("nama", "asc")
+            ->limit(50)
+            ->get(["username", "nama"])
+            ->map(function ($item) {
+                $nama = trim((string) ($item->nama ?? ""));
+                $username = trim((string) ($item->username ?? ""));
+
+                return [
+                    "id" => $username,
+                    "text" => $nama !== "" ? "{$nama} ({$username})" : $username,
+                ];
+            })
+            ->values();
+
+        return response()->json($items);
     }
 
     public function getSiswa(Request $request)
@@ -425,10 +483,13 @@ class DataSiswaController extends Controller
                 "alamat" => ["nullable", "string", "max:255"],
                 "gender" => ["nullable", "string", "max:50"],
                 "no_wa" => ["nullable", "string", "max:50"],
+                "musrifah" => ["nullable", "string", "max:100"],
                 "stcust" => ["nullable", "in:0,1"],
             ],
             ValidationMessage::messages(),
-            ValidationMessage::attributes(),
+            array_merge(ValidationMessage::attributes(), [
+                "musrifah" => "Musrifah",
+            ]),
         );
 
         if ($validator->fails()) {
@@ -436,6 +497,17 @@ class DataSiswaController extends Controller
                 ["message" => $validator->errors()->first(), "errors" => $validator->errors()],
                 422,
             );
+        }
+
+        $musrifah = trim((string) $request->input("musrifah", ""));
+        if ($musrifah !== "") {
+            $exists = sholat_user::query()
+                ->where("role", "Musrifah")
+                ->where("username", $musrifah)
+                ->exists();
+            if (!$exists) {
+                return response()->json(["message" => "Musrifah tidak ditemukan."], 422);
+            }
         }
 
         $siswa = scctcust::when($this->unitScope, fn ($q) => $q->where("CODE02", $this->unitScope))
@@ -447,23 +519,24 @@ class DataSiswaController extends Controller
         }
 
         try {
-            DB::beginTransaction();
+            DB::connection("DATA_MYSQL")->beginTransaction();
             $payload = [
                 "GENUS" => $request->input("ayah") ?: null,
                 "CODE04" => $request->input("gender") ?: null,
                 "DESC05" => $request->input("alamat") ?: null,
                 "NO_WA" => $request->input("no_wa") ?: null,
+                "musrifah" => $musrifah !== "" ? $musrifah : null,
                 "STCUST" => $request->filled("stcust")
                     ? (int) $request->input("stcust")
                     : (int) ($siswa->STCUST ?? 0),
                 "LastUpdate" => date("Y-m-d H:i:s"),
             ];
             $siswa->update($payload);
-            DB::commit();
+            DB::connection("DATA_MYSQL")->commit();
 
             return response()->json(["message" => "Data siswa berhasil diperbarui."], 200);
         } catch (\Throwable $e) {
-            DB::rollBack();
+            DB::connection("DATA_MYSQL")->rollBack();
 
             return response()->json(
                 ["message" => "Gagal memperbarui data siswa.", "error" => $e->getMessage()],

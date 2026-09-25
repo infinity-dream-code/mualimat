@@ -232,6 +232,13 @@
                                 <input type="text" class="form-control form-control-sm"
                                        id="edit_siswa-nowa" name="no_wa">
                             </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Musrifah</label>
+                                <select class="form-select form-select-sm" id="edit_siswa-musrifah" name="musrifah"
+                                        data-placeholder="Cari musrifah...">
+                                    <option value=""></option>
+                                </select>
+                            </div>
                             <div class="col-md-9">
                                 <label class="form-label">Alamat</label>
                                 <textarea class="form-control form-control-sm" id="edit_siswa-alamat" name="alamat" rows="2"></textarea>
@@ -482,6 +489,7 @@
                 DESC05: 55,
                 GENUS: 55,
                 NO_WA: 48,
+                musrifah_display: 70,
                 STCUST: 24,
             },
             printCustomize: function (win) {
@@ -648,6 +656,18 @@
                 setValue('#form-edit-siswa [name="gender"]', pickValue(rowData.gender, rowData.code04, rowData.CODE04));
                 setValue('#form-edit-siswa [name="alamat"]', pickValue(rowData.alamat, rowData.desc05, rowData.DESC05));
                 setValue('#form-edit-siswa [name="item_id"]', rowData.item_id ?? '');
+
+                const musrifahUsername = pickValue(rowData.musrifah);
+                const musrifahNama = pickValue(rowData.musrifah_nama, rowData.musrifah_display);
+                const $musrifah = $('#edit_siswa-musrifah');
+                $musrifah.empty();
+                if (musrifahUsername) {
+                    const label = musrifahNama
+                        ? `${musrifahNama} (${musrifahUsername})`
+                        : musrifahUsername;
+                    $musrifah.append(new Option(label, musrifahUsername, true, true));
+                }
+                $musrifah.trigger('change');
             }
 
             if (id === 'form-edit-status-siswa') {
@@ -764,6 +784,30 @@
                         language: 'id',
                         dropdownParent: $this.parent()
                     });
+                });
+            }
+
+            const $musrifahSelect = $('#edit_siswa-musrifah');
+            if ($musrifahSelect.length) {
+                $musrifahSelect.select2({
+                    placeholder: 'Cari musrifah...',
+                    allowClear: true,
+                    width: '100%',
+                    language: 'id',
+                    dropdownParent: $('#modal-edit-siswa'),
+                    ajax: {
+                        url: '{{ route('admin.master-data.data-siswa.get-musrifah-select2') }}',
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return { term: params.term || '' };
+                        },
+                        processResults: function (data) {
+                            return { results: Array.isArray(data) ? data : (data.results || []) };
+                        },
+                        cache: true
+                    },
+                    minimumInputLength: 0
                 });
             }
         });

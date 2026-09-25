@@ -104,6 +104,7 @@ Route::prefix("admin")
                     Route::get("get-column", "getColumn")->name("get-column");
                     Route::get("get-siswa", "getSiswa")->name("get-siswa");
                     Route::get("get-siswa-select2", "getSiswaSelect2")->name("get-siswa-select2");
+                    Route::get("get-musrifah-select2", "getMusrifahSelect2")->name("get-musrifah-select2");
                     Route::post("reset-login-android/{id}", "ResetLoginAndroid")->name("reset-login-android");
                     Route::post("set-status-siswa/{id}", "setStatusSiswa")->name("set-status-siswa");
                 });
