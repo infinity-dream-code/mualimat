@@ -32,9 +32,14 @@ return [
     ],
 
     "smartpayment" => [
+        // Production SIKEU and mobile API are on the same host (103.23.103.43).
+        // Calling the public hostname:8888 from that box times out (NAT hairpin).
         "notice_push_url" => env(
             "SMARTPAYMENT_NOTICE_PUSH_URL",
-            "http://mobile.smartpayment.co.id:8888/YogyaMuallimaat/Token/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJNRVRIT0QiOiJOb3RpY2VQdXNoIn0.Zhzaxz9T9pq2tJgfpgh9ldJ0HEKUGS3mnd9RnSISu6Y",
+            (env("APP_ENV", "production") === "local"
+                ? "http://mobile.smartpayment.co.id:8888"
+                : "http://127.0.0.1:8888")
+            . "/YogyaMuallimaat/Token/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJNRVRIT0QiOiJOb3RpY2VQdXNoIn0.Zhzaxz9T9pq2tJgfpgh9ldJ0HEKUGS3mnd9RnSISu6Y",
         ),
     ],
 
