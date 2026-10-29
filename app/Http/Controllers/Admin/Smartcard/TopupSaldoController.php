@@ -599,10 +599,13 @@ class TopupSaldoController extends Controller
 
     private function fetchTranRows(int $custid)
     {
-        $ketCol = $this->firstExistingColumn('sccttran', ['Keterangan', 'keterangan', 'KET', 'ket']);
+        $ketCol = $this->firstExistingColumn('sccttran', ['Keterangan', 'keterangan', 'KET', 'ket', 'NOTE', 'Note']);
         $cols = ['TRXDATE as tanggal', 'METODE as metode', 'KREDIT as kredit', 'DEBET as debet', 'FIDBANK', 'REFFBANK'];
         if ($ketCol !== null) {
             $cols[] = DB::raw("`{$ketCol}` as keterangan");
+        }
+        if ($this->hasColumn('sccttran', 'HELPDESK')) {
+            $cols[] = 'HELPDESK as helpdesk';
         }
 
         return DB::connection('DATA_MYSQL')
@@ -615,9 +618,7 @@ class TopupSaldoController extends Controller
             ->limit(80)
             ->get($cols)
             ->map(function ($r) {
-                $r->keterangan = trim((string) ($r->keterangan ?? '')) !== ''
-                    ? trim((string) $r->keterangan)
-                    : '-';
+                $r->keterangan = $this->resolveKeterangan($r->keterangan ?? '', $r->helpdesk ?? '');
 
                 return $r;
             });
@@ -726,6 +727,30 @@ class TopupSaldoController extends Controller
         }
 
         return null;
+    }
+
+    private function resolveKeterangan(mixed $ket, mixed $helpdesk): string
+    {
+        $ket = trim((string) $ket);
+        if ($ket !== '') {
+            return $ket;
+        }
+
+        $help = trim((string) $helpdesk);
+        if ($help === '') {
+            return '-';
+        }
+
+        if (preg_match('/Ket:\s*(.+)$/i', $help, $m)) {
+            $fromHelp = trim((string) ($m[1] ?? ''));
+            return $fromHelp !== '' ? $fromHelp : '-';
+        }
+
+        if (preg_match('/^User:\s*/i', $help)) {
+            return '-';
+        }
+
+        return $help;
     }
 
     /** @param  list<string>  $candidates */

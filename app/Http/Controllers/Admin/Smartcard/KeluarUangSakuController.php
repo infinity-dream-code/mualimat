@@ -357,22 +357,28 @@ class KeluarUangSakuController extends Controller
         $ketCol = $tranKetCol !== null
             ? DB::raw('t.`' . $tranKetCol . '` as keterangan')
             : DB::raw("'' as keterangan");
+        $hasHelpdesk = $this->hasColumn('sccttran', 'HELPDESK');
+
+        $select = [
+            'c.NOCUST as nis',
+            'c.NMCUST as nama',
+            DB::raw("COALESCE(NULLIF(TRIM(t.TRANSNO), ''), NULLIF(TRIM(t.NOREFF), ''), '-') as no_transaksi"),
+            't.TRXDATE as tgl_transaksi',
+            't.KREDIT as kredit',
+            't.DEBET as debet',
+            't.FIDBANK as fidbank',
+            't.METODE as metode',
+            $ketCol,
+        ];
+        if ($hasHelpdesk) {
+            $select[] = 't.HELPDESK as helpdesk';
+        }
 
         $rows = $query
             ->orderByDesc('t.TRXDATE')
             ->orderByDesc('t.urut')
             ->limit(5000)
-            ->get([
-                'c.NOCUST as nis',
-                'c.NMCUST as nama',
-                DB::raw("COALESCE(NULLIF(TRIM(t.TRANSNO), ''), NULLIF(TRIM(t.NOREFF), ''), '-') as no_transaksi"),
-                't.TRXDATE as tgl_transaksi',
-                't.KREDIT as kredit',
-                't.DEBET as debet',
-                't.FIDBANK as fidbank',
-                't.METODE as metode',
-                $ketCol,
-            ]);
+            ->get($select);
 
         if ($rows->isEmpty()) {
             return redirect()
@@ -404,7 +410,7 @@ class KeluarUangSakuController extends Controller
                 $row->metode ?? '',
                 $kredit,
                 $debet,
-                $row->keterangan ?? '',
+                $this->resolveKeterangan($row->keterangan ?? '', $row->helpdesk ?? ''),
             ];
         }
         $exportRows[] = ['', '', '', '', 'TOTAL', '', '', $totalKredit, $totalDebet, ''];
@@ -574,6 +580,9 @@ class KeluarUangSakuController extends Controller
         if ($tranKetCol !== null) {
             $cols[] = DB::raw('`' . $tranKetCol . '` as keterangan');
         }
+        if ($this->hasColumn('sccttran', 'HELPDESK')) {
+            $cols[] = 'HELPDESK as helpdesk';
+        }
         if ($this->hasColumn('sccttran', 'METODE')) {
             $cols[] = 'METODE as metode_alt';
         }
@@ -598,7 +607,7 @@ class KeluarUangSakuController extends Controller
                     'metode' => $metode !== '' ? $metode : '-',
                     'kredit' => (int) ($r->kredit ?? 0),
                     'debet' => (int) ($r->debet ?? 0),
-                    'keterangan' => trim((string) ($r->keterangan ?? '')) ?: '-',
+                    'keterangan' => $this->resolveKeterangan($r->keterangan ?? '', $r->helpdesk ?? ''),
                 ];
             });
     }
@@ -714,6 +723,30 @@ class KeluarUangSakuController extends Controller
                     ->orWhereRaw('TRIM(CAST(CODE02 AS CHAR)) = ?', [$unit]);
             })
             ->exists();
+    }
+
+    private function resolveKeterangan(mixed $ket, mixed $helpdesk): string
+    {
+        $ket = trim((string) $ket);
+        if ($ket !== '') {
+            return $ket;
+        }
+
+        $help = trim((string) $helpdesk);
+        if ($help === '') {
+            return '-';
+        }
+
+        if (preg_match('/Ket:\s*(.+)$/i', $help, $m)) {
+            $fromHelp = trim((string) ($m[1] ?? ''));
+            return $fromHelp !== '' ? $fromHelp : '-';
+        }
+
+        if (preg_match('/^User:\s*/i', $help)) {
+            return '-';
+        }
+
+        return $help;
     }
 
     /** @param  list<string>  $candidates */
