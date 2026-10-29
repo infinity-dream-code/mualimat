@@ -444,9 +444,16 @@ class RekapPencairanKantinController extends Controller
 
         $rows = $query
             ->select([
+                'scctcust.NMCUST as nama',
                 'scctcashout.TanggalKeluar as tgl_transaksi',
                 'scctcashout.BILLAM as saldo',
-                DB::raw('COALESCE(NULLIF(TRIM(sm_mercan.NamaMercan), \'\'), TRIM(sm_kantin.KDMERCAN), \'-\') as mercan'),
+                DB::raw("COALESCE(
+                    NULLIF(TRIM(sm_mercan.NamaMercan), ''),
+                    NULLIF(TRIM(sm_kantin.KDMERCAN), ''),
+                    NULLIF(TRIM(sm_kantin.username), ''),
+                    NULLIF(TRIM(scctcashout.Teller), ''),
+                    '-'
+                ) as mercan"),
                 DB::raw('COALESCE(NULLIF(TRIM(sm_kantin.NamaKantin), \'\'), TRIM(scctcashout.Teller), \'-\') as kantin'),
             ])
             ->orderByDesc('scctcashout.TanggalKeluar')

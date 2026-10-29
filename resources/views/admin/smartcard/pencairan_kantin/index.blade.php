@@ -121,8 +121,9 @@
                     <table class="table table-sm table-bordered mb-0">
                         <thead class="table-light">
                         <tr>
+                            <th>Nama</th>
                             <th>Tgl Transaksi</th>
-                            <th class="text-end">Saldo</th>
+                            <th class="text-end">Debet</th>
                             <th>Merchant</th>
                             <th>Kantin</th>
                         </tr>
@@ -131,6 +132,7 @@
                         @if ($cariTransaksi ?? false)
                             @forelse (($transaksiRows ?? collect()) as $row)
                                 <tr>
+                                    <td>{{ $row->nama ?? '—' }}</td>
                                     <td>
                                         @if (!empty($row->tgl_transaksi) && !str_starts_with((string) $row->tgl_transaksi, '0000-00-00'))
                                             {{ \Illuminate\Support\Carbon::parse($row->tgl_transaksi)->format('d-m-Y H:i:s') }}
@@ -141,17 +143,17 @@
                                     <td>{{ $row->kantin ?? '—' }}</td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="text-center text-muted">Tidak ada transaksi pada periode ini.</td></tr>
+                                <tr><td colspan="5" class="text-center text-muted">Tidak ada transaksi pada periode ini.</td></tr>
                             @endforelse
                             @if (($transaksiRows ?? collect())->isNotEmpty())
                                 <tr class="table-light">
-                                    <td><strong>Total</strong></td>
+                                    <td colspan="2"><strong>Total</strong></td>
                                     <td class="text-end"><strong>{{ number_format((float) ($transaksiTotal ?? 0), 0, ',', '.') }}</strong></td>
                                     <td colspan="2"></td>
                                 </tr>
                             @endif
                         @else
-                            <tr><td colspan="4" class="text-center text-muted">Pilih merchant & tanggal, lalu klik Cari Transaksi.</td></tr>
+                            <tr><td colspan="5" class="text-center text-muted">Pilih merchant & tanggal, lalu klik Cari Transaksi.</td></tr>
                         @endif
                         </tbody>
                     </table>
