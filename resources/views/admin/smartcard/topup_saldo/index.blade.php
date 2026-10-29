@@ -172,39 +172,40 @@
                     </table>
                 </div>
             </div>
-            <div class="card">
-                <div class="card-header"><h5 class="mb-0">Transaksi</h5></div>
-                <div class="table-responsive" style="max-height:420px;">
-                    <table class="table table-sm table-bordered mb-0" style="min-width:720px;">
-                        <thead class="table-light">
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Metode</th>
-                            <th class="text-end">Kredit</th>
-                            <th class="text-end">Debet</th>
-                            <th style="min-width:220px;white-space:nowrap;">Keterangan</th>
-                        </tr>
-                        </thead>
-                        <tbody id="tranBody">
-                        @forelse ($tranRows as $row)
-                            <tr>
-                                <td>
-                                    @if (!empty($row->tanggal))
-                                        {{ \Illuminate\Support\Carbon::parse($row->tanggal)->format('Y-m-d H:i:s') }}
-                                    @else — @endif
-                                </td>
-                                <td>{{ $row->metode }}</td>
-                                <td class="text-end">{{ number_format((int)$row->kredit, 0, ',', '.') }}</td>
-                                <td class="text-end">{{ number_format((int)$row->debet, 0, ',', '.') }}</td>
-                                <td style="min-width:220px;white-space:nowrap;">{{ $row->keterangan ?? '-' }}</td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="5" class="text-center text-muted py-3">—</td></tr>
-                        @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header"><h5 class="mb-0">Transaksi</h5></div>
+        <div class="table-responsive" style="max-height:560px;">
+            <table class="table table-sm table-bordered mb-0 w-100">
+                <thead class="table-light sticky-top">
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Metode</th>
+                    <th class="text-end">Kredit</th>
+                    <th class="text-end">Debet</th>
+                    <th style="min-width:280px;">Keterangan</th>
+                </tr>
+                </thead>
+                <tbody id="tranBody">
+                @forelse ($tranRows as $row)
+                    <tr>
+                        <td>
+                            @if (!empty($row->tanggal))
+                                {{ \Illuminate\Support\Carbon::parse($row->tanggal)->format('Y-m-d H:i:s') }}
+                            @else — @endif
+                        </td>
+                        <td>{{ $row->metode }}</td>
+                        <td class="text-end">{{ number_format((int)$row->kredit, 0, ',', '.') }}</td>
+                        <td class="text-end">{{ number_format((int)$row->debet, 0, ',', '.') }}</td>
+                        <td>{{ $row->keterangan ?? '-' }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="5" class="text-center text-muted py-3">—</td></tr>
+                @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 @endsection
@@ -334,8 +335,8 @@
             } else {
                 tranBody.innerHTML = d.tran_rows.map(function (r) {
                     return '<tr><td>' + (r.tanggal || '') + '</td><td>' + (r.metode || '') +
-                        '</td><td class="text-end">' + fmt(r.kredit) + '</td><td class="text-end">' + fmt(r.debet) +
-                        '</td><td style="min-width:220px;white-space:nowrap;">' + (r.keterangan || '-') + '</td></tr>';
+                        '</td><td class="text-end">' + fmt(r.kredit) +                         '</td><td class="text-end">' + fmt(r.debet) +
+                        '</td><td>' + (r.keterangan || '-') + '</td></tr>';
                 }).join('');
             }
         } catch (e) {}
