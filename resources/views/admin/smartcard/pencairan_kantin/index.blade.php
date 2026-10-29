@@ -175,6 +175,7 @@
                             <th>Tgl Terima</th>
                             <th>Nama Penerima</th>
                             <th class="text-end">Nominal</th>
+                            <th>Merchant</th>
                             <th>No Terima</th>
                         </tr>
                         </thead>
@@ -189,20 +190,21 @@
                                     </td>
                                     <td>{{ $row->nama_penerima ?? '—' }}</td>
                                     <td class="text-end">{{ number_format((float) ($row->nominal ?? 0), 0, ',', '.') }}</td>
+                                    <td>{{ trim((string) ($row->merchant_nama ?? '')) !== '' ? $row->merchant_nama : '—' }}</td>
                                     <td>{{ $row->no_terima ?? '—' }}</td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="text-center text-muted">Belum ada data pencairan.</td></tr>
+                                <tr><td colspan="5" class="text-center text-muted">Belum ada data pencairan.</td></tr>
                             @endforelse
                             @if (($pencairanRows ?? collect())->isNotEmpty())
                                 <tr class="table-light">
                                     <td colspan="2"><strong>Total Nominal</strong></td>
                                     <td class="text-end"><strong>{{ number_format((float) ($pencairanTotal ?? 0), 0, ',', '.') }}</strong></td>
-                                    <td></td>
+                                    <td colspan="2"></td>
                                 </tr>
                             @endif
                         @else
-                            <tr><td colspan="4" class="text-center text-muted">Klik Liat Pencairan untuk menampilkan data.</td></tr>
+                            <tr><td colspan="5" class="text-center text-muted">Klik Liat Pencairan untuk menampilkan data.</td></tr>
                         @endif
                         </tbody>
                     </table>

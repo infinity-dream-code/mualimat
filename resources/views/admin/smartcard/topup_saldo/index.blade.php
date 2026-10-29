@@ -176,20 +176,30 @@
     </div>
 
     <div class="card mt-3">
-        <div class="card-header"><h5 class="mb-0">Transaksi</h5></div>
+        <div class="card-header d-flex justify-content-between">
+            <h5 class="mb-0">Transaksi</h5>
+            <small class="text-muted" id="tranCount">{{ count($tranRows) }} baris</small>
+        </div>
         <div class="table-responsive" style="max-height:560px;">
             <table class="table table-sm table-bordered mb-0 w-100">
                 <thead class="table-light sticky-top">
                 <tr>
                     <th>Tanggal</th>
-                    <th>Metode</th>
-                    <th class="text-end">Kredit</th>
-                    <th class="text-end">Debet</th>
+                    <th>METODE</th>
+                    <th class="text-end">MASUK</th>
+                    <th class="text-end">KELUAR</th>
                     <th style="min-width:280px;">Keterangan</th>
                 </tr>
                 </thead>
                 <tbody id="tranBody">
+                @php
+                    $sumMasuk = 0; $sumKeluar = 0;
+                @endphp
                 @forelse ($tranRows as $row)
+                    @php
+                        $sumMasuk += (int) $row->kredit;
+                        $sumKeluar += (int) $row->debet;
+                    @endphp
                     <tr>
                         <td>
                             @if (!empty($row->tanggal))
@@ -205,6 +215,14 @@
                     <tr><td colspan="5" class="text-center text-muted py-3">—</td></tr>
                 @endforelse
                 </tbody>
+                <tfoot class="table-light">
+                <tr>
+                    <th colspan="2" class="text-end">Total</th>
+                    <th class="text-end" id="totMasuk">{{ number_format($sumMasuk, 0, ',', '.') }}</th>
+                    <th class="text-end" id="totKeluar">{{ number_format($sumKeluar, 0, ',', '.') }}</th>
+                    <th></th>
+                </tr>
+                </tfoot>
             </table>
         </div>
     </div>
@@ -330,15 +348,25 @@
                     document.getElementById('cetakTransno').value = d.topup_rows[0].no_transaksi;
                 }
             }
-            if (!(d.tran_rows || []).length) {
+            const totMasukEl = document.getElementById('totMasuk');
+            const totKeluarEl = document.getElementById('totKeluar');
+            const tranCountEl = document.getElementById('tranCount');
+            const tranRows = d.tran_rows || [];
+            if (tranCountEl) tranCountEl.textContent = tranRows.length + ' baris';
+            let masuk = 0, keluar = 0;
+            if (!tranRows.length) {
                 tranBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">—</td></tr>';
             } else {
-                tranBody.innerHTML = d.tran_rows.map(function (r) {
+                tranBody.innerHTML = tranRows.map(function (r) {
+                    masuk += Number(r.kredit || 0);
+                    keluar += Number(r.debet || 0);
                     return '<tr><td>' + (r.tanggal || '') + '</td><td>' + (r.metode || '') +
-                        '</td><td class="text-end">' + fmt(r.kredit) +                         '</td><td class="text-end">' + fmt(r.debet) +
+                        '</td><td class="text-end">' + fmt(r.kredit) + '</td><td class="text-end">' + fmt(r.debet) +
                         '</td><td>' + (r.keterangan || '-') + '</td></tr>';
                 }).join('');
             }
+            if (totMasukEl) totMasukEl.textContent = fmt(masuk);
+            if (totKeluarEl) totKeluarEl.textContent = fmt(keluar);
         } catch (e) {}
     }
 
