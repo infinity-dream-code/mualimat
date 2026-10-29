@@ -52,6 +52,11 @@ class CyberKey extends Model implements AuthenticatableContract
         return $this->ket ?: (string) $this->users;
     }
 
+    public function getUsernameAttribute(): string
+    {
+        return (string) $this->users;
+    }
+
     public function hasRole(string $role): bool
     {
         if ($role === "siswa") {
