@@ -246,7 +246,7 @@ class RekapPencairanKantinController extends Controller
                 $row->nama_penerima ?? '',
                 (float) ($row->nominal ?? 0),
                 $row->no_terima ?? '',
-                $row->KDMERCAN ?? ($row->KDMERCHANT ?? ($row->username ?? '')),
+                $row->merchant_nama ?? '',
             ];
         }
         $exportRows[] = ['', '', 'TOTAL', $total, '', ''];
@@ -486,17 +486,27 @@ class RekapPencairanKantinController extends Controller
         $hasDariTgl = Schema::connection('DATA_MYSQL')->hasColumn('sm_mercan_cair', 'dari_tgl_tran');
         $hasAkhirTgl = Schema::connection('DATA_MYSQL')->hasColumn('sm_mercan_cair', 'akhir_tgl_tran');
         $hasKdMerchant = Schema::connection('DATA_MYSQL')->hasColumn('sm_mercan_cair', 'KDMERCHANT');
+        $hasKdMercan = Schema::connection('DATA_MYSQL')->hasColumn('sm_mercan_cair', 'KDMERCAN');
+        $hasSmMercan = Schema::connection('DATA_MYSQL')->hasTable('sm_mercan')
+            && Schema::connection('DATA_MYSQL')->hasColumn('sm_mercan', 'NamaMercan');
 
         $query = DB::connection('DATA_MYSQL')->table('sm_mercan_cair');
+        if ($hasSmMercan && $hasKdMercan) {
+            $query->leftJoin('sm_mercan', function ($join) {
+                $join->on(DB::raw('TRIM(sm_mercan.KDMERCAN)'), '=', DB::raw('TRIM(sm_mercan_cair.KDMERCAN)'));
+            });
+        }
 
         if ($kdMercan !== '') {
-            $query->where(function ($q) use ($kdMercan, $hasUsername, $hasKdMerchant) {
-                $q->whereRaw('TRIM(COALESCE(KDMERCAN, \'\')) = ?', [$kdMercan]);
+            $query->where(function ($q) use ($kdMercan, $hasUsername, $hasKdMerchant, $hasKdMercan) {
+                if ($hasKdMercan) {
+                    $q->whereRaw('TRIM(COALESCE(sm_mercan_cair.KDMERCAN, \'\')) = ?', [$kdMercan]);
+                }
                 if ($hasKdMerchant) {
-                    $q->orWhereRaw('TRIM(COALESCE(KDMERCHANT, \'\')) = ?', [$kdMercan]);
+                    $q->orWhereRaw('TRIM(COALESCE(sm_mercan_cair.KDMERCHANT, \'\')) = ?', [$kdMercan]);
                 }
                 if ($hasUsername) {
-                    $q->orWhereRaw('TRIM(COALESCE(username, \'\')) = ?', [$kdMercan]);
+                    $q->orWhereRaw('TRIM(COALESCE(sm_mercan_cair.username, \'\')) = ?', [$kdMercan]);
                 }
             });
         }
@@ -504,37 +514,46 @@ class RekapPencairanKantinController extends Controller
         $from = $this->parseDate($dari);
         $to = $this->parseDate($sampai);
         if ($from) {
-            $query->where('TglTerima', '>=', $from->copy()->startOfDay());
+            $query->where('sm_mercan_cair.TglTerima', '>=', $from->copy()->startOfDay());
         }
         if ($to) {
-            $query->where('TglTerima', '<=', $to->copy()->endOfDay());
+            $query->where('sm_mercan_cair.TglTerima', '<=', $to->copy()->endOfDay());
         }
 
-        $select = [
-            'TglTerima as tgl_terima',
-            'NamaPenerima as nama_penerima',
-            'Nominal as nominal',
-            'NoTerima as no_terima',
-        ];
-        if (Schema::connection('DATA_MYSQL')->hasColumn('sm_mercan_cair', 'KDMERCAN')) {
-            $select[] = 'KDMERCAN';
+        $merchantParts = [];
+        if ($hasSmMercan && $hasKdMercan) {
+            $merchantParts[] = 'NULLIF(TRIM(sm_mercan.NamaMercan), \'\')';
+        }
+        if ($hasKdMercan) {
+            $merchantParts[] = 'NULLIF(TRIM(sm_mercan_cair.KDMERCAN), \'\')';
         }
         if ($hasKdMerchant) {
-            $select[] = 'KDMERCHANT';
-        }
-        if ($hasDariTgl) {
-            $select[] = 'dari_tgl_tran';
-        }
-        if ($hasAkhirTgl) {
-            $select[] = 'akhir_tgl_tran';
+            $merchantParts[] = 'NULLIF(TRIM(sm_mercan_cair.KDMERCHANT), \'\')';
         }
         if ($hasUsername) {
-            $select[] = 'username';
+            $merchantParts[] = 'NULLIF(TRIM(sm_mercan_cair.username), \'\')';
+        }
+        $merchantSql = $merchantParts !== []
+            ? 'COALESCE(' . implode(', ', $merchantParts) . ', \'\')'
+            : '\'\'';
+
+        $select = [
+            'sm_mercan_cair.TglTerima as tgl_terima',
+            'sm_mercan_cair.NamaPenerima as nama_penerima',
+            'sm_mercan_cair.Nominal as nominal',
+            'sm_mercan_cair.NoTerima as no_terima',
+            DB::raw($merchantSql . ' as merchant_nama'),
+        ];
+        if ($hasDariTgl) {
+            $select[] = 'sm_mercan_cair.dari_tgl_tran';
+        }
+        if ($hasAkhirTgl) {
+            $select[] = 'sm_mercan_cair.akhir_tgl_tran';
         }
 
-        $query->select($select)->orderByDesc('TglTerima');
+        $query->select($select)->orderByDesc('sm_mercan_cair.TglTerima');
         if ($hasUrut) {
-            $query->orderByDesc('urut');
+            $query->orderByDesc('sm_mercan_cair.urut');
         }
 
         $rows = $query->limit(self::MAX_ROWS)->get();

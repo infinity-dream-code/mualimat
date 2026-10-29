@@ -249,11 +249,16 @@ class KeluarUangSakuController extends Controller
                 if ($this->hasColumn('sccttran', 'TRANSNO')) {
                     $tranRow['TRANSNO'] = $transNo;
                 }
-                if ($this->hasColumn('sccttran', 'Keterangan')) {
-                    $tranRow['Keterangan'] = $ket !== '' ? $ket : null;
+                $tranKetCol = $this->firstExistingColumn('sccttran', ['Keterangan', 'keterangan', 'KET', 'ket', 'NOTE', 'Note']);
+                if ($tranKetCol !== null) {
+                    $tranRow[$tranKetCol] = $ket !== '' ? $ket : null;
                 }
                 if ($this->hasColumn('sccttran', 'HELPDESK')) {
-                    $tranRow['HELPDESK'] = 'User: ' . $loginUser;
+                    $help = 'User: ' . $loginUser;
+                    if ($ket !== '') {
+                        $help .= ' | Ket: ' . $ket;
+                    }
+                    $tranRow['HELPDESK'] = $help;
                 }
                 DB::connection('DATA_MYSQL')->table('sccttran')->insert($tranRow);
 
@@ -268,8 +273,9 @@ class KeluarUangSakuController extends Controller
                 if ($this->hasColumn('scctcashout', 'users')) {
                     $cashRow['users'] = $loginUser;
                 }
-                if ($this->hasColumn('scctcashout', 'Keterangan')) {
-                    $cashRow['Keterangan'] = $ket !== '' ? $ket : null;
+                $cashKetCol = $this->firstExistingColumn('scctcashout', ['Keterangan', 'keterangan', 'KET', 'ket', 'NOTE', 'Note']);
+                if ($cashKetCol !== null) {
+                    $cashRow[$cashKetCol] = $ket !== '' ? $ket : null;
                 }
                 DB::connection('DATA_MYSQL')->table('scctcashout')->insert($cashRow);
             });
@@ -347,7 +353,10 @@ class KeluarUangSakuController extends Controller
             });
         }
 
-        $ketCol = $this->hasColumn('sccttran', 'Keterangan') ? 't.Keterangan as keterangan' : DB::raw("'' as keterangan");
+        $tranKetCol = $this->firstExistingColumn('sccttran', ['Keterangan', 'keterangan', 'KET', 'ket', 'NOTE', 'Note']);
+        $ketCol = $tranKetCol !== null
+            ? DB::raw('t.`' . $tranKetCol . '` as keterangan')
+            : DB::raw("'' as keterangan");
 
         $rows = $query
             ->orderByDesc('t.TRXDATE')
@@ -524,8 +533,9 @@ class KeluarUangSakuController extends Controller
         if ($hasUsers) {
             $cols[] = 'users';
         }
-        if ($this->hasColumn('scctcashout', 'Keterangan')) {
-            $cols[] = 'Keterangan';
+        $cashKetCol = $this->firstExistingColumn('scctcashout', ['Keterangan', 'keterangan', 'KET', 'ket', 'NOTE', 'Note']);
+        if ($cashKetCol !== null) {
+            $cols[] = DB::raw('`' . $cashKetCol . '` as keterangan');
         }
 
         return DB::connection('DATA_MYSQL')
@@ -547,7 +557,7 @@ class KeluarUangSakuController extends Controller
                     'jumlah' => (int) ($r->BILLAM ?? 0),
                     'teller' => $user,
                     'transno' => trim((string) ($r->TRANSNO ?? '')),
-                    'keterangan' => trim((string) ($r->Keterangan ?? '')),
+                    'keterangan' => trim((string) ($r->keterangan ?? '')),
                 ];
             });
     }
@@ -560,8 +570,9 @@ class KeluarUangSakuController extends Controller
             'KREDIT as kredit',
             'DEBET as debet',
         ];
-        if ($this->hasColumn('sccttran', 'Keterangan')) {
-            $cols[] = 'Keterangan as keterangan';
+        $tranKetCol = $this->firstExistingColumn('sccttran', ['Keterangan', 'keterangan', 'KET', 'ket', 'NOTE', 'Note']);
+        if ($tranKetCol !== null) {
+            $cols[] = DB::raw('`' . $tranKetCol . '` as keterangan');
         }
         if ($this->hasColumn('sccttran', 'METODE')) {
             $cols[] = 'METODE as metode_alt';
@@ -703,6 +714,18 @@ class KeluarUangSakuController extends Controller
                     ->orWhereRaw('TRIM(CAST(CODE02 AS CHAR)) = ?', [$unit]);
             })
             ->exists();
+    }
+
+    /** @param  list<string>  $candidates */
+    private function firstExistingColumn(string $table, array $candidates): ?string
+    {
+        foreach ($candidates as $col) {
+            if ($this->hasColumn($table, $col)) {
+                return $col;
+            }
+        }
+
+        return null;
     }
 
     private function hasColumn(string $table, string $column): bool

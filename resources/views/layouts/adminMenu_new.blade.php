@@ -75,7 +75,10 @@
             </ul>
         </li>
 
-        <li class="menu-item {{ Request::is(['admin/keuangan*']) ? 'active open' : '' }}">
+        <li class="menu-item {{ (
+            Request::is(['admin/keuangan*']) && !Request::is(['admin/keuangan/manual-pembayaran*', 'admin/keuangan/saldo*'])
+            || Request::is(['admin/manual-input*', 'admin/rekap-data*'])
+        ) ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon ri ri-wallet-3-line"></i>
                 <div data-i18n="Keuangan">Keuangan</div>
@@ -96,33 +99,9 @@
                                 <div data-i18n="Buat Tagihan Excel">Buat Tagihan Excel</div>
                             </a>
                         </li>
-                       
                         <li class="menu-item {{ Request::is(['admin/keuangan/tagihan-siswa/copy-tagihan*']) ? 'active' : '' }}">
                             <a href="{{ route('admin.keuangan.tagihan-siswa.copy-tagihan.index') }}" class="menu-link">
                                 <div data-i18n="Copy Tagihan">Copy Tagihan</div>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                <li class="menu-item {{ Request::is(['admin/keuangan/manual-pembayaran*']) ? 'active' : '' }}">
-                    <a href="{{ route('admin.keuangan.manual-pembayaran.index') }}" class="menu-link">
-                        <div data-i18n="Manual Pembayaran">Manual Pembayaran</div>
-                    </a>
-                </li>
-                
-                <li class="menu-item {{ Request::is(['admin/keuangan/saldo*']) ? 'active open' : '' }}">
-                    <a href="javascript:void(0);" class="menu-link menu-toggle">
-                        <div data-i18n="Saldo">Saldo</div>
-                    </a>
-                    <ul class="menu-sub">
-                        <li class="menu-item {{ Request::is(['admin/keuangan/saldo/saldo-virtual-account*']) ? 'active' : '' }}">
-                            <a href="{{ route('admin.keuangan.saldo.saldo-virtual-account.index') }}" class="menu-link">
-                                <div data-i18n="Saldo Virtual Account">Saldo Virtual Account</div>
-                            </a>
-                        </li>
-                        <li class="menu-item {{ Request::is(['admin/keuangan/saldo/saldo-virtual-saku*']) ? 'active' : '' }}">
-                            <a href="{{ route('admin.keuangan.saldo.saldo-virtual-saku.index') }}" class="menu-link">
-                                <div data-i18n="Saldo Virtual SAKU">Saldo Virtual SAKU</div>
                             </a>
                         </li>
                     </ul>
@@ -131,6 +110,35 @@
                     <a href="{{ route('admin.keuangan.hapus-tagihan.index') }}" class="menu-link">
                         <div data-i18n="Hapus Tagihan">Hapus Tagihan</div>
                     </a>
+                </li>
+                <li class="menu-item {{ Request::is(['admin/manual-input*']) ? 'active open' : '' }}">
+                    <a href="javascript:void(0);" class="menu-link menu-toggle">
+                        <div data-i18n="Manual Input">Manual Input</div>
+                    </a>
+                    <ul class="menu-sub">
+                        <li class="menu-item {{ Request::is(['admin/manual-input/edit-manual*']) ? 'active' : '' }}">
+                            <a href="{{ route('admin.manual-input.edit-manual.index') }}" class="menu-link">
+                                <div data-i18n="Edit Manual">Edit Manual</div>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="menu-item {{ Request::is(['admin/rekap-data*']) ? 'active open' : '' }}">
+                    <a href="javascript:void(0);" class="menu-link menu-toggle">
+                        <div data-i18n="Rekap Data">Rekap Data</div>
+                    </a>
+                    <ul class="menu-sub">
+                        <li class="menu-item {{ Request::is(['admin/rekap-data/cek-pelunasan*']) ? 'active' : '' }}">
+                            <a href="{{ route('admin.rekap-data.cek-pelunasan.index') }}" class="menu-link">
+                                <div data-i18n="Cek Pelunasan">Cek Pelunasan</div>
+                            </a>
+                        </li>
+                        <li class="menu-item {{ Request::is(['admin/rekap-data/cek-lunas-siswa*']) ? 'active' : '' }}">
+                            <a href="{{ route('admin.rekap-data.cek-lunas-siswa.index') }}" class="menu-link">
+                                <div data-i18n="Cek Lunas Siswa">Cek Lunas Siswa</div>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
             </ul>
         </li>
@@ -211,46 +219,37 @@
                 </li>
             </ul>
         </li>
-        
-        <li class="menu-item {{ Request::is(['admin/manual-input*']) ? 'active open' : '' }}">
+
+        <li class="menu-item {{ Request::is(['admin/keuangan/manual-pembayaran*']) ? 'active' : '' }}">
+            <a href="{{ route('admin.keuangan.manual-pembayaran.index') }}" class="menu-link">
+                <i class="menu-icon ri ri-money-dollar-circle-line"></i>
+                <div data-i18n="Manual Pembayaran">Manual Pembayaran</div>
+            </a>
+        </li>
+
+        <li class="menu-item {{ Request::is(['admin/keuangan/saldo*']) ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon ri ri-edit-2-line"></i>
-                <div data-i18n="Manual Input">Manual Input</div>
+                <i class="menu-icon ri ri-wallet-2-line"></i>
+                <div data-i18n="Saldo">Saldo</div>
             </a>
             <ul class="menu-sub">
-                <li class="menu-item {{ Request::is(['admin/manual-input/edit-manual*']) ? 'active' : '' }}">
-                    <a href="{{ route('admin.manual-input.edit-manual.index') }}" class="menu-link">
-                        <div data-i18n="Edit Manual">Edit Manual</div>
+                <li class="menu-item {{ Request::is(['admin/keuangan/saldo/saldo-virtual-account*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.keuangan.saldo.saldo-virtual-account.index') }}" class="menu-link">
+                        <div data-i18n="Saldo Virtual Account">Saldo Virtual Account</div>
+                    </a>
+                </li>
+                <li class="menu-item {{ Request::is(['admin/keuangan/saldo/saldo-virtual-saku*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.keuangan.saldo.saldo-virtual-saku.index') }}" class="menu-link">
+                        <div data-i18n="Saldo Virtual SAKU">Saldo Virtual SAKU</div>
                     </a>
                 </li>
             </ul>
         </li>
-
-        <li class="menu-item {{ Request::is(['admin/rekap-data*']) ? 'active open' : '' }}">
-            <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon ri ri-file-list-3-line"></i>
-                <div data-i18n="Rekap Data">Rekap Data</div>
-            </a>
-            <ul class="menu-sub">
-                <li class="menu-item {{ Request::is(['admin/rekap-data/cek-pelunasan*']) ? 'active' : '' }}">
-                    <a href="{{ route('admin.rekap-data.cek-pelunasan.index') }}" class="menu-link">
-                        <div data-i18n="Cek Pelunasan">Cek Pelunasan</div>
-                    </a>
-                </li>
-                <li class="menu-item {{ Request::is(['admin/rekap-data/cek-lunas-siswa*']) ? 'active' : '' }}">
-                    <a href="{{ route('admin.rekap-data.cek-lunas-siswa.index') }}" class="menu-link">
-                        <div data-i18n="Cek Lunas Siswa">Cek Lunas Siswa</div>
-                    </a>
-                </li>
-            </ul>
-        </li>
-
-    
 
         <li class="menu-item {{ Request::is(['admin/pengumuman*']) ? 'active' : '' }}">
             <a href="{{ url('admin/pengumuman') }}" class="menu-link">
                 <i class="menu-icon ri ri-megaphone-line"></i>
-                <div data-i18n="Pengumuman">Pengumuman</div>
+                <div data-i18n="Pengumuman Apps Android">Pengumuman Apps Android</div>
             </a>
         </li>
 
@@ -332,12 +331,14 @@
             </ul>
         </li>
 
+        {{-- Hidden: sudah ada di web Intra
         <li class="menu-item {{ Request::is(['admin/update-musrifah*']) ? 'active' : '' }}">
             <a href="{{ route('admin.update-musrifah.index') }}" class="menu-link">
                 <i class="menu-icon ri ri-user-settings-line"></i>
                 <div data-i18n="Update Musrifah">Update Musrifah</div>
             </a>
         </li>
+        --}}
 
         <li class="menu-item mt-auto pb-2">
             <a href="{{route('logout')}}" class="menu-link btn-danger text-white" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">

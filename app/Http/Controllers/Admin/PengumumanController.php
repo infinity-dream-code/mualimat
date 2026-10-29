@@ -14,9 +14,9 @@ use Illuminate\Support\Facades\Validator;
 
 class PengumumanController extends Controller
 {
-    public string $title = 'Pengumuman';
-    public string $mainTitle = 'Pengumuman';
-    public string $dataTitle = 'Pengumuman';
+    public string $title = 'Pengumuman Apps Android';
+    public string $mainTitle = 'Pengumuman Apps Android';
+    public string $dataTitle = 'Pengumuman Apps Android';
 
     public function index()
     {
