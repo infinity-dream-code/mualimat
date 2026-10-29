@@ -249,7 +249,7 @@
         <li class="menu-item {{ Request::is(['admin/pengumuman*']) ? 'active' : '' }}">
             <a href="{{ url('admin/pengumuman') }}" class="menu-link">
                 <i class="menu-icon ri ri-megaphone-line"></i>
-                <div data-i18n="Pengumuman Apps Android">Pengumuman Apps Android</div>
+                <div data-i18n="Pengumuman Apps Mobile">Pengumuman Apps Mobile</div>
             </a>
         </li>
 
