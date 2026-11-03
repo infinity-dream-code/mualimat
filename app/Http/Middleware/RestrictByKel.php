@@ -17,10 +17,6 @@ class RestrictByKel
         }
 
         $group = $user->kel_group ?? 'admfak';
-        if ($group === 'admfak') {
-            return $next($request);
-        }
-
         $path = trim($request->path(), '/');
 
         if (
@@ -31,9 +27,21 @@ class RestrictByKel
             return $next($request);
         }
 
+        $isTapBelanja = str_starts_with($path, 'admin/smartcard/tap-belanja');
+
+        // Tap Belanja hanya kel kantin
+        if ($isTapBelanja && $group !== 'kantin') {
+            return $this->deny($request, $user);
+        }
+
+        if ($group === 'admfak') {
+            return $next($request);
+        }
+
         $allowed = false;
 
         if ($group === 'cashless') {
+            // smartCARD kecuali tap-belanja (sudah diblok di atas)
             $allowed = $path === 'admin' || str_starts_with($path, 'admin/smartcard');
         } elseif ($group === 'kantin') {
             $allowed = $path === 'admin'
@@ -45,6 +53,11 @@ class RestrictByKel
             return $next($request);
         }
 
+        return $this->deny($request, $user);
+    }
+
+    private function deny(Request $request, $user): Response
+    {
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json(['message' => 'Anda tidak memiliki akses ke halaman ini.'], 403);
         }

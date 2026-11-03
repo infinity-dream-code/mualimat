@@ -132,14 +132,18 @@ class CyberKey extends Model implements AuthenticatableContract
 
     public function canSeeSmartcardItem(string $item): bool
     {
-        if ($this->isAdmfak() || $this->isCashless()) {
-            return true;
+        $item = strtolower(trim($item));
+
+        // Tap Belanja hanya untuk kel kantin (bukan admfak / cashless)
+        if ($item === 'tap-belanja') {
+            return $this->isKantin();
         }
 
         if ($this->isKantin()) {
             return in_array($item, ['transaksi-belanja', 'tap-belanja'], true);
         }
 
+        // admfak & cashless: semua item smartCARD kecuali tap-belanja
         return true;
     }
 
