@@ -161,11 +161,20 @@ class TransaksiBelanjaController extends Controller
     private function fetchKantinOptions(): array
     {
         try {
-            return $this->db()
+            $q = $this->db()
                 ->table('sm_kantin')
                 ->whereNotNull('NamaKantin')
-                ->whereRaw("TRIM(NamaKantin) <> ''")
-                ->orderBy('NamaKantin')
+                ->whereRaw("TRIM(NamaKantin) <> ''");
+
+            $teller = $this->currentKantinUsername();
+            if ($teller !== null) {
+                $q->where(function ($inner) use ($teller) {
+                    $inner->whereRaw('TRIM(username) = ?', [$teller])
+                        ->orWhereRaw('TRIM(NamaKantin) = ?', [$teller]);
+                });
+            }
+
+            return $q->orderBy('NamaKantin')
                 ->distinct()
                 ->get(['NamaKantin'])
                 ->map(static fn ($r) => trim((string) ($r->NamaKantin ?? '')))
@@ -189,6 +198,7 @@ class TransaksiBelanjaController extends Controller
             ->whereRaw('UPPER(TRIM(scctcashout.FIDBANK)) = ?', ['BUY']);
 
         $this->applySchoolScope($query);
+        $this->applyKantinTellerScope($query);
         $this->applyFilters($query, $filters);
 
         return $query;
@@ -205,6 +215,39 @@ class TransaksiBelanjaController extends Controller
             $q->whereRaw('TRIM(scctcust.CODE01) = ?', [$unit])
                 ->orWhereRaw('TRIM(scctcust.CODE02) = ?', [$unit]);
         });
+    }
+
+    /**
+     * Login kel=kantin: hanya transaksi merchant sendiri
+     * (cyber_key.users = scctcashout.Teller).
+     */
+    private function applyKantinTellerScope($query): void
+    {
+        $user = Auth::user();
+        if (!$user || !method_exists($user, 'isKantin') || !$user->isKantin()) {
+            return;
+        }
+
+        $teller = trim((string) ($user->users ?? $user->username ?? ''));
+        if ($teller === '') {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $query->whereRaw('TRIM(scctcashout.Teller) = ?', [$teller]);
+    }
+
+    private function currentKantinUsername(): ?string
+    {
+        $user = Auth::user();
+        if (!$user || !method_exists($user, 'isKantin') || !$user->isKantin()) {
+            return null;
+        }
+
+        $teller = trim((string) ($user->users ?? $user->username ?? ''));
+
+        return $teller !== '' ? $teller : null;
     }
 
     private function applyFilters($query, array $filters): void
