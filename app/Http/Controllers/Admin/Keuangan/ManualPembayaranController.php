@@ -50,14 +50,15 @@ class ManualPembayaranController extends Controller
                 'selectName' => 'tagihan[post]',
                 'selectClass' => 'scctbill',
             ],
-            ['data' => 'nocust', 'name' => 'NIS', 'searchable' => true, 'orderable' => true, 'duplicate' => true],
-            ['data' => 'NUM2ND', 'name' => 'NO. DAFTAR', 'searchable' => true, 'orderable' => true, 'duplicate' => true],
-            ['data' => 'kelas_label', 'name' => 'Kelas', 'searchable' => true, 'orderable' => false, 'duplicate' => true],
-            ['data' => 'NOVA', 'name' => 'NO. VA', 'searchable' => true, 'orderable' => false, 'duplicate' => true, 'columnType' => 'nova_edit'],
-            ['data' => 'nmcust', 'name' => 'NAMA', 'searchable' => true, 'orderable' => true, 'duplicate' => true],
-            ['data' => 'list_nama_akun', 'name' => 'Nama Post', 'columnType' => 'array', 'keyLabel' => false, 'searchable' => true, 'orderable' => false],
-            ['data' => 'BILLAC', 'name' => 'Periode', 'searchable' => true, 'orderable' => true, 'columnType' => 'periode'],
-            ['data' => 'BILLAM', 'name' => 'Tagihan', 'searchable' => true, 'orderable' => true, 'columnType' => 'currency', 'className' => 'text-end'],
+            ['data' => 'nocust', 'name' => 'NIS', 'searchable' => true, 'orderable' => true, 'duplicate' => false],
+            ['data' => 'NUM2ND', 'name' => 'NO. DAFTAR', 'searchable' => true, 'orderable' => true, 'duplicate' => false],
+            ['data' => 'kelas_label', 'name' => 'Kelas', 'searchable' => true, 'orderable' => false, 'duplicate' => false],
+            ['data' => 'NOVA', 'name' => 'NO. VA', 'searchable' => true, 'orderable' => false, 'duplicate' => false, 'columnType' => 'nova_edit'],
+            ['data' => 'nmcust', 'name' => 'NAMA', 'searchable' => true, 'orderable' => true, 'duplicate' => false],
+            ['data' => 'BILLNM', 'name' => 'Nama Tagihan', 'searchable' => true, 'orderable' => true, 'duplicate' => false, 'exportable' => true],
+            ['data' => 'list_nama_akun', 'name' => 'Nama Post', 'columnType' => 'array', 'keyLabel' => false, 'searchable' => true, 'orderable' => false, 'duplicate' => false],
+            ['data' => 'BILLAC', 'name' => 'Periode', 'searchable' => true, 'orderable' => true, 'columnType' => 'periode', 'duplicate' => false],
+            ['data' => 'BILLAM', 'name' => 'Tagihan', 'searchable' => true, 'orderable' => true, 'columnType' => 'currency', 'className' => 'text-end', 'duplicate' => false],
             [
                 'data' => null,
                 'name' => 'Nominal Bayar',
@@ -156,9 +157,15 @@ class ManualPembayaranController extends Controller
                 ->get()
                 ->map(function ($item) {
                     $item->item_id = $item->AA;
-                    $item->nocust = $item->NOCUST;
-                    $item->nmcust = $item->NMCUST;
-                    $item->kelas_label = trim(($item->DESC02 ?? '') . ' ' . ($item->DESC03 ?? ''));
+                    $item->nocust = $item->NOCUST ?: '-';
+                    $item->nmcust = $item->NMCUST ?: '-';
+                    $item->NUM2ND = $item->NUM2ND ?: '-';
+                    $item->BILLNM = trim((string) ($item->BILLNM ?? '')) ?: '-';
+                    $item->BILLAC = $item->BILLAC !== null && $item->BILLAC !== ''
+                        ? (string) $item->BILLAC
+                        : '-';
+                    $kelas = trim(($item->DESC02 ?? '') . ' ' . ($item->DESC03 ?? ''));
+                    $item->kelas_label = $kelas !== '' ? $kelas : '-';
                     $nis = $item->NOCUST;
                     if ($nis && $nis !== '-') {
                         $item->NOVA = scctcust::showVA($nis);
@@ -170,7 +177,7 @@ class ManualPembayaranController extends Controller
                     $rawList = $item->list_nama_akun ?? '';
                     $item->list_nama_akun = $rawList !== '' && $rawList !== null
                         ? array_values(array_filter(array_map('trim', explode(',', (string) $rawList))))
-                        : [];
+                        : '-';
                     unset($item->AA);
                     return $item;
                 })->toArray();

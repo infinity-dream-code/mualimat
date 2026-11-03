@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Admin\CekPelunasan;
 
 use App\Http\Controllers\Controller;
+use App\Support\UnitScope;
 use App\Models\MetodeBayar;
-use App\Models\mst_kelas;
-use App\Models\mst_sekolah;
 use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
 use App\Models\scctbill;
@@ -22,6 +21,7 @@ class RekapCekPelunasanController extends Controller
     private string $datasUrl;
     private string $columnsUrl;
     private string $mainTitle;
+    private ?string $unitScope = null;
 
     public function __construct()
     {
@@ -29,6 +29,12 @@ class RekapCekPelunasanController extends Controller
         $this->mainTitle = "Rekap Cek Pelunasan";
         $this->datasUrl = route("admin.rekap-cek-pelunasan.get-data");
         $this->columnsUrl = route("admin.rekap-cek-pelunasan.get-column");
+
+        $this->middleware(function ($request, $next) {
+            $this->unitScope = UnitScope::current();
+
+            return $next($request);
+        });
     }
 
     public function index()
@@ -42,9 +48,10 @@ class RekapCekPelunasanController extends Controller
             ->where("thn_aka", "!=", null)
             ->orderBy("thn_aka", "desc")
             ->get();
-        $data["unit"] = mst_sekolah::get();
+        $data["unit"] = UnitScope::sekolahOptions($this->unitScope);
         $data["metode_bayar"] = MetodeBayar::attributes();
-        $data["kelas"] = mst_kelas::get();
+        $data["kelas"] = UnitScope::kelasOptions($this->unitScope);
+        $data["unitScope"] = $this->unitScope;
 
         return view("admin.rekap_cek_pelunasan.index", $data);
     }
@@ -313,20 +320,21 @@ class RekapCekPelunasanController extends Controller
             ]),
         );
 
-        $totalRecords = scctcust::select("count(*) as allcount")
-            ->where("scctcust.STCUST", 1)
-            ->count();
+        $totalRecordsQuery = scctcust::query()->where("scctcust.STCUST", 1);
+        UnitScope::apply($totalRecordsQuery, $this->unitScope);
+        $totalRecords = $totalRecordsQuery->count();
 
-        $totalRecordswithFilter = scctcust::where("scctcust.STCUST", 1)
+        $totalRecordswithFilterQuery = scctcust::where("scctcust.STCUST", 1)
             ->where(function ($query) use ($filtersiswaQuery) {
                 if ($filtersiswaQuery) {
                     $filtersiswaQuery($query);
                 }
-            })
-            ->count();
+            });
+        UnitScope::apply($totalRecordswithFilterQuery, $this->unitScope);
+        $totalRecordswithFilter = $totalRecordswithFilterQuery->count();
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
-        $records = scctcust::leftJoin(
+        $recordsQuery = scctcust::leftJoin(
             "scctbill",
             "scctcust.CUSTID",
             "scctbill.CUSTID",
@@ -338,8 +346,9 @@ class RekapCekPelunasanController extends Controller
                 if ($filterQuery) {
                     $filterQuery($query);
                 }
-            })
-            ->orderBy('scctcust.nmcust', 'asc')
+            });
+        UnitScope::apply($recordsQuery, $this->unitScope);
+        $records = $recordsQuery->orderBy('scctcust.nmcust', 'asc')
             ->select($select)
             ->addSelect(DB::raw('COALESCE(MIN(scctbill.PAIDST), 0) as status_kelunasan'))
             ->addSelect(

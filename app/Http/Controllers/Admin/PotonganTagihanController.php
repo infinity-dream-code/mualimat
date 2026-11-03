@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\mst_kelas;
+use App\Support\UnitScope;
 use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
 use App\Models\scctbill;
@@ -25,6 +25,7 @@ class PotonganTagihanController extends Controller
     public string $mainTitle;
     public string $datasUrl;
     public string $columnsUrl;
+    private ?string $unitScope = null;
 
     public function __construct()
     {
@@ -32,6 +33,12 @@ class PotonganTagihanController extends Controller
         $this->mainTitle = "Potongan Tagihan";
         $this->datasUrl = route("admin.potongan-tagihan.get-data");
         $this->columnsUrl = route("admin.potongan-tagihan.get-column");
+
+        $this->middleware(function ($request, $next) {
+            $this->unitScope = UnitScope::current();
+
+            return $next($request);
+        });
     }
 
     public function index()
@@ -56,7 +63,9 @@ class PotonganTagihanController extends Controller
             ->where("thn_aka", "!=", null)
             ->orderBy("thn_aka", "desc")
             ->get();
-        $data["kelas"] = mst_kelas::get();
+        $data["kelas"] = UnitScope::kelasOptions($this->unitScope);
+        $data["unit"] = UnitScope::sekolahOptions($this->unitScope);
+        $data["unitScope"] = $this->unitScope;
 
         return view("admin.potongan_tagihan.index", $data);
     }
@@ -76,7 +85,7 @@ class PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => true
+                "duplicate" => false
             ],
             [
                 "data" => "nmcust",
@@ -84,7 +93,7 @@ class PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => true
+                "duplicate" => false
             ],
             [
                 "data" => "CODE02",
@@ -92,7 +101,7 @@ class PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => true
+                "duplicate" => false
             ],
             [
                 "data" => "DESC02",
@@ -100,7 +109,7 @@ class PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => true
+                "duplicate" => false
             ],
             [
                 "data" => "DESC03",
@@ -108,7 +117,7 @@ class PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => true
+                "duplicate" => false
             ],
             [
                 "data" => "BILLNM",
@@ -116,7 +125,7 @@ class PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => true
+                "duplicate" => false
             ],
             [
                 "data" => "PAIDST",
@@ -127,7 +136,7 @@ class PotonganTagihanController extends Controller
                 "columnType" => "boolean",
                 "trueVal" => "LUNAS",
                 "falseVal" => "BELUM LUNAS",
-                "duplicate" => true
+                "duplicate" => false
             ],
             [
                 "data" => "STCUST",
@@ -135,7 +144,7 @@ class PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => true,
+                "duplicate" => false,
                 "render" => function ($data) {
                     return $data == 1 ? '1' : '0';
                 }
@@ -147,7 +156,7 @@ class PotonganTagihanController extends Controller
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "duplicate" => true
+                "duplicate" => false
             ],
             [
                 "data" => "BILLAM",
@@ -157,7 +166,7 @@ class PotonganTagihanController extends Controller
                 "columnType" => "currency",
                 "className" => "text-end",
                 "exportable" => true,
-                "duplicate" => true
+                "duplicate" => false
             ],
             [
                 "data" => "TOTAL_BILL_CUT",
@@ -218,6 +227,7 @@ class PotonganTagihanController extends Controller
                         "tahun_akademik" => "scctbill.BTA",
                         "post" => "scctbill.BILLNM",
                         "tanggal-potongan" => "scctbill_cut.CUT_DATE",
+                        "unit" => "scctcust.CODE01",
                         "kelas" => "scctcust.DESC02",
                         "siswa" => "scctcust.nmcust",
                         "angkatan" => "scctcust.DESC04",
@@ -341,8 +351,9 @@ class PotonganTagihanController extends Controller
 
         $whereAny = ["scctcust.nmcust", "scctcust.nocust", "scctbill_cut.REASON"];
 
-        $baseQuery = function () use ($whereAny, $searchValue, $filterQuery) {
-            return ScctbillCut::query()
+        $unitScope = $this->unitScope;
+        $baseQuery = function () use ($whereAny, $searchValue, $filterQuery, $unitScope) {
+            $query = ScctbillCut::query()
                 ->join("scctbill", "scctbill_cut.AA", "=", "scctbill.AA")
                 ->join("scctcust", "scctcust.CUSTID", "=", "scctbill.CUSTID")
                 ->where("scctbill.PAIDST", 1)
@@ -361,6 +372,9 @@ class PotonganTagihanController extends Controller
                         $filterQuery($query);
                     }
                 });
+            UnitScope::apply($query, $unitScope);
+
+            return $query;
         };
 
         $totalRecords = ScctbillCut::where("IS_SHOW", 1)->distinct('AA')->count('AA');
@@ -589,7 +603,9 @@ class PotonganTagihanController extends Controller
             ->where("thn_aka", "!=", null)
             ->orderBy("thn_aka", "desc")
             ->get();
-        $data["kelas"] = mst_kelas::get();
+        $data["kelas"] = UnitScope::kelasOptions($this->unitScope);
+        $data["unit"] = UnitScope::sekolahOptions($this->unitScope);
+        $data["unitScope"] = $this->unitScope;
 
         return view("admin.potongan_tagihan.create", $data);
     }

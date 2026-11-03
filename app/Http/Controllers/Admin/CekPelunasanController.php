@@ -4,14 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\MetodeBayar;
-use App\Models\mst_kelas;
 use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
 use App\Models\scctbill;
 use App\Models\scctcust;
+use App\Support\UnitScope;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class CekPelunasanController extends Controller
 {
@@ -19,6 +18,7 @@ class CekPelunasanController extends Controller
     private string $datasUrl;
     private string $columnsUrl;
     private string $mainTitle;
+    private ?string $unitScope = null;
 
     public function __construct()
     {
@@ -27,6 +27,10 @@ class CekPelunasanController extends Controller
         $this->datasUrl = route('admin.cek-pelunasan.get-data');
         $this->detailDatasUrl = '';
         $this->columnsUrl = route('admin.cek-pelunasan.get-column');
+        $this->middleware(function ($request, $next) {
+            $this->unitScope = UnitScope::current();
+            return $next($request);
+        });
     }
 
     public function index()
@@ -38,7 +42,9 @@ class CekPelunasanController extends Controller
         $data['post'] = mst_tagihan::select(['tagihan'])->get();
         $data['thn_aka'] = mst_thn_aka::select(['thn_aka'])->where('thn_aka', '!=', null)->get();
         $data["metode_bayar"] = MetodeBayar::attributes();
-        $data['kelas'] = mst_kelas::get();
+        $data['kelas'] = UnitScope::kelasOptions($this->unitScope);
+        $data['unit'] = UnitScope::sekolahOptions($this->unitScope);
+        $data['unitScope'] = $this->unitScope;
 
         return view('admin.cek_pelunasan.index', $data);
     }
@@ -239,7 +245,9 @@ class CekPelunasanController extends Controller
                 if ($filterQuery) {
                     $filterQuery($query);
                 }
-            })->orderByRaw("
+            });
+        UnitScope::apply($query, $this->unitScope);
+        $query->orderByRaw("
                 CASE
                     WHEN scctbill.BILLNM LIKE '%JULI%' THEN 1
                     WHEN scctbill.BILLNM LIKE '%AGUSTUS%' THEN 2
@@ -257,13 +265,15 @@ class CekPelunasanController extends Controller
                 END
             ");
 
-        $totalRecords = Cache::remember('total_penerimaan_count', 600, function () {
-            return scctbill::select('count(*) as allcount')
-                ->where('scctbill.FSTSBolehBayar', 1)
-                ->count();
-        });
+        $totalRecordsQuery = scctbill::query()
+            ->leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
+            ->where('scctbill.FSTSBolehBayar', 1)
+            ->where('scctcust.STCUST', 1);
+        UnitScope::apply($totalRecordsQuery, $this->unitScope);
+        $totalRecords = $totalRecordsQuery->count();
 
         $totalRecordswithFilter = (clone $query)->count();
+        $totalTagihan = (float) ((clone $query)->sum('scctbill.BILLAM') ?? 0);
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
         $records = (clone $query)->orderBy($columnName, $columnSortOrder)
@@ -291,6 +301,13 @@ class CekPelunasanController extends Controller
             "recordsTotal" => $totalRecords ?? 0,
             "recordsFiltered" => $totalRecordswithFilter ?? 0,
             "data" => $data,
+            "totals" => [
+                "tagihan" => [
+                    "location" => 6,
+                    "value" => $totalTagihan,
+                    "columnType" => "currency",
+                ],
+            ],
         ];
         return response()->json($response);
     }

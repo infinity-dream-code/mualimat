@@ -386,6 +386,18 @@
                 });
         })
 
+            @if(!empty($unitScope))
+            const unitScope = @json($unitScope);
+            const $unitSelect = $("[name='filter[unit]']");
+            if ($unitSelect.length && unitScope) {
+                $unitSelect.val(unitScope).trigger('change');
+                $unitSelect.find('option').each(function () {
+                    if ($(this).val() !== unitScope && $(this).val() !== 'all') {
+                        $(this).prop('disabled', true);
+                    }
+                });
+            }
+            @endif
     </script>
 
     {!! ($modalLink??'') !!}

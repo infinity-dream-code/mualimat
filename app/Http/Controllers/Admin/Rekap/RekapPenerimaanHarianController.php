@@ -3,8 +3,7 @@
 namespace App\Http\Controllers\Admin\Rekap;
 
 use App\Http\Controllers\Controller;
-use App\Models\mst_kelas;
-use App\Models\mst_sekolah;
+use App\Support\UnitScope;
 use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
 use App\Models\scctcust;
@@ -15,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class RekapPenerimaanHarianController extends Controller
 {
+    private ?string $unitScope = null;
+
     public function __construct()
     {
         $this->title = 'Rekap Penerimaan Harian';
@@ -22,6 +23,12 @@ class RekapPenerimaanHarianController extends Controller
         $this->datasUrl = route('admin.rekap-penerimaan-harian.get-data');
         $this->detailDatasUrl = '';
         $this->columnsUrl = route('admin.rekap-penerimaan-harian.get-column');
+
+        $this->middleware(function ($request, $next) {
+            $this->unitScope = UnitScope::current();
+
+            return $next($request);
+        });
     }
 
     public function index()
@@ -38,8 +45,9 @@ class RekapPenerimaanHarianController extends Controller
                         kode ASC
                     ")->get();
         $data['thn_aka'] = mst_thn_aka::select(['thn_aka'])->where('thn_aka', '!=', null)->get();
-        $data['kelas'] = mst_kelas::get();
-        $data['unit'] = mst_sekolah::get();
+        $data['kelas'] = UnitScope::kelasOptions($this->unitScope);
+        $data['unit'] = UnitScope::sekolahOptions($this->unitScope);
+        $data['unitScope'] = $this->unitScope;
 
         return view('admin.rekap_penerimaan_harian', $data);
     }
@@ -245,10 +253,12 @@ class RekapPenerimaanHarianController extends Controller
             })->where('scctcust.STCUST', 1);
 //                ->groupBy('scctcust.CUSTID');
 
+            UnitScope::apply($query, $this->unitScope);
+
             // Total records
-            $totalRecords = scctcust::select('count(*) as allcount')
-                ->where('scctcust.STCUST', 1)
-                ->count();
+            $totalRecordsQuery = scctcust::query()->where('scctcust.STCUST', 1);
+            UnitScope::apply($totalRecordsQuery, $this->unitScope);
+            $totalRecords = $totalRecordsQuery->count();
 
 //            $totalTagihan = (clone $query)->sum('BILLAM');
 

@@ -114,7 +114,24 @@
                         </div>
                         <div class="col">
                             <div class="col mb-5">
-                                <label class="form-label" for="filter[angkatan]]">
+                                <label class="form-label" for="filter[unit]">
+                                    Tingkat
+                                </label>
+                                <select class="form-select" id="filter[unit]" name="filter[unit]"
+                                        data-control="select2" data-placeholder="Pilih unit">
+                                    <option value="all">Semua</option>
+                                    @isset($unit)
+                                        @foreach($unit as $item)
+                                            <option
+                                                value="{{$item->CODE01}}" data-group="{{$item->DESC01}}">{{$item->DESC01}}</option>
+                                        @endforeach
+                                    @else
+                                        <option>data kosong</option>
+                                    @endisset
+                                </select>
+                            </div>
+                            <div class="col mb-5">
+                                <label class="form-label" for="filter[angkatan]">
                                     Angkatan Siswa
                                 </label>
                                 <select class="form-select" id="filter[angkatan]"
@@ -771,6 +788,17 @@
             // });
         });
 
-
+            @if(!empty($unitScope))
+            const unitScope = @json($unitScope);
+            const $unitSelect = $("[name='filter[unit]']");
+            if ($unitSelect.length && unitScope) {
+                $unitSelect.val(unitScope).trigger('change');
+                $unitSelect.find('option').each(function () {
+                    if ($(this).val() !== unitScope && $(this).val() !== 'all') {
+                        $(this).prop('disabled', true);
+                    }
+                });
+            }
+            @endif
     </script>
 @endsection

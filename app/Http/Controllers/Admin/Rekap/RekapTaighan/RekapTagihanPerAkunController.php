@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Admin\Rekap\RekapTaighan;
 
 use App\Http\Controllers\Controller;
-use App\Models\mst_kelas;
-use App\Models\mst_sekolah;
 use App\Models\mst_tagihan;
 use App\Models\mst_thn_aka;
 use App\Models\scctbill;
 use App\Models\scctcust;
+use App\Support\UnitScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +18,7 @@ class RekapTagihanPerAkunController extends Controller
     private string $datasUrl;
     private string $columnsUrl;
     private string $mainTitle;
+    private ?string $unitScope = null;
 
     public function __construct()
     {
@@ -26,6 +26,10 @@ class RekapTagihanPerAkunController extends Controller
         $this->mainTitle = "Rekap Tagihan";
         $this->datasUrl = route("admin.rekap-tagihan.get-data");
         $this->columnsUrl = route("admin.rekap-tagihan.get-column");
+        $this->middleware(function ($request, $next) {
+            $this->unitScope = UnitScope::current();
+            return $next($request);
+        });
     }
 
     public function index()
@@ -39,8 +43,9 @@ class RekapTagihanPerAkunController extends Controller
             ->where("thn_aka", "!=", null)
             ->orderBy("thn_aka", "desc")
             ->get();
-        $data["kelas"] = mst_kelas::get();
-        $data["unit"] = mst_sekolah::get();
+        $data["kelas"] = UnitScope::kelasOptions($this->unitScope);
+        $data["unit"] = UnitScope::sekolahOptions($this->unitScope);
+        $data["unitScope"] = $this->unitScope;
 
         return view("admin.rekap_tagihan.index", $data);
     }
@@ -256,6 +261,7 @@ class RekapTagihanPerAkunController extends Controller
                         $filterQuery($query);
                     }
                 });
+            UnitScope::apply($query, $this->unitScope);
 
             // Total records
             $totalRecords = scctbill::select("count(*) as allcount")
@@ -460,7 +466,9 @@ class RekapTagihanPerAkunController extends Controller
             )
                 ->where("scctbill.PAIDST", 0)
                 ->where("scctbill.FSTSBolehBayar", 1)
-                ->where("scctcust.STCUST", 1)
+                ->where("scctcust.STCUST", 1);
+            UnitScope::apply($records, $this->unitScope);
+            $records = $records
                 ->where(function ($query) use ($filter_scctbill) {
                     foreach ($filter_scctbill as $filter) {
                         switch (count($filter)) {

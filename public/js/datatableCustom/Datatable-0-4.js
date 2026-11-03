@@ -15,6 +15,30 @@ function reformatNumber(data, row, column, node) {
     }
 }
 
+/** Periode BILLAC: YYYYMM → "Bulan Tahun", YYYY → tahun saja, else "-" */
+function formatPeriodeDisplay(data) {
+    if (data === null || data === undefined || data === '') {
+        return '-';
+    }
+    const raw = String(data).trim();
+    if (!/^\d+$/.test(raw)) {
+        return '-';
+    }
+    const monthsIndonesian = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+    if (raw.length === 4) {
+        return raw;
+    }
+    if (raw.length === 6) {
+        const year = Math.floor(Number(raw) / 100);
+        const month = Number(raw) % 100;
+        return (month >= 1 && month <= 12) ? `${monthsIndonesian[month - 1]} ${year}` : '-';
+    }
+    return raw;
+}
+
 // function addCustomNumberFormat(xlsx, numberFormat) {
 //     let numFmtsElement = xlsx.xl['styles.xml'].getElementsByTagName('numFmts')[0];
 //     let numFmtElement = '<numFmt numFmtId="176" formatCode="' + numberFormat + '"/>';
@@ -666,16 +690,7 @@ function dtButtons(options, buttons) {
                                 return tsDate.toLocaleDateString('id-ID', tsOptions);
                             case 'periode':
                             case 'yearmonth':
-                                if (!data || typeof data !== 'string' || data.length !== 6 || !/^\d{6}$/.test(data)) {
-                                    return '';
-                                }
-                                const monthsID = [
-                                    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-                                    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-                                ];
-                                const pmYear = Math.floor(data / 100);
-                                const pmMonth = data % 100;
-                                return (pmMonth >= 1 && pmMonth <= 12) ? `${monthsID[pmMonth - 1]} ${pmYear}` : '';
+                                return formatPeriodeDisplay(data);
                             case 'currency':
                                 if (config.extend !== 'excel') {
                                     return new Intl.NumberFormat('id-ID', {
@@ -1151,16 +1166,7 @@ async function getDT(options) {
                             case 'periode':
                             case 'yearmonth':
                                 renderFunc = function (data, type, row) {
-                                    if (!data || typeof data !== 'string' || data.length !== 6 || !/^\d{6}$/.test(data)) {
-                                        return '';
-                                    }
-                                    const monthsIndonesian = [
-                                        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-                                        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-                                    ];
-                                    const year = Math.floor(data / 100);
-                                    const month = data % 100;
-                                    return (month >= 1 && month <= 12) ? `${monthsIndonesian[month - 1]} ${year}` : '';
+                                    return formatPeriodeDisplay(data);
                                 };
                                 break;
                             case 'timestamp':
@@ -1339,9 +1345,14 @@ async function getDT(options) {
                                 break;
                             case "array":
                                 renderFunc = function (data, type, row) {
-                                    if (!data) return "";
+                                    if (!data || (Array.isArray(data) && data.length === 0) || data === '-') {
+                                        return '-';
+                                    }
 
                                     const parsed = parseArrayForRow(data, column.currency);
+                                    if (!parsed || String(parsed).trim() === '') {
+                                        return '-';
+                                    }
 
                                     // UI rendering (HTML list)
                                     if (type === 'display') {

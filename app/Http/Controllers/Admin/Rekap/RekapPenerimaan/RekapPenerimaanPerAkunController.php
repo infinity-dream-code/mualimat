@@ -99,10 +99,21 @@ class RekapPenerimaanPerAkunController extends Controller
             ],
             [
                 "data" => "BILLNM",
-                "name" => "Post Tagihan",
+                "name" => "Nama Tagihan",
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
+                "duplicate" => false,
+            ],
+            [
+                "data" => "list_nama_akun",
+                "name" => "Nama Post",
+                "columnType" => "array",
+                "keyLabel" => false,
+                "searchable" => false,
+                "orderable" => false,
+                "exportable" => true,
+                "duplicate" => false,
             ],
             [
                 "data" => "BILLAM",
@@ -311,6 +322,7 @@ class RekapPenerimaanPerAkunController extends Controller
             $select = array_unique(
                 array_merge($whereAny, [
                     "scctbill.AA",
+                    "scctbill.BILLCD",
                     "scctbill.BILLNM",
                     "scctbill.BILLAM",
                     "scctbill.PAIDST",
@@ -386,14 +398,45 @@ class RekapPenerimaanPerAkunController extends Controller
                 ->take($rowperpage)
                 ->get();
 
-            $records = $records->map(function ($item, $index) use ($request) {
-                $item->NOVA = match (strtolower($item->CODE02)) {
+            $postMap = [];
+            if ($records->isNotEmpty()) {
+                $custIds = $records->pluck("CUSTID")->unique()->filter()->values()->all();
+                $billCds = $records->pluck("BILLCD")->unique()->filter()->values()->all();
+                if ($custIds !== [] && $billCds !== []) {
+                    $postRows = DB::connection("DATA_MYSQL")
+                        ->table("scctbill_detail")
+                        ->leftJoin("u_akun", "u_akun.KodeAkun", "=", "scctbill_detail.KodePost")
+                        ->whereIn("scctbill_detail.CUSTID", $custIds)
+                        ->whereIn("scctbill_detail.BILLCD", $billCds)
+                        ->whereNotNull("u_akun.NamaAkun")
+                        ->whereRaw("TRIM(u_akun.NamaAkun) <> ''")
+                        ->select([
+                            "scctbill_detail.CUSTID",
+                            "scctbill_detail.BILLCD",
+                            DB::raw("GROUP_CONCAT(DISTINCT TRIM(u_akun.NamaAkun) ORDER BY u_akun.NamaAkun SEPARATOR ', ') as list_nama_akun"),
+                        ])
+                        ->groupBy("scctbill_detail.CUSTID", "scctbill_detail.BILLCD")
+                        ->get();
+
+                    foreach ($postRows as $pr) {
+                        $postMap[$pr->CUSTID . "|" . $pr->BILLCD] = $pr->list_nama_akun;
+                    }
+                }
+            }
+
+            $records = $records->map(function ($item, $index) use ($request, $postMap) {
+                $item->NOVA = match (strtolower((string) ($item->CODE02 ?? ""))) {
                     "mts" => scctcust::showVAMTS($item->nocust),
                     "ma" => scctcust::showVAMA($item->nocust),
                     default => "",
                 };
 
                 $item->item_id = $item["AA"];
+                $rawPost = $postMap[($item->CUSTID ?? "") . "|" . ($item->BILLCD ?? "")] ?? "";
+                $item->list_nama_akun = $rawPost !== ""
+                    ? array_values(array_filter(array_map("trim", explode(",", (string) $rawPost))))
+                    : "-";
+                $item->BILLNM = trim((string) ($item->BILLNM ?? "")) ?: "-";
 
                 return $item;
             });
@@ -408,7 +451,7 @@ class RekapPenerimaanPerAkunController extends Controller
             "data" => $records ?? [],
             "totals" => [
                 "tagihan" => [
-                    "location" => 5,
+                    "location" => 6,
                     "value" => $totalTagihan ?? 0,
                     "columnType" => "currency",
                 ],

@@ -3,8 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\mst_kelas;
-use App\Models\mst_sekolah;
+use App\Support\UnitScope;
 use App\Models\mst_thn_aka;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -17,6 +16,7 @@ class RekapSaldoSakuController extends Controller
     private string $datasUrl;
     private string $columnsUrl;
     private string $mainTitle;
+    private ?string $unitScope = null;
 
     public function __construct()
     {
@@ -24,6 +24,12 @@ class RekapSaldoSakuController extends Controller
         $this->mainTitle = "Rekap Saldo Saku";
         $this->datasUrl = route("admin.rekap-saldo-saku.get-data");
         $this->columnsUrl = route("admin.rekap-saldo-saku.get-column");
+
+        $this->middleware(function ($request, $next) {
+            $this->unitScope = UnitScope::current();
+
+            return $next($request);
+        });
     }
 
     public function index()
@@ -36,8 +42,9 @@ class RekapSaldoSakuController extends Controller
             ->where("thn_aka", "!=", null)
             ->orderBy("thn_aka", "desc")
             ->get();
-        $data["kelas"] = mst_kelas::get();
-        $data['unit'] = mst_sekolah::get();
+        $data["kelas"] = UnitScope::kelasOptions($this->unitScope);
+        $data['unit'] = UnitScope::sekolahOptions($this->unitScope);
+        $data['unitScope'] = $this->unitScope;
 
         return view("admin.rekap_saldo_saku.index", $data);
     }
@@ -329,6 +336,8 @@ class RekapSaldoSakuController extends Controller
                 ->selectRaw("COALESCE(tran.current_net, 0) as current_net")
                 ->selectRaw("COALESCE(tran.opening_balance, 0) + COALESCE(tran.current_net, 0) as closing_balance");
 
+            UnitScope::apply($query, $this->unitScope);
+
             if (!blank($searchValue)) {
                 $query->where(function ($q) use ($whereAny, $searchValue) {
                     $sanitizeSearch = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $searchValue);
@@ -338,9 +347,9 @@ class RekapSaldoSakuController extends Controller
                 });
             }
 
-            $totalRecords = DB::table("scctcust")
-                ->where("STCUST", 1)
-                ->count();
+            $totalRecordsQuery = DB::table("scctcust")->where("STCUST", 1);
+            UnitScope::apply($totalRecordsQuery, $this->unitScope);
+            $totalRecords = $totalRecordsQuery->count();
 
             $totalRecordswithFilter = (clone $query)->count();
 
