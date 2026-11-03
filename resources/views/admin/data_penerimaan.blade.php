@@ -382,233 +382,180 @@
             // default tampil awal bulan - hari ini, bisa dikosongkan via Batal
             date.val(startOfMonth.format('DD-MM-YYYY') + ' - ' + today.format('DD-MM-YYYY'));
 
+            function normalizeTagihanList(tagihan) {
+                if (Array.isArray(tagihan)) {
+                    return tagihan.map(String).filter(Boolean);
+                }
+                if (tagihan && typeof tagihan === 'object') {
+                    return Object.values(tagihan).map(String).filter(Boolean);
+                }
+                return [];
+            }
+
             function generateTableRow(data, tagihan) {
+                const tags = normalizeTagihanList(tagihan);
                 return data.map(s => {
-                    let row = {
-                        "NIS": s.nocust,
-                        "Nama": s.nmcust
+                    const row = {
+                        "NIS": s.nocust ?? s.NIS ?? '-',
+                        "Nama": s.nmcust ?? s.Nama ?? '-',
                     };
 
                     let total = 0;
-                    Object.keys(tagihan).forEach(function (key) {
-                        row[tagihan[key]] = Number(s[tagihan[key]] ?? 0);
-                        total += Number(s[tagihan[key]] ?? 0);
+                    tags.forEach(function (name) {
+                        const val = Number(s[name] ?? 0);
+                        row[name] = val;
+                        total += val;
                     });
-                    // row['TOTAL'] = Number(total);
+                    row['TOTAL'] = total;
                     return row;
                 });
             }
 
             function parseDDMMYYYY(dateStr) {
                 if (!dateStr) return null;
+                const parts = String(dateStr).trim().split(/[\/\-]/);
+                if (parts.length < 3) return null;
+                const [dd, mm, yyyy] = parts;
+                const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), 12, 0, 0);
+                return Number.isNaN(d.getTime()) ? null : d;
+            }
 
-                const [dd, mm, yyyy] = dateStr.split('-');
-
-                return new Date(`${yyyy}-${mm}-${dd}`);
+            function downloadBlob(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function () {
+                    URL.revokeObjectURL(url);
+                    a.remove();
+                }, 1500);
             }
 
             async function exportExcel(groupedData, params, tagihans = []) {
                 const rows = groupedData;
-                if (!rows.length) return;
-
-                try {
-                    const invalidValues = [null, '', 'undefined', 'all'];
-                    let kelasVal = params.get('filter[kelas]') ?? null;
-                    if (invalidValues.includes(kelasVal)) {
-                        kelasVal = 'Semua';
-                    }
-
-                    let thnAkaVal = params.get('filter[tahun_akademik]') ?? null;
-                    if (invalidValues.includes(thnAkaVal)) {
-                        thnAkaVal = 'Semua';
-                    }
-
-                    let angkatanVal = params.get('filter[angkatan]') ?? null;
-                    if (invalidValues.includes(angkatanVal)) {
-                        angkatanVal = 'Semua';
-                    }
-
-                    let periodeVal = params.get('filter[periode]') ?? null;
-                    if (invalidValues.includes(periodeVal)) {
-                        periodeVal = 'Semua';
-                    }
-
-                    let metodeBayarVal = params.get('filter[metode_bayar]') ?? null;
-                    if (invalidValues.includes(metodeBayarVal)) {
-                        metodeBayarVal = 'Semua';
-                    }else{
-                        const option = document.querySelector(`#metode_bayar option[value="${metodeBayarVal}"]`);
-                        const metodeBayarVal = option?.dataset.value;
-                    }
-
-                    let tanggalTransaksi = params.get('filter[tanggal-transaksi]') ?? null;
-                    tanggalTransaksi = tanggalTransaksi.split(" - ")
-                    console.log(tanggalTransaksi)
-
-                    const wbTitle = "REKAP DATA PENERIMAAN"
-                    const wb = new ExcelJS.Workbook();
-                    const ws = wb.addWorksheet(wbTitle);
-
-                    const header = Object.keys(rows[0]);
-
-                    ws.insertRow(1, [wbTitle]);
-                    ws.insertRow(2, ["Unit, Kelas", kelasVal.replace(/~/g, " - ")]);
-                    ws.insertRow(3, ["Angkatan", angkatanVal]);
-                    ws.insertRow(4, ["Tahun Akademik", thnAkaVal]);
-                    ws.insertRow(5, ["Periode", periodeVal]);
-                    ws.insertRow(6, ["Metode Pembayaran", metodeBayarVal]);
-                    ws.insertRow(7, ["Dari", parseDDMMYYYY(tanggalTransaksi[0])]);
-                    ws.insertRow(8, ["Hingga", parseDDMMYYYY(tanggalTransaksi[1])]);
-
-                    [7, 8].forEach(rowNumber => {
-                        const cell = ws.getRow(rowNumber).getCell(2);
-
-                        if (cell.value instanceof Date) {
-                            cell.numFmt = "[$-id-ID]dddd, dd mmmm yyyy";
-                        }
-                    });
-
-                    const boldRows = [1, 2, 3, 4, 5, 6, 7, 8];
-
-                    boldRows.forEach(rowNumber => {
-                        const row = ws.getRow(rowNumber);
-
-                        row.eachCell({includeEmpty: true}, cell => {
-                            cell.font = {bold: true};
-                        });
-
-                        row.commit();
-                    });
-
-                    ws.insertRow(9, []);
-
-                    const headerRowNumber = 10;
-
-                    ws.getColumn(1).width = 35;
-                    ws.getColumn(2).width = 35;
-
-                    const headerRow = ws.insertRow(headerRowNumber, header);
-
-                    let totalColIndex = null;
-
-                    headerRow.eachCell((cell, colNumber) => {
-                        if (String(cell.value || "").toLowerCase().includes("total")) {
-                            totalColIndex = colNumber;
-                        }
-                    });
-
-                    if (!totalColIndex) {
-                        totalColIndex = headerRow.cellCount + 1;
-
-                        const totalCell = headerRow.getCell(totalColIndex);
-                        totalCell.value = "TOTAL";
-                        totalCell.font = { bold: true };
-                        totalCell.alignment = { horizontal: "center" };
-                        totalCell.border = fullBorder();
-
-                        ws.getColumn(totalColIndex).width = 18;
-                    }
-
-                    headerRow.eachCell({includeEmpty: true}, (cell, colNumber) => {
-                        cell.font = {bold: true};
-                        cell.alignment = {horizontal: "center", vertical: "middle"};
-                        cell.border = fullBorder();
-
-                        if (colNumber <= 2) return;
-                        const headerText = String(cell.value || "");
-                        let width = Math.max(12, headerText.length + 4);
-                        ws.getColumn(colNumber).width = width;
-                    });
-
-                    rows.forEach(r => {
-                        const row = ws.addRow(Object.values(r));
-
-                        row.eachCell({includeEmpty: true}, cell => {
-                            if (cell.value instanceof Date) {
-                                cell.numFmt = "dddd, dd mmmm yyyy";
-                            }
-
-                            if (typeof cell.value === "number") {
-                                cell.numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
-                            }
-
-                            cell.border = fullBorder();
-                        });
-                    });
-
-                    const dataStartRow = headerRowNumber + 1;
-                    const dataEndRow = ws.lastRow.number;
-
-                    const totalRow = ws.addRow([]);
-                    totalRow.getCell(1).value = "TOTAL";
-                    totalRow.getCell(1).font = {bold: true};
-                    totalRow.getCell(1).border = fullBorder();
-                    headerRow.eachCell((cell, colNumber) => {
-                        const headerText = String(cell.value || "").toLowerCase();
-                        let shouldSum = Object.values(tagihans).some(tagihan =>
-                            headerText.includes(tagihan.toLowerCase())
-                        );
-                        totalRow.getCell(colNumber).font = {bold: true};
-                        totalRow.getCell(colNumber).border = fullBorder();
-                        if (!shouldSum) return;
-                        const colLetter = ws.getColumn(colNumber).letter;
-                        totalRow.getCell(colNumber).value = {
-                            formula: `SUM(${colLetter}${dataStartRow}:${colLetter}${dataEndRow})`
-                        };
-                        totalRow.getCell(colNumber).numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
-                    });
-
-                    const sumColumns = [];
-
-                    headerRow.eachCell((cell, colNumber) => {
-                        const headerText = String(cell.value || "").toLowerCase();
-                        if (headerText === "total") {
-                            totalColIndex = colNumber;
-                            return;
-                        }
-                        const shouldSum = Object.values(tagihans).some(tagihan =>
-                            headerText.includes(tagihan.toLowerCase())
-                        );
-                        if (shouldSum) {
-                            sumColumns.push(colNumber);
-                        }
-                    });
-
-                    if (totalColIndex) {
-                        for (let rowNumber = dataStartRow; rowNumber <= dataEndRow + 1; rowNumber++) {
-                            const row = ws.getRow(rowNumber);
-                            const sumRange = sumColumns.map(col =>
-                                `${ws.getColumn(col).letter}${rowNumber}`
-                            );
-                            row.getCell(totalColIndex).value = {
-                                formula: `SUM(${sumRange.join(',')})`
-                            };
-                            row.getCell(totalColIndex).numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
-                            row.getCell(totalColIndex).font = {bold: true};
-                            row.getCell(totalColIndex).border = fullBorder();
-                            // ws.getColumn(totalColIndex).width = Math.max(12, headerText.length + 4);
-                        }
-                    }
-
-                    const buffer = await wb.xlsx.writeBuffer();
-                    if (!buffer || buffer.byteLength === 0) {
-                        throw new Error("Excel buffer empty");
-                    }
-                    const blob = new Blob([buffer], {
-                        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = wbTitle + " - " + kelasVal.replace(/~/g, " - ") + ".xlsx";
-                    document.body.appendChild(a);
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                } catch (err) {
-                    warningAlert('Gagal Mengexport Excel');
-                    console.log(err);
+                if (!rows.length) {
+                    throw new Error('Data Tagihan Kosong');
                 }
+                if (typeof ExcelJS === 'undefined') {
+                    throw new Error('Library ExcelJS gagal dimuat. Periksa koneksi internet / CDN.');
+                }
+
+                const invalidValues = [null, '', 'undefined', 'all'];
+                let kelasVal = params.get('filter[kelas]') ?? null;
+                if (invalidValues.includes(kelasVal)) kelasVal = 'Semua';
+
+                let thnAkaVal = params.get('filter[tahun_akademik]') ?? null;
+                if (invalidValues.includes(thnAkaVal)) thnAkaVal = 'Semua';
+
+                let angkatanVal = params.get('filter[angkatan]') ?? null;
+                if (invalidValues.includes(angkatanVal)) angkatanVal = 'Semua';
+
+                let periodeVal = params.get('filter[periode]') ?? null;
+                if (invalidValues.includes(periodeVal)) periodeVal = 'Semua';
+
+                let metodeBayarVal = params.get('filter[metode_bayar]') ?? null;
+                if (invalidValues.includes(metodeBayarVal)) {
+                    metodeBayarVal = 'Semua';
+                } else {
+                    const option = document.querySelector(`#metode_bayar option[value="${CSS.escape(String(metodeBayarVal))}"]`);
+                    metodeBayarVal = option?.textContent?.trim() || metodeBayarVal;
+                }
+
+                let tanggalRaw = String(params.get('filter[tanggal-transaksi]') ?? '');
+                // Pisah range saja (" - " / " ~ "), jangan pecah tanggal DD-MM-YYYY
+                let tanggalTransaksi = tanggalRaw.split(/\s+-\s+|\s+~\s+|\s+\/\s+/).map(s => s.trim()).filter(Boolean);
+
+                const tags = normalizeTagihanList(tagihans);
+                const wbTitle = "REKAP DATA PENERIMAAN";
+                const wb = new ExcelJS.Workbook();
+                const ws = wb.addWorksheet(wbTitle.substring(0, 31));
+
+                const header = Object.keys(rows[0]);
+
+                ws.insertRow(1, [wbTitle]);
+                ws.insertRow(2, ["Unit, Kelas", String(kelasVal).replace(/~/g, " - ")]);
+                ws.insertRow(3, ["Angkatan", angkatanVal]);
+                ws.insertRow(4, ["Tahun Akademik", thnAkaVal]);
+                ws.insertRow(5, ["Periode", periodeVal]);
+                ws.insertRow(6, ["Metode Pembayaran", metodeBayarVal]);
+                ws.insertRow(7, ["Dari", parseDDMMYYYY(tanggalTransaksi[0])]);
+                ws.insertRow(8, ["Hingga", parseDDMMYYYY(tanggalTransaksi[1])]);
+
+                [7, 8].forEach(rowNumber => {
+                    const cell = ws.getRow(rowNumber).getCell(2);
+                    if (cell.value instanceof Date) {
+                        cell.numFmt = "[$-id-ID]dddd, dd mmmm yyyy";
+                    }
+                });
+
+                [1, 2, 3, 4, 5, 6, 7, 8].forEach(rowNumber => {
+                    const row = ws.getRow(rowNumber);
+                    row.eachCell({includeEmpty: true}, cell => {
+                        cell.font = {bold: true};
+                    });
+                });
+
+                ws.insertRow(9, []);
+                const headerRowNumber = 10;
+                ws.getColumn(1).width = 18;
+                ws.getColumn(2).width = 32;
+
+                const headerRow = ws.insertRow(headerRowNumber, header);
+                headerRow.eachCell({includeEmpty: true}, (cell, colNumber) => {
+                    cell.font = {bold: true};
+                    cell.alignment = {horizontal: "center", vertical: "middle"};
+                    cell.border = fullBorder();
+                    if (colNumber <= 2) return;
+                    const headerText = String(cell.value || "");
+                    ws.getColumn(colNumber).width = Math.max(12, Math.min(28, headerText.length + 4));
+                });
+
+                const colTotals = {};
+                header.forEach((h, idx) => {
+                    if (idx >= 2) colTotals[idx] = 0;
+                });
+
+                rows.forEach(r => {
+                    const values = header.map(h => r[h] ?? 0);
+                    const row = ws.addRow(values);
+                    row.eachCell({includeEmpty: true}, (cell, colNumber) => {
+                        if (typeof cell.value === "number") {
+                            cell.numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
+                            if (colNumber >= 3) {
+                                colTotals[colNumber - 1] = (colTotals[colNumber - 1] || 0) + Number(cell.value || 0);
+                            }
+                        }
+                        cell.border = fullBorder();
+                    });
+                });
+
+                const totalRowValues = header.map((h, idx) => {
+                    if (idx === 0) return 'TOTAL';
+                    if (idx === 1) return '';
+                    return colTotals[idx] || 0;
+                });
+                const totalRow = ws.addRow(totalRowValues);
+                totalRow.eachCell({includeEmpty: true}, (cell, colNumber) => {
+                    cell.font = {bold: true};
+                    cell.border = fullBorder();
+                    if (colNumber >= 3 && typeof cell.value === 'number') {
+                        cell.numFmt = '"Rp "#,##0;\\("Rp "#,##0\\)';
+                    }
+                });
+
+                const buffer = await wb.xlsx.writeBuffer();
+                if (!buffer || buffer.byteLength === 0) {
+                    throw new Error("Excel buffer empty");
+                }
+                const blob = new Blob([buffer], {
+                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                });
+                const safeKelas = String(kelasVal).replace(/~/g, "-").replace(/[\\/:*?"<>|]/g, "");
+                downloadBlob(blob, wbTitle + " - " + safeKelas + ".xlsx");
+                return true;
             }
 
             function fullBorder() {
@@ -668,17 +615,22 @@
                         const result = await response.json();
 
                         if (!result['data'] || result['data'].length === 0) {
-                            console.log('kosong');
                             const error = new Error("Data Tagihan Kosong");
                             error.status = 422;
                             throw error;
                         }
 
-                        let tableRow = generateTableRow(result.data, result.mstTagihan)
-                        await exportExcel(tableRow, params, result.mstTagihan)
+                        const tableRow = generateTableRow(result.data, result.mstTagihan);
+                        if (!tableRow.length) {
+                            const error = new Error("Data Tagihan Kosong");
+                            error.status = 422;
+                            throw error;
+                        }
 
-                        successAlert('Sukses, Rekap telah dicetak');
+                        await exportExcel(tableRow, params, result.mstTagihan);
+                        successAlert('Sukses, Rekap telah dicetak. Cek folder Download browser Anda.');
                     } catch (error) {
+                        console.error(error);
                         if (error.status === 422) {
                             const errors = error.error || error.errors;
                             errorAlert(error.message);
@@ -694,7 +646,7 @@
                                 419: 'Permintaan gagal diproses. Silakan coba lagi.',
                                 429: 'Terlalu banyak permintaan akses <br>silahkan tunggu beberapa saat 🙏',
                             };
-                            errorAlert(errorMessages[error.status] || "Terjadi kesalahan, silahkan coba memuat ulang halaman");
+                            errorAlert(error.message || errorMessages[error.status] || "Terjadi kesalahan saat membuat Excel");
                         }
                     }
                 } else {
