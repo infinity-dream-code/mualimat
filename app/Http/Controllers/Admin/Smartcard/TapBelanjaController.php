@@ -128,7 +128,7 @@ class TapBelanjaController extends Controller
             DB::connection('DATA_MYSQL')->transaction(function () use ($custid, $trxDate, $belanja, $transNo, $helpdesk, $loginUser) {
                 DB::connection('DATA_MYSQL')->table(self::TRAN_TABLE)->insert([
                     'CUSTID' => $custid,
-                    'METODE' => 'FROM SALDO',
+                    'METODE' => 'FROM SALDO_CLP',
                     'TRXDATE' => $trxDate->format('Y-m-d H:i:s'),
                     'KREDIT' => 0,
                     'DEBET' => $belanja,
