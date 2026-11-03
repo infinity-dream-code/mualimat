@@ -53,7 +53,7 @@ class ManualPembayaranController extends Controller
             ['data' => 'nocust', 'name' => 'NIS', 'searchable' => true, 'orderable' => true, 'duplicate' => false],
             ['data' => 'NUM2ND', 'name' => 'NO. DAFTAR', 'searchable' => true, 'orderable' => true, 'duplicate' => false],
             ['data' => 'kelas_label', 'name' => 'Kelas', 'searchable' => true, 'orderable' => false, 'duplicate' => false],
-            ['data' => 'NOVA', 'name' => 'NO. VA', 'searchable' => true, 'orderable' => false, 'duplicate' => false, 'columnType' => 'nova_edit'],
+            ['data' => 'NOVA', 'name' => 'NO. VA', 'searchable' => true, 'orderable' => false, 'duplicate' => false],
             ['data' => 'nmcust', 'name' => 'NAMA', 'searchable' => true, 'orderable' => true, 'duplicate' => false],
             ['data' => 'BILLNM', 'name' => 'Nama Tagihan', 'searchable' => true, 'orderable' => true, 'duplicate' => false, 'exportable' => true],
             ['data' => 'list_nama_akun', 'name' => 'Nama Post', 'columnType' => 'array', 'keyLabel' => false, 'searchable' => true, 'orderable' => false, 'duplicate' => false],
