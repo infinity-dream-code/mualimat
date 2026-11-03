@@ -121,7 +121,7 @@ class TapAmbilRutinController extends Controller
             DB::connection('DATA_MYSQL')->transaction(function () use ($custid, $trxDate, $ambil, $transNo, $helpdesk, $loginUser) {
                 DB::connection('DATA_MYSQL')->table(self::TRAN_TABLE)->insert([
                     'CUSTID' => $custid,
-                    'METODE' => 'Cash',
+                    'METODE' => 'FROM SALDO_CLN',
                     'TRXDATE' => $trxDate->format('Y-m-d H:i:s'),
                     'KREDIT' => 0,
                     'DEBET' => $ambil,
