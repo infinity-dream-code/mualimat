@@ -89,7 +89,7 @@
                             </div>
                             <div class="mb-5">
                                 <label class="form-label" for="post">
-                                    Nama Tagihan
+                                    Post Tagihan
                                 </label>
                                 <select class="form-select" id="post"
                                         name="filter[post][]"
@@ -380,7 +380,7 @@
                     let row = {
                         "Kode": s.KodeAkun,
                         "Nama Post": s.NamaAkun,
-                        "Nama Tagihan": s.bill_name,
+                        "Post Tagihan": s.bill_name,
                     };
 
                     kelas.forEach((it, i) => {
@@ -613,6 +613,19 @@
                     warningAlert('Silahkan pilih salah satu kelas terlebih dahulu!')
                 }
             });
+
+            @if(!empty($unitScope))
+            const unitScope = @json($unitScope);
+            const $unitSelect = $("[name='filter[unit]']");
+            if ($unitSelect.length && unitScope) {
+                $unitSelect.val(unitScope).trigger('change');
+                $unitSelect.find('option').each(function () {
+                    if ($(this).val() !== unitScope && $(this).val() !== 'all') {
+                        $(this).prop('disabled', true);
+                    }
+                });
+            }
+            @endif
         });
 
     </script>

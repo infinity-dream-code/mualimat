@@ -57,6 +57,17 @@ class CyberKey extends Model implements AuthenticatableContract
         return (string) $this->users;
     }
 
+    /**
+     * Kode sekolah dari cyber_key.fid (nyambung mst_sekolah.CODE01).
+     * Contoh: admmts=23 (MTS), admma=63 (MA). Kosong = akses semua.
+     */
+    public function getUnitAttribute(): ?string
+    {
+        $fid = trim((string) ($this->attributes['fid'] ?? ''));
+
+        return $fid !== '' ? $fid : null;
+    }
+
     public function hasRole(string $role): bool
     {
         if ($role === "siswa") {

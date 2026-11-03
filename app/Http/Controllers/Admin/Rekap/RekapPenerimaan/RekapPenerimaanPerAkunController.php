@@ -12,6 +12,7 @@ use App\Models\scctbill;
 use App\Models\scctcust;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class RekapPenerimaanPerAkunController extends Controller
@@ -20,6 +21,7 @@ class RekapPenerimaanPerAkunController extends Controller
     private string $datasUrl;
     private string $columnsUrl;
     private string $mainTitle;
+    private ?string $unitScope = null;
 
     public function __construct()
     {
@@ -27,6 +29,14 @@ class RekapPenerimaanPerAkunController extends Controller
         $this->mainTitle = "Rekap Penerimaan";
         $this->datasUrl = route("admin.rekap-penerimaan.get-data");
         $this->columnsUrl = route("admin.rekap-penerimaan.get-column");
+
+        $this->middleware(function ($request, $next) {
+            if (Auth::check()) {
+                $this->unitScope = Auth::user()->unit;
+            }
+
+            return $next($request);
+        });
     }
 
     public function index()
@@ -41,8 +51,23 @@ class RekapPenerimaanPerAkunController extends Controller
             ->orderBy("thn_aka", "desc")
             ->get();
         $data["metode_bayar"] = MetodeBayar::attributes();
-        $data["kelas"] = mst_kelas::get();
-        $data['unit'] = mst_sekolah::get();
+        $data["kelas"] = mst_kelas::query()
+            ->when($this->unitScope, function ($q) {
+                $desc = mst_sekolah::query()
+                    ->whereRaw('TRIM(CODE01) = ?', [$this->unitScope])
+                    ->value('DESC01');
+                $q->where(function ($inner) use ($desc) {
+                    $inner->whereRaw('TRIM(unit) = ?', [$this->unitScope]);
+                    if ($desc) {
+                        $inner->orWhereRaw('UPPER(TRIM(unit)) = ?', [strtoupper(trim((string) $desc))]);
+                    }
+                });
+            })
+            ->get();
+        $data['unit'] = mst_sekolah::query()
+            ->when($this->unitScope, fn ($q) => $q->whereRaw('TRIM(CODE01) = ?', [$this->unitScope]))
+            ->get();
+        $data['unitScope'] = $this->unitScope;
 
         return view("admin.rekap_penerimaan.index", $data);
     }
@@ -74,7 +99,7 @@ class RekapPenerimaanPerAkunController extends Controller
             ],
             [
                 "data" => "BILLNM",
-                "name" => "Nama Tagihan",
+                "name" => "Post Tagihan",
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
@@ -105,6 +130,15 @@ class RekapPenerimaanPerAkunController extends Controller
                 "exportable" => true,
             ],
         ];
+    }
+
+    private function applyUnitScope($query): void
+    {
+        if (!$this->unitScope) {
+            return;
+        }
+
+        $query->whereRaw('TRIM(CAST(scctcust.CODE01 AS CHAR)) = ?', [$this->unitScope]);
     }
 
     public function getData(Request $request)
@@ -322,14 +356,19 @@ class RekapPenerimaanPerAkunController extends Controller
                     END
                 ");
 
+            $this->applyUnitScope($query);
+
             // Total records
-            $totalRecords = scctbill::select("count(*) as allcount")
-                ->where("PAIDST", 1)
+            $totalRecordsQuery = scctbill::query()
+                ->leftJoin("scctcust", "scctcust.CUSTID", "scctbill.CUSTID")
+                ->where("scctbill.PAIDST", 1)
                 ->where("scctbill.FSTSBolehBayar", 1)
-                ->where("PAIDDT", "!=", null)
-                ->count();
+                ->where("scctbill.PAIDDT", "!=", null);
+            $this->applyUnitScope($totalRecordsQuery);
+            $totalRecords = $totalRecordsQuery->count();
 
             $totalRecordswithFilter = (clone $query)->count();
+            $totalTagihan = (float) ((clone $query)->sum("scctbill.BILLAM") ?? 0);
 
             $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
             $records = (clone $query)
@@ -367,6 +406,13 @@ class RekapPenerimaanPerAkunController extends Controller
             "recordsTotal" => $totalRecords ?? 0,
             "recordsFiltered" => $totalRecordswithFilter ?? 0,
             "data" => $records ?? [],
+            "totals" => [
+                "tagihan" => [
+                    "location" => 5,
+                    "value" => $totalTagihan ?? 0,
+                    "columnType" => "currency",
+                ],
+            ],
         ];
         return response()->json($response);
     }
@@ -525,7 +571,29 @@ class RekapPenerimaanPerAkunController extends Controller
             //     )
             //     ->get();
 
-            $kelas = mst_kelas::get();
+            if ($this->unitScope) {
+                $filterInput = $request->input("filter", []);
+                $filterInput["unit"] = $this->unitScope;
+                $request->merge(["filter" => $filterInput]);
+                $hasUnitFilter = collect($filter_main)->contains(fn ($f) => ($f[0] ?? null) === "scctcust.CODE01");
+                if (!$hasUnitFilter) {
+                    $filter_main[] = ["scctcust.CODE01", "=", $this->unitScope];
+                }
+            }
+
+            $kelas = mst_kelas::query()
+                ->when($this->unitScope, function ($q) {
+                    $desc = mst_sekolah::query()
+                        ->whereRaw('TRIM(CODE01) = ?', [$this->unitScope])
+                        ->value('DESC01');
+                    $q->where(function ($inner) use ($desc) {
+                        $inner->whereRaw('TRIM(unit) = ?', [$this->unitScope]);
+                        if ($desc) {
+                            $inner->orWhereRaw('UPPER(TRIM(unit)) = ?', [strtoupper(trim((string) $desc))]);
+                        }
+                    });
+                })
+                ->get();
 
             $records = DB::connection('DATA_MYSQL')->table("u_akun")
                 ->join("scctbill_detail", function ($join) {
@@ -576,38 +644,40 @@ class RekapPenerimaanPerAkunController extends Controller
                 ->leftJoin("scctcust", function ($join) {
                     $join->on("scctcust.CUSTID", "=", "scctbill_detail.CUSTID");
                 })
-                // ->where(function ($query) use ($filter_main) {
-                //     foreach ($filter_main as $filter) {
-                //         switch (count($filter)) {
-                //             case 3:
-                //                 $filter[1] === "in"
-                //                     ? $query->whereIn($filter[0], $filter[2])
-                //                     : $query->where(
-                //                         $filter[0],
-                //                         $filter[1],
-                //                         $filter[2],
-                //                     );
-                //                 break;
+                ->where(function ($query) use ($filter_main) {
+                    foreach ($filter_main as $filter) {
+                        switch (count($filter)) {
+                            case 3:
+                                $filter[1] === "in"
+                                    ? $query->whereIn($filter[0], $filter[2])
+                                    : $query->where(
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
+                                break;
 
-                //             case 4:
-                //                 $filter[3] === "whereBetween"
-                //                     ? $query->whereBetween($filter[0], [
-                //                         $filter[1],
-                //                         $filter[2],
-                //                     ])
-                //                     : $query->{$filter[3]}(
-                //                         $filter[0],
-                //                         $filter[1],
-                //                         $filter[2],
-                //                     );
-                //                 break;
-                //         }
-                //     }
-                // })
+                            case 4:
+                                $filter[3] === "whereBetween"
+                                    ? $query->whereBetween($filter[0], [
+                                        $filter[1],
+                                        $filter[2],
+                                    ])
+                                    : $query->{$filter[3]}(
+                                        $filter[0],
+                                        $filter[1],
+                                        $filter[2],
+                                    );
+                                break;
+                        }
+                    }
+                })
                 ->where("scctcust.STCUST", 1)
+                ->when($this->unitScope, function ($q) {
+                    $q->whereRaw('TRIM(CAST(scctcust.CODE01 AS CHAR)) = ?', [$this->unitScope]);
+                })
                 ->select($select)
                 ->orderBy("u_akun.KodeAkun", "asc")
-                // ->orderBy("scctbill.BILLNM", "asc")
                 ->groupBy("u_akun.KodeAkun");
 
             $records->addSelect(DB::raw("MAX(scctbill.BILLNM) as bill_name"));

@@ -14,6 +14,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 
@@ -22,12 +23,21 @@ class DataPenerimaanController extends Controller
     public string $title;
     public $datasUrl;
     public $columnsUrl;
+    private ?string $unitScope = null;
 
     public function __construct()
     {
         $this->title = "Data Penerimaan";
         $this->datasUrl = route("admin.data-penerimaan.get-data");
         $this->columnsUrl = route("admin.data-penerimaan.get-column");
+
+        $this->middleware(function ($request, $next) {
+            if (Auth::check()) {
+                $this->unitScope = Auth::user()->unit;
+            }
+
+            return $next($request);
+        });
     }
 
     public function getColumn(): array
@@ -149,9 +159,24 @@ class DataPenerimaanController extends Controller
             ->where("thn_aka", "!=", null)
             ->orderBy("thn_aka", "desc")
             ->get();
-        $data["kelas"] = mst_kelas::get();
-        $data["unit"] = mst_sekolah::get();
+        $data["kelas"] = mst_kelas::query()
+            ->when($this->unitScope, function ($q) {
+                $desc = mst_sekolah::query()
+                    ->whereRaw('TRIM(CODE01) = ?', [$this->unitScope])
+                    ->value('DESC01');
+                $q->where(function ($inner) use ($desc) {
+                    $inner->whereRaw('TRIM(unit) = ?', [$this->unitScope]);
+                    if ($desc) {
+                        $inner->orWhereRaw('UPPER(TRIM(unit)) = ?', [strtoupper(trim((string) $desc))]);
+                    }
+                });
+            })
+            ->get();
+        $data["unit"] = mst_sekolah::query()
+            ->when($this->unitScope, fn ($q) => $q->whereRaw('TRIM(CODE01) = ?', [$this->unitScope]))
+            ->get();
         $data["metode_bayar"] = MetodeBayar::attributes();
+        $data["unitScope"] = $this->unitScope;
 
         return view("admin.data_penerimaan", $data);
     }
@@ -409,14 +434,19 @@ class DataPenerimaanController extends Controller
                 }
             });
 
+        $this->applyUnitScope($query);
+
         // Total records
-        $totalRecords = scctbill::select("count(*) as allcount")
-            ->where("PAIDST", 1)
+        $totalRecordsQuery = scctbill::query()
+            ->leftJoin("scctcust", "scctcust.CUSTID", "scctbill.CUSTID")
+            ->where("scctbill.PAIDST", 1)
             ->where("scctbill.FSTSBolehBayar", 1)
-            ->where("PAIDDT", "!=", null)
-            ->count();
+            ->where("scctbill.PAIDDT", "!=", null);
+        $this->applyUnitScope($totalRecordsQuery);
+        $totalRecords = $totalRecordsQuery->count();
 
         $totalRecordswithFilter = (clone $query)->count();
+        $totalTagihan = (float) ((clone $query)->sum("scctbill.BILLAM") ?? 0);
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
 
@@ -453,8 +483,24 @@ class DataPenerimaanController extends Controller
             "recordsTotal" => $totalRecords ?? 0,
             "recordsFiltered" => $totalRecordswithFilter ?? 0,
             "data" => $records ?? [],
+            "totals" => [
+                "tagihan" => [
+                    "location" => 8,
+                    "value" => $totalTagihan,
+                    "columnType" => "currency",
+                ],
+            ],
         ];
         return response()->json($response);
+    }
+
+    private function applyUnitScope($query): void
+    {
+        if (!$this->unitScope) {
+            return;
+        }
+
+        $query->whereRaw('TRIM(CAST(scctcust.CODE01 AS CHAR)) = ?', [$this->unitScope]);
     }
 
     public function cetakRekapPenerimaan(Request $request)
@@ -702,6 +748,8 @@ class DataPenerimaanController extends Controller
                 ->select($select)
                 ->groupBy("scctcust.CUSTID");
 
+            $this->applyUnitScope($records);
+
             foreach ($mstTagihan as $val) {
                 $namaPost = $val["tagihan"];
                 $records->addSelect(
@@ -780,10 +828,35 @@ class DataPenerimaanController extends Controller
 
     public function getDataRekap(Request $request)
     {
+        $filterInput = $request->input("filter", []);
+        $kelasFilter = $filterInput["kelas"] ?? null;
+        $unitFilter = $filterInput["unit"] ?? null;
+        $tanggalFilter = $filterInput["tanggal-transaksi"] ?? null;
+        $hasKelas = $kelasFilter !== null && $kelasFilter !== "" && $kelasFilter !== "all";
+        $hasUnit = $unitFilter !== null && $unitFilter !== "" && $unitFilter !== "all";
+
         if (
-            $request->filter["kelas"] != null &&
-            $request->filter["kelas"] != "all"
+            $tanggalFilter === null ||
+            $tanggalFilter === "" ||
+            !preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', (string) $tanggalFilter)
         ) {
+            return response()->json(
+                [
+                    "message" =>
+                    'Tidak dapat mencetak rekap penerimaan!<br> <span class="text-danger">*</span>Tanggal transaksi pembayaran tidak boleh kosong',
+                ],
+                422,
+            );
+        }
+
+        if ($this->unitScope) {
+            $hasUnit = true;
+            $unitFilter = $this->unitScope;
+            $filterInput["unit"] = $this->unitScope;
+            $request->merge(["filter" => $filterInput]);
+        }
+
+        if ($hasKelas || $hasUnit) {
             $filters = [];
             $filterQuery = null;
             $filter_scctbill = [];
@@ -835,6 +908,8 @@ class DataPenerimaanController extends Controller
                                         "d-m-Y",
                                         $endDate,
                                     )->endOfDay();
+                                    $tanggalMulai = $startDate;
+                                    $tanggalSelesai = $endDate;
                                     if ($startDate && $endDate) {
                                         $colName &&
                                             ($filters[] = [
@@ -869,8 +944,9 @@ class DataPenerimaanController extends Controller
                                     return $value !== "all";
                                 });
                                 if (count($array) > 0) {
+                                    $post = array_values($array);
                                     $colName &&
-                                        ($filters[] = [$colName, "in", $array]);
+                                        ($filters[] = [$colName, "in", $post]);
                                 }
                                 break;
                             case 'siswa':
@@ -1002,6 +1078,8 @@ class DataPenerimaanController extends Controller
                     ->select($select)
                     ->groupBy("scctcust.CUSTID");
 
+                $this->applyUnitScope($records);
+
                 foreach ($mstTagihan as $val) {
                     $namaPost = $val["tagihan"];
                     $records->addSelect(
@@ -1013,10 +1091,13 @@ class DataPenerimaanController extends Controller
 
                 $records = $records->get();
 
-                $kelas = mst_kelas::where("unit", $kelas[0])
-                    ->where("jenjang", $kelas[1])
-                    ->where("kelas", $kelas[2])
-                    ->first();
+                $kelasInfo = null;
+                if (count($kelas) === 3) {
+                    $kelasInfo = mst_kelas::where("unit", $kelas[0])
+                        ->where("jenjang", $kelas[1])
+                        ->where("kelas", $kelas[2])
+                        ->first();
+                }
                 if (!$records || !$mstTagihan) {
                     throw new \Exception("Gagal mengambil data tagihan");
                 }
@@ -1050,7 +1131,7 @@ class DataPenerimaanController extends Controller
                 $data = [
                     "data" => $filtered,
                     "mstTagihan" => $filteredMstTagihan->toArray(),
-                    "kelas" => $kelas,
+                    "kelas" => $kelasInfo,
                     "tanggalMulai" => $tanggalMulai,
                     "tanggalSelesai" => $tanggalSelesai,
                 ];
@@ -1065,14 +1146,14 @@ class DataPenerimaanController extends Controller
                     422,
                 );
             }
-        } else {
-            return response()->json(
-                [
-                    "message" =>
-                    "Tidak dapat mencetak rekap penerimaan!<br> *Kelas Harus Diisi, silahkan pilih salah satu kelas",
-                ],
-                422,
-            );
         }
+
+        return response()->json(
+            [
+                "message" =>
+                "Tidak dapat mencetak rekap penerimaan!<br> *Unit atau Kelas harus diisi, silahkan pilih salah satu",
+            ],
+            422,
+        );
     }
 }
