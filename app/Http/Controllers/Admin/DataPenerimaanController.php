@@ -503,6 +503,122 @@ class DataPenerimaanController extends Controller
         $query->whereRaw('TRIM(CAST(scctcust.CODE01 AS CHAR)) = ?', [$this->unitScope]);
     }
 
+    private function applyRekapFilterList($query, array $filters): void
+    {
+        foreach ($filters as $filter) {
+            switch (count($filter)) {
+                case 3:
+                    $filter[1] === "in"
+                        ? $query->whereIn($filter[0], $filter[2])
+                        : $query->where($filter[0], $filter[1], $filter[2]);
+                    break;
+                case 4:
+                    $filter[3] === "whereBetween"
+                        ? $query->whereBetween($filter[0], [$filter[1], $filter[2]])
+                        : $query->{$filter[3]}($filter[0], $filter[1], $filter[2]);
+                    break;
+            }
+        }
+    }
+
+    /**
+     * Hanya ambil nama tagihan yang benar-benar ada di transaksi terfilter
+     * (bukan seluruh mst_tagihan) supaya pivot SQL tetap ringan.
+     */
+    private function resolveTagihanNamesForRekap(array $filterScctbill, array $filterMain, $post = false): array
+    {
+        $q = scctbill::query()
+            ->join("scctcust", "scctcust.CUSTID", "=", "scctbill.CUSTID")
+            ->where("scctbill.PAIDST", 1)
+            ->where("scctbill.FSTSBolehBayar", 1)
+            ->whereNotNull("scctbill.PAIDDT")
+            ->where("scctcust.STCUST", 1);
+
+        $this->applyRekapFilterList($q, $filterScctbill);
+        $this->applyRekapFilterList($q, $filterMain);
+        $this->applyUnitScope($q);
+
+        if (is_array($post) && count($post) > 0) {
+            $q->whereIn("scctbill.BILLNM", $post);
+        }
+
+        $paidNames = $q->distinct()
+            ->orderBy("scctbill.BILLNM")
+            ->pluck("scctbill.BILLNM")
+            ->map(fn ($v) => trim((string) $v))
+            ->filter(fn ($v) => $v !== "")
+            ->values()
+            ->all();
+
+        if ($paidNames === []) {
+            return [];
+        }
+
+        // Urutkan mengikuti mst_tagihan bila ada; sisanya di belakang
+        $ordered = mst_tagihan::query()
+            ->whereIn("tagihan", $paidNames)
+            ->orderByRaw("
+                CASE
+                    WHEN kode BETWEEN '07' AND '12' THEN 0
+                    WHEN kode BETWEEN '01' AND '06' THEN 1
+                    ELSE 2
+                END,
+                kode ASC
+            ")
+            ->pluck("tagihan")
+            ->map(fn ($v) => trim((string) $v))
+            ->filter()
+            ->values()
+            ->all();
+
+        $remaining = array_values(array_diff($paidNames, $ordered));
+
+        return array_values(array_merge($ordered, $remaining));
+    }
+
+    private function pivotTagihanSelect(string $namaPost): \Illuminate\Database\Query\Expression
+    {
+        $escaped = str_replace("'", "''", $namaPost);
+        $alias = str_replace("`", "``", $namaPost);
+
+        return DB::raw(
+            "SUM(CASE WHEN scctbill.BILLNM = '{$escaped}' THEN scctbill.BILLAM ELSE 0 END) AS `{$alias}`"
+        );
+    }
+
+    private function stripZeroTagihanColumns($records, array $tagihanNames): array
+    {
+        if ($records->isEmpty() || $tagihanNames === []) {
+            return [$records, $tagihanNames];
+        }
+
+        $zero = [];
+        foreach ($tagihanNames as $name) {
+            $allZero = $records->every(function ($row) use ($name) {
+                $val = is_array($row) || $row instanceof \Illuminate\Support\Collection
+                    ? data_get($row, $name, 0)
+                    : ($row->{$name} ?? 0);
+
+                return (float) $val == 0.0;
+            });
+            if ($allZero) {
+                $zero[] = $name;
+            }
+        }
+
+        if ($zero === []) {
+            return [$records, $tagihanNames];
+        }
+
+        $filtered = $records->map(function ($item) use ($zero) {
+            return collect($item)->except($zero);
+        });
+
+        $keep = array_values(array_diff($tagihanNames, $zero));
+
+        return [$filtered, $keep];
+    }
+
     public function cetakRekapPenerimaan(Request $request)
     {
         if (
@@ -659,23 +775,15 @@ class DataPenerimaanController extends Controller
         );
 
         try {
-            $mstTagihan = mst_tagihan::select(["tagihan"])
-                ->where(function ($query) use ($post) {
-                    if ($post) {
-                        $query->whereIn("tagihan", $post);
-                    }
-                })
-                ->orderByRaw(
-                    "
-                        CASE
-                            WHEN kode BETWEEN '07' AND '12' THEN 0
-                            WHEN kode BETWEEN '01' AND '06' THEN 1
-                            ELSE 2
-                        END,
-                        kode ASC
-                    ",
-                )
-                ->get();
+            $tagihanNames = $this->resolveTagihanNamesForRekap(
+                $filter_scctbill,
+                $filter_main,
+                $post,
+            );
+
+            if ($tagihanNames === []) {
+                throw new \Exception("Data Tagihan Kosong");
+            }
 
             $records = DB::table("scctcust")
                 ->orderBy("scctcust.nmcust", "asc")
@@ -686,63 +794,11 @@ class DataPenerimaanController extends Controller
                         ->where("scctbill.FSTSBolehBayar", 1)
                         ->whereNotNull("scctbill.PAIDDT")
                         ->where(function ($query) use ($filter_scctbill) {
-                            foreach ($filter_scctbill as $filter) {
-                                switch (count($filter)) {
-                                    case 3:
-                                        $filter[1] === "in"
-                                            ? $query->whereIn(
-                                                $filter[0],
-                                                $filter[2],
-                                            )
-                                            : $query->where(
-                                                $filter[0],
-                                                $filter[1],
-                                                $filter[2],
-                                            );
-                                        break;
-                                    case 4:
-                                        $filter[3] === "whereBetween"
-                                            ? $query->whereBetween($filter[0], [
-                                                $filter[1],
-                                                $filter[2],
-                                            ])
-                                            : $query->{$filter[3]}(
-                                                $filter[0],
-                                                $filter[1],
-                                                $filter[2],
-                                            );
-                                        break;
-                                }
-                            }
+                            $this->applyRekapFilterList($query, $filter_scctbill);
                         });
                 })
                 ->where(function ($query) use ($filter_main) {
-                    foreach ($filter_main as $filter) {
-                        switch (count($filter)) {
-                            case 3:
-                                $filter[1] === "in"
-                                    ? $query->whereIn($filter[0], $filter[2])
-                                    : $query->where(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
-                                break;
-
-                            case 4:
-                                $filter[3] === "whereBetween"
-                                    ? $query->whereBetween($filter[0], [
-                                        $filter[1],
-                                        $filter[2],
-                                    ])
-                                    : $query->{$filter[3]}(
-                                        $filter[0],
-                                        $filter[1],
-                                        $filter[2],
-                                    );
-                                break;
-                        }
-                    }
+                    $this->applyRekapFilterList($query, $filter_main);
                 })
                 ->where("scctcust.STCUST", 1)
                 ->select($select)
@@ -750,58 +806,35 @@ class DataPenerimaanController extends Controller
 
             $this->applyUnitScope($records);
 
-            foreach ($mstTagihan as $val) {
-                $namaPost = $val["tagihan"];
-                $records->addSelect(
-                    DB::raw(
-                        "SUM(CASE WHEN scctbill.BILLNM = '{$namaPost}' THEN scctbill.BILLAM ELSE 0 END) AS '{$namaPost}'",
-                    ),
-                );
+            foreach ($tagihanNames as $namaPost) {
+                $records->addSelect($this->pivotTagihanSelect($namaPost));
             }
 
-            $records = DB::table(DB::raw("({$records->toSql()}) as sub"))
-                ->mergeBindings($records)
-                ->where(function ($q) use ($mstTagihan) {
-                    foreach ($mstTagihan as $val) {
-                        $namaPost = $val["tagihan"];
-                        $q->orWhere($namaPost, ">", 0);
-                    }
-                })
-                ->get();
+            $havingParts = [];
+            foreach ($tagihanNames as $namaPost) {
+                $escaped = str_replace("'", "''", $namaPost);
+                $havingParts[] = "SUM(CASE WHEN scctbill.BILLNM = '{$escaped}' THEN scctbill.BILLAM ELSE 0 END) > 0";
+            }
+            if ($havingParts !== []) {
+                $records->havingRaw("(" . implode(" OR ", $havingParts) . ")");
+            }
 
-            if (!$records || !$mstTagihan) {
+            $records = $records->get();
+
+            if (!$records) {
                 throw new \Exception("Gagal mengambil data tagihan");
             }
 
-            $zeroColumns = [];
-            $filtered = $records->map(function ($item) use (
+            [$filtered, $filteredMstTagihan] = $this->stripZeroTagihanColumns(
                 $records,
-                &$zeroColumns,
-            ) {
-                $zeroColumns = collect($item)
-                    ->keys()
-                    ->filter(function ($key) use ($records) {
-                        return $records
-                            ->pluck($key)
-                            ->every(fn($value) => $value == 0);
-                    });
-
-                return collect($item)->except($zeroColumns);
-            });
-
-            $mstTagihan = $mstTagihan->pluck("tagihan");
-            $zeroColumns = $zeroColumns->toArray();
-            $filteredMstTagihan = $mstTagihan->reject(function ($value) use (
-                $zeroColumns,
-            ) {
-                return in_array($value, $zeroColumns, true);
-            });
+                $tagihanNames,
+            );
 
             $customPaper = [0, 0, 935.43, 595.28];
 
             $pdf = Pdf::loadView("cetak.rekap-penerimaan", [
                 "tagihans" => $filtered,
-                "mstTagihan" => $filteredMstTagihan,
+                "mstTagihan" => collect($filteredMstTagihan),
                 "kelas" => $kelas,
                 "unit" => $unit,
                 "tanggalMulai" => $tanggalMulai,
@@ -985,23 +1018,20 @@ class DataPenerimaanController extends Controller
             );
 
             try {
-                $mstTagihan = mst_tagihan::select(["tagihan"])
-                    ->where(function ($query) use ($post) {
-                        if ($post) {
-                            $query->whereIn("tagihan", $post);
-                        }
-                    })
-                    ->orderByRaw(
-                        "
-                        CASE
-                            WHEN kode BETWEEN '07' AND '12' THEN 0
-                            WHEN kode BETWEEN '01' AND '06' THEN 1
-                            ELSE 2
-                        END,
-                        kode ASC
-                    ",
-                    )
-                    ->get();
+                $tagihanNames = $this->resolveTagihanNamesForRekap(
+                    $filter_scctbill,
+                    $filter_main,
+                    $post,
+                );
+
+                if ($tagihanNames === []) {
+                    return response()->json(
+                        [
+                            "message" => "Data Tagihan Kosong",
+                        ],
+                        422,
+                    );
+                }
 
                 $records = scctcust::leftJoin("scctbill", function ($join) use (
                     $filter_scctbill,
@@ -1012,66 +1042,11 @@ class DataPenerimaanController extends Controller
                         ->where("scctbill.FSTSBolehBayar", 1)
                         ->whereNotNull("scctbill.PAIDDT")
                         ->where(function ($query) use ($filter_scctbill) {
-                            foreach ($filter_scctbill as $filter) {
-                                switch (count($filter)) {
-                                    case 3:
-                                        $filter[1] === "in"
-                                            ? $query->whereIn(
-                                                $filter[0],
-                                                $filter[2],
-                                            )
-                                            : $query->where(
-                                                $filter[0],
-                                                $filter[1],
-                                                $filter[2],
-                                            );
-                                        break;
-                                    case 4:
-                                        $filter[3] === "whereBetween"
-                                            ? $query->whereBetween($filter[0], [
-                                                $filter[1],
-                                                $filter[2],
-                                            ])
-                                            : $query->{$filter[3]}(
-                                                $filter[0],
-                                                $filter[1],
-                                                $filter[2],
-                                            );
-                                        break;
-                                }
-                            }
+                            $this->applyRekapFilterList($query, $filter_scctbill);
                         });
                 })
                     ->where(function ($query) use ($filter_main) {
-                        foreach ($filter_main as $filter) {
-                            switch (count($filter)) {
-                                case 3:
-                                    $filter[1] === "in"
-                                        ? $query->whereIn(
-                                            $filter[0],
-                                            $filter[2],
-                                        )
-                                        : $query->where(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
-                                    break;
-
-                                case 4:
-                                    $filter[3] === "whereBetween"
-                                        ? $query->whereBetween($filter[0], [
-                                            $filter[1],
-                                            $filter[2],
-                                        ])
-                                        : $query->{$filter[3]}(
-                                            $filter[0],
-                                            $filter[1],
-                                            $filter[2],
-                                        );
-                                    break;
-                            }
-                        }
+                        $this->applyRekapFilterList($query, $filter_main);
                     })
                     ->where("scctcust.STCUST", 1)
                     ->orderBy("scctcust.nmcust", "asc")
@@ -1080,13 +1055,18 @@ class DataPenerimaanController extends Controller
 
                 $this->applyUnitScope($records);
 
-                foreach ($mstTagihan as $val) {
-                    $namaPost = $val["tagihan"];
-                    $records->addSelect(
-                        DB::raw(
-                            "SUM(CASE WHEN scctbill.BILLNM = '{$namaPost}' THEN scctbill.BILLAM ELSE 0 END) AS '{$namaPost}'",
-                        ),
-                    );
+                foreach ($tagihanNames as $namaPost) {
+                    $records->addSelect($this->pivotTagihanSelect($namaPost));
+                }
+
+                // Hanya siswa yang punya minimal 1 nilai tagihan > 0
+                $havingParts = [];
+                foreach ($tagihanNames as $namaPost) {
+                    $escaped = str_replace("'", "''", $namaPost);
+                    $havingParts[] = "SUM(CASE WHEN scctbill.BILLNM = '{$escaped}' THEN scctbill.BILLAM ELSE 0 END) > 0";
+                }
+                if ($havingParts !== []) {
+                    $records->havingRaw("(" . implode(" OR ", $havingParts) . ")");
                 }
 
                 $records = $records->get();
@@ -1098,39 +1078,18 @@ class DataPenerimaanController extends Controller
                         ->where("kelas", $kelas[2])
                         ->first();
                 }
-                if (!$records || !$mstTagihan) {
+                if (!$records) {
                     throw new \Exception("Gagal mengambil data tagihan");
                 }
 
-                $zeroColumns = [];
-                $filtered = $records->map(function ($item) use (
+                [$filtered, $filteredMstTagihan] = $this->stripZeroTagihanColumns(
                     $records,
-                    &$zeroColumns,
-                ) {
-                    $zeroColumns = collect($item)
-                        ->keys()
-                        ->filter(function ($key) use ($records) {
-                            return $records
-                                ->pluck($key)
-                                ->every(fn($value) => $value == 0);
-                        });
-
-                    return collect($item)->except($zeroColumns);
-                });
-
-                $mstTagihan = $mstTagihan->pluck("tagihan");
-                if ($zeroColumns->count() > 0) {
-                    $zeroColumns = $zeroColumns->toArray();
-                }
-                $filteredMstTagihan = $mstTagihan->reject(function (
-                    $value,
-                ) use ($zeroColumns) {
-                    return in_array($value, $zeroColumns, true);
-                });
+                    $tagihanNames,
+                );
 
                 $data = [
                     "data" => $filtered,
-                    "mstTagihan" => $filteredMstTagihan->toArray(),
+                    "mstTagihan" => $filteredMstTagihan,
                     "kelas" => $kelasInfo,
                     "tanggalMulai" => $tanggalMulai,
                     "tanggalSelesai" => $tanggalSelesai,
