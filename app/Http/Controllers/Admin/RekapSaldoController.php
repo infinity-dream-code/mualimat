@@ -70,24 +70,12 @@ class RekapSaldoController extends Controller
                 "duplicate" => false
             ],
             [
-                "data" => "PAIDST",
-                "name" => "Status",
-                "searchable" => true,
-                "orderable" => true,
-                "exportable" => true,
-                "columnType" => "boolean",
-                "trueVal" => "LUNAS",
-                "falseVal" => "BELUM LUNAS",
-            ],
-            [
                 "data" => "STCUST",
                 "name" => "Status Siswa",
                 "searchable" => true,
                 "orderable" => true,
                 "exportable" => true,
-                "render" => function ($data) {
-                    return $data == 1 ? '1' : '0';
-                }
+                "duplicate" => false,
             ],
             [
                 "data" => "CODE02",
