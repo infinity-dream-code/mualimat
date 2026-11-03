@@ -7,8 +7,8 @@ use App\Models\mst_kelas;
 use App\Models\scctcust;
 use App\Models\mst_thn_aka;
 use App\Models\ValidationMessage;
+use App\Support\UnitScope;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -21,10 +21,7 @@ class PindahKelasController extends Controller
     public function __construct()
     {
         $this->middleware(function ($request, $next) {
-            if (Auth::check()) {
-                $user = Auth::user();
-                $this->unitScope = $user->unit;
-            }
+            $this->unitScope = UnitScope::current();
             return $next($request);
         });
     }
@@ -37,9 +34,9 @@ class PindahKelasController extends Controller
         $data['columnsUrl'] = route('admin.master-data.pindah-kelas.get-column');
         $data['datasUrl'] = route('admin.master-data.pindah-kelas.get-data');
         $data['thn_aka'] = mst_thn_aka::where('thn_aka', '!=', null)->orderBy('thn_aka','asc')->get();
-        $data['kelas'] = mst_kelas::when($this->unitScope, function ($query) {
-            $query->where("unit", $this->unitScope);
-        })->orderBy('kelas','asc')->get();
+        // fid/CODE01 (mis. 23) ≠ mst_kelas.unit (mis. MTS) — match keduanya via UnitScope
+        $data['kelas'] = UnitScope::kelasOptions($this->unitScope);
+        $data['unitScope'] = $this->unitScope;
 
         return view('admin.master_data.pindah_kelas.index', $data);
     }
@@ -62,10 +59,7 @@ class PindahKelasController extends Controller
         $kelasId = $request->get("kelas");
 
         $query = scctcust::query()->where("STCUST", 1);
-
-        if ($this->unitScope) {
-            $query->where("CODE02", $this->unitScope);
-        }
+        UnitScope::apply($query, $this->unitScope);
 
         if ($kelasId) {
             $query->where("CODE03", $kelasId);
@@ -119,19 +113,31 @@ class PindahKelasController extends Controller
         $valMsg = $request->pindah === 'satuan' ? 'silahkan pilih siswa yang akan dipindahkan kelasnya!' : $validator->errors()->first();
         if ($validator->fails()) return response()->json(['message' => $valMsg, 'error' => $validator->errors()], 422);
 
+        $allowedKelasIds = UnitScope::kelasOptions($this->unitScope)->pluck('id')->all();
         $dariKelas = mst_kelas::where('id', '=', $request->dari_kelas)->first();
         $keKelas = mst_kelas::where('id', '=', $request->ke_kelas)->first();
-        if (!$keKelas && $dariKelas) return response()->json(['message' => 'Kelas tidak ditemukan, silahkan muat ulang halaman!'], 422);
+        if (!$keKelas || !$dariKelas) {
+            return response()->json(['message' => 'Kelas tidak ditemukan, silahkan muat ulang halaman!'], 422);
+        }
+        if ($this->unitScope && (
+            !in_array((int) $dariKelas->id, array_map('intval', $allowedKelasIds), true)
+            || !in_array((int) $keKelas->id, array_map('intval', $allowedKelasIds), true)
+        )) {
+            return response()->json(['message' => 'Kelas di luar unit Anda'], 422);
+        }
 
         switch ($request->pindah) {
             case 'all':
-                $siswas = scctcust::select(['CUSTID'])
-                    ->where('CODE03', $request->dari_kelas)
-                    ->get();
+                $siswasQuery = scctcust::select(['CUSTID'])
+                    ->where('CODE03', $request->dari_kelas);
+                UnitScope::apply($siswasQuery, $this->unitScope);
+                $siswas = $siswasQuery->get();
                 if ($siswas->isEmpty()) return response()->json(['message' => 'Tidak ada siswa di kelas dan angkatan ini'], 422);
                 break;
             case 'satuan':
-                $siswas = scctcust::select(['CUSTID'])->whereIn('CUSTID', $request->input('siswa'))->get();
+                $siswasQuery = scctcust::select(['CUSTID'])->whereIn('CUSTID', $request->input('siswa'));
+                UnitScope::apply($siswasQuery, $this->unitScope);
+                $siswas = $siswasQuery->get();
                 if ($siswas->isEmpty()) return response()->json(['message' => 'Siswa tidak ditemukan'], 422);
                 if (count($request->input('siswa')) != $siswas->count()) return response()->json(['message' => 'Jumlah siswa yang dipilih tidak sesuai dengan jumlah data, silahkan muat ulang halaman!'], 422);
                 break;
