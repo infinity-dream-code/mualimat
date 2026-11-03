@@ -268,6 +268,11 @@ class LoginController extends Controller
 
     protected function redirectTo(): string
     {
+        $user = Auth::user();
+        if ($user && method_exists($user, 'defaultHomePath')) {
+            return $user->defaultHomePath();
+        }
+
         return "/admin";
     }
 

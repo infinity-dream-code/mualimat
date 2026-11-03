@@ -48,30 +48,78 @@ class DataSiswaController extends Controller
         $data["columnsUrl"] = route("admin.master-data.data-siswa.get-column");
         $data["datasUrl"] = route("admin.master-data.data-siswa.get-data");
 
+        // Angkatan global — tidak diikat sekolah/fid
         $data["thn_aka"] = scctcust::query()
             ->whereNotNull("DESC04")
             ->where("DESC04", "!=", "")
-            ->when($this->unitScope, fn ($q) => $q->where("CODE02", $this->unitScope))
             ->select("DESC04 as thn_aka")
             ->distinct()
             ->orderBy("DESC04", "desc")
             ->get();
 
         $data["sekolah"] = mst_sekolah::when($this->unitScope, function ($query) {
-            $query->where(function ($q) {
-                $q->where("CODE01", $this->unitScope)
-                    ->orWhere("DESC01", $this->unitScope);
-            });
+            $query->whereRaw('TRIM(CODE01) = ?', [$this->unitScope]);
         })->get();
 
         $data["kelas"] = \App\Models\mst_kelas::query()
-            ->when($this->unitScope, fn ($q) => $q->where("unit", $this->unitScope))
+            ->when($this->unitScope, function ($q) {
+                $desc = $this->unitDesc();
+                $q->where(function ($inner) use ($desc) {
+                    $inner->whereRaw('TRIM(unit) = ?', [$this->unitScope]);
+                    if ($desc) {
+                        $inner->orWhereRaw('UPPER(TRIM(unit)) = ?', [strtoupper($desc)]);
+                    }
+                });
+            })
             ->orderBy("unit")
             ->orderBy("jenjang")
             ->orderBy("kelas")
             ->get();
 
+        $data["unitScope"] = $this->unitScope;
+
         return view("admin.master_data.data_siswa.index", $data);
+    }
+
+    /** Nama unit dari fid, contoh fid 23 → MTS */
+    private function unitDesc(): ?string
+    {
+        if (!$this->unitScope) {
+            return null;
+        }
+
+        $desc = mst_sekolah::query()
+            ->whereRaw('TRIM(CODE01) = ?', [$this->unitScope])
+            ->value('DESC01');
+
+        $desc = trim((string) ($desc ?? ''));
+
+        return $desc !== '' ? $desc : null;
+    }
+
+    /**
+     * Filter siswa by cyber_key.fid → CODE01 / CODE02 / nama unit (MTS/MA).
+     * fid kosong = tanpa filter (semua sekolah).
+     */
+    private function applyUnitScope($query, string $alias = 'scctcust'): void
+    {
+        if (!$this->unitScope) {
+            return;
+        }
+
+        $unit = $this->unitScope;
+        $desc = $this->unitDesc();
+        $col1 = $alias !== '' ? "{$alias}.CODE01" : 'CODE01';
+        $col2 = $alias !== '' ? "{$alias}.CODE02" : 'CODE02';
+
+        $query->where(function ($q) use ($unit, $desc, $col1, $col2) {
+            $q->whereRaw("TRIM(CAST({$col1} AS CHAR)) = ?", [$unit])
+                ->orWhereRaw("TRIM(CAST({$col2} AS CHAR)) = ?", [$unit]);
+            if ($desc) {
+                $q->orWhereRaw("UPPER(TRIM(CAST({$col2} AS CHAR))) = ?", [strtoupper($desc)])
+                    ->orWhereRaw("UPPER(TRIM(CAST({$col1} AS CHAR))) = ?", [strtoupper($desc)]);
+            }
+        });
     }
 
     public function getColumn()
@@ -157,12 +205,6 @@ class DataSiswaController extends Controller
             $filter = [];
         }
 
-        if ($this->unitScope !== null) {
-            $filter = array_merge($filter, [
-                "scctcust.CODE02" => $this->unitScope,
-            ]);
-        }
-
         foreach ($filter as $key => $val) {
             switch ($key) {
                 case "scctcust.DESC02":
@@ -226,6 +268,7 @@ class DataSiswaController extends Controller
                     $q->where($f[0], $f[1], $f[2]);
                 }
             });
+        $this->applyUnitScope($baseQuery);
 
         $totalRecords = (clone $baseQuery)->count("CUSTID");
 
@@ -290,8 +333,8 @@ class DataSiswaController extends Controller
             return response()->json([]);
         }
 
-        $query = scctcust::query()->where("STCUST", 1)
-            ->when($this->unitScope, fn ($q) => $q->where("CODE02", $this->unitScope));
+        $query = scctcust::query()->where("STCUST", 1);
+        $this->applyUnitScope($query, '');
 
         if (is_numeric($term)) {
             $query->where("nocust", "like", "%{$term}%");
@@ -361,12 +404,13 @@ class DataSiswaController extends Controller
             return response()->json([]);
         }
 
-        $siswa = scctcust::query()
-            ->when($this->unitScope, fn ($q) => $q->where("CODE02", $this->unitScope))
+        $siswaQuery = scctcust::query()
             ->when($kelas, fn ($q) => $q->where("CODE03", $kelas))
             ->when($thn_aka, fn ($q) => $q->where("DESC04", $thn_aka))
             ->when($nis, fn ($q) => $q->where("nocust", "like", $nis))
-            ->when($nama, fn ($q) => $q->where("nmcust", "like", $nama))
+            ->when($nama, fn ($q) => $q->where("nmcust", "like", $nama));
+        $this->applyUnitScope($siswaQuery, '');
+        $siswa = $siswaQuery
             ->orderBy("nmcust", "asc")
             ->limit(200)
             ->get(["CUSTID", "nocust", "NUM2ND", "nmcust", "CODE02", "DESC02", "DESC03", "DESC04"])
@@ -490,9 +534,9 @@ class DataSiswaController extends Controller
             }
         }
 
-        $siswa = scctcust::when($this->unitScope, fn ($q) => $q->where("CODE02", $this->unitScope))
-            ->where("CUSTID", $id)
-            ->first();
+        $siswaQuery = scctcust::query()->where("CUSTID", $id);
+        $this->applyUnitScope($siswaQuery, '');
+        $siswa = $siswaQuery->first();
 
         if (!$siswa) {
             return response()->json(["message" => "Siswa tidak ditemukan!"], 422);

@@ -53,7 +53,7 @@ Route::prefix('approval-prestasi')
 
 Route::prefix("admin")
     ->name("admin.")
-    ->middleware(["auth", "check.roles:admin"])
+    ->middleware(["auth", "check.roles:admin", "restrict.kel"])
     ->group(function () {
         Route::get("/", [AdminController::class, "index"])->name("index");
 
@@ -595,6 +595,15 @@ Route::prefix("admin")
                 Route::controller(\App\Http\Controllers\Admin\Smartcard\TapAmbilRutinController::class)
                     ->prefix("tap-ambil-rutin")
                     ->name("tap-ambil-rutin.")
+                    ->group(function () {
+                        Route::get("/", "index")->name("index");
+                        Route::post("lookup", "lookup")->name("lookup");
+                        Route::post("process", "process")->name("process");
+                    });
+
+                Route::controller(\App\Http\Controllers\Admin\Smartcard\TapBelanjaController::class)
+                    ->prefix("tap-belanja")
+                    ->name("tap-belanja.")
                     ->group(function () {
                         Route::get("/", "index")->name("index");
                         Route::post("lookup", "lookup")->name("lookup");

@@ -67,7 +67,9 @@ class SsoLoginController extends Controller
             Auth::guard('web')->login($user, false);
             PersistentLogin::set($user);
 
-            return redirect('/admin');
+            $home = method_exists($user, 'defaultHomePath') ? $user->defaultHomePath() : '/admin';
+
+            return redirect($home);
         } catch (Throwable $e) {
             Log::error('SSO login exception', [
                 'message' => $e->getMessage(),

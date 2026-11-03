@@ -1,3 +1,16 @@
+@php
+    $authUser = Auth::user();
+    $can = function (string $menu) use ($authUser): bool {
+        return $authUser && method_exists($authUser, 'canSeeMenu')
+            ? $authUser->canSeeMenu($menu)
+            : true;
+    };
+    $canSc = function (string $item) use ($authUser): bool {
+        return $authUser && method_exists($authUser, 'canSeeSmartcardItem')
+            ? $authUser->canSeeSmartcardItem($item)
+            : true;
+    };
+@endphp
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
     <div class="app-brand demo">
         <a href="{{route('admin.index')}}" class="app-brand-link">
@@ -26,6 +39,7 @@
             </a>
         </li>
 
+        @if($can('master-data'))
         <li class="menu-item {{ Request::is(['admin/master-data*']) ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon ri ri-database-2-line"></i>
@@ -74,7 +88,9 @@
                 </li>
             </ul>
         </li>
+        @endif
 
+        @if($can('keuangan'))
         <li class="menu-item {{ (
             Request::is(['admin/keuangan*']) && !Request::is(['admin/keuangan/manual-pembayaran*', 'admin/keuangan/saldo*'])
             || Request::is(['admin/manual-input*', 'admin/rekap-data*'])
@@ -142,7 +158,9 @@
                 </li>
             </ul>
         </li>
+        @endif
 
+        @if($can('laporan'))
             <li class="menu-item {{ Request::is([
             'admin/data-tagihan',
             'admin/data-penerimaan',
@@ -219,14 +237,18 @@
                 </li>
             </ul>
         </li>
+        @endif
 
+        @if($can('manual-pembayaran'))
         <li class="menu-item {{ Request::is(['admin/keuangan/manual-pembayaran*']) ? 'active' : '' }}">
             <a href="{{ route('admin.keuangan.manual-pembayaran.index') }}" class="menu-link">
                 <i class="menu-icon ri ri-money-dollar-circle-line"></i>
                 <div data-i18n="Manual Pembayaran">Manual Pembayaran</div>
             </a>
         </li>
+        @endif
 
+        @if($can('saldo'))
         <li class="menu-item {{ Request::is(['admin/keuangan/saldo*']) ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon ri ri-wallet-2-line"></i>
@@ -245,14 +267,18 @@
                 </li>
             </ul>
         </li>
+        @endif
 
+        @if($can('pengumuman'))
         <li class="menu-item {{ Request::is(['admin/pengumuman*']) ? 'active' : '' }}">
             <a href="{{ url('admin/pengumuman') }}" class="menu-link">
                 <i class="menu-icon ri ri-megaphone-line"></i>
                 <div data-i18n="Pengumuman Apps Mobile">Pengumuman Apps Mobile</div>
             </a>
         </li>
+        @endif
 
+        @if($can('wakaf'))
         <li class="menu-item {{ Request::is(['admin/wakaf*']) ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon ri ri-hand-heart-line"></i>
@@ -271,74 +297,95 @@
                 </li>
             </ul>
         </li>
+        @endif
 
+        @if($can('smartcard'))
         <li class="menu-item {{ Request::is(['admin/smartcard*']) ? 'active open' : '' }}">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon ri ri-bank-card-line"></i>
                 <div data-i18n="smartCARD">smartCARD</div>
             </a>
             <ul class="menu-sub">
+                @if($canSc('data-kartu-siswa'))
                 <li class="menu-item {{ Request::is(['admin/smartcard/data-kartu-siswa*']) ? 'active' : '' }}">
                     <a href="{{ route('admin.smartcard.data-kartu-siswa.index') }}" class="menu-link">
                         <div>Data Kartu Siswa</div>
                     </a>
                 </li>
+                @endif
+                @if($canSc('setting-blokir-kartu'))
                 <li class="menu-item {{ Request::is(['admin/smartcard/setting-blokir-kartu*']) ? 'active' : '' }}">
                     <a href="{{ route('admin.smartcard.setting-blokir-kartu.index') }}" class="menu-link">
                         <div>Setting Blokir Kartu</div>
                     </a>
                 </li>
+                @endif
+                @if($canSc('setting-batasan-saku'))
                 <li class="menu-item {{ Request::is(['admin/smartcard/setting-batasan-saku*']) ? 'active' : '' }}">
                     <a href="{{ route('admin.smartcard.setting-batasan-saku.index') }}" class="menu-link">
                         <div>Setting Batasan Kartu</div>
                     </a>
                 </li>
+                @endif
+                @if($canSc('transaksi-belanja'))
                 <li class="menu-item {{ Request::is(['admin/smartcard/transaksi-belanja*']) ? 'active' : '' }}">
                     <a href="{{ route('admin.smartcard.transaksi-belanja.index') }}" class="menu-link">
                         <div>Transaksi Belanja</div>
                     </a>
                 </li>
+                @endif
+                @if($canSc('pencairan-kantin'))
                 <li class="menu-item {{ Request::is(['admin/smartcard/pencairan-kantin*']) ? 'active' : '' }}">
                     <a href="{{ route('admin.smartcard.pencairan-kantin.index') }}" class="menu-link">
                         <div>Rekap Pencairan Kantin</div>
                     </a>
                 </li>
+                @endif
+                @if($canSc('rekap-topup'))
                 <li class="menu-item {{ Request::is(['admin/smartcard/rekap-topup*']) ? 'active' : '' }}">
                     <a href="{{ route('admin.smartcard.rekap-topup.index') }}" class="menu-link">
                         <div>Rekap Topup</div>
                     </a>
                 </li>
+                @endif
+                @if($canSc('topup-saldo'))
                 <li class="menu-item {{ Request::is(['admin/smartcard/topup-saldo*']) ? 'active' : '' }}">
                     <a href="{{ route('admin.smartcard.topup-saldo.index') }}" class="menu-link">
                         <div>Topup Cash</div>
                     </a>
                 </li>
+                @endif
+                @if($canSc('rekap-keluar-uang-saku'))
                 <li class="menu-item {{ Request::is(['admin/smartcard/rekap-keluar-uang-saku*']) ? 'active' : '' }}">
                     <a href="{{ route('admin.smartcard.rekap-keluar-uang-saku.index') }}" class="menu-link">
                         <div>Rekap Keluar Uang Saku</div>
                     </a>
                 </li>
+                @endif
+                @if($canSc('keluar-uang-saku'))
                 <li class="menu-item {{ Request::is(['admin/smartcard/keluar-uang-saku*']) ? 'active' : '' }}">
                     <a href="{{ route('admin.smartcard.keluar-uang-saku.index') }}" class="menu-link">
                         <div>Keluar Uang Saku</div>
                     </a>
                 </li>
+                @endif
+                @if($canSc('tap-ambil-rutin'))
                 <li class="menu-item {{ Request::is(['admin/smartcard/tap-ambil-rutin*']) ? 'active' : '' }}">
                     <a href="{{ route('admin.smartcard.tap-ambil-rutin.index') }}" class="menu-link">
                         <div>Tap Ambil Rutin</div>
                     </a>
                 </li>
+                @endif
+                @if($canSc('tap-belanja'))
+                <li class="menu-item {{ Request::is(['admin/smartcard/tap-belanja*']) ? 'active' : '' }}">
+                    <a href="{{ route('admin.smartcard.tap-belanja.index') }}" class="menu-link">
+                        <div>Tap Belanja</div>
+                    </a>
+                </li>
+                @endif
             </ul>
         </li>
-
-        {{-- Hidden: sudah ada di web Intra
-        <li class="menu-item {{ Request::is(['admin/update-musrifah*']) ? 'active' : '' }}">
-            <a href="{{ route('admin.update-musrifah.index') }}" class="menu-link">
-                <i class="menu-icon ri ri-user-settings-line"></i>
-                <div data-i18n="Update Musrifah">Update Musrifah</div>
-            </a>
-        </li>
-        --}}
+        @endif
 
         <li class="menu-item mt-auto pb-2">
             <a href="{{route('logout')}}" class="menu-link btn-danger text-white" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
