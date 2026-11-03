@@ -124,23 +124,24 @@ class DataSiswaController extends Controller
 
     public function getColumn()
     {
+        // duplicate=false: jangan merge sel berurutan (unit/kelas tampil per anak)
         return [
-            ["data" => null, "name" => "no", "className" => "text-center", "columnType" => "row", "exportable" => true],
-            ["data" => "nocust", "name" => "NIS", "searchable" => true, "orderable" => true, "exportable" => true],
-            ["data" => "va_spp", "name" => "VA SPP", "searchable" => false, "orderable" => false, "exportable" => true],
-            ["data" => "va_saku", "name" => "VA Saku", "searchable" => false, "orderable" => false, "exportable" => true],
-            ["data" => "NUM2ND", "name" => "No Pendaftaran", "searchable" => true, "orderable" => true, "exportable" => true],
-            ["data" => "nmcust", "name" => "NAMA", "searchable" => true, "orderable" => true, "exportable" => true],
-            ["data" => "CODE02", "name" => "Unit", "searchable" => true, "orderable" => true, "exportable" => true],
-            ["data" => "DESC02", "name" => "Kelas", "searchable" => true, "orderable" => true, "exportable" => true],
-            ["data" => "DESC03", "name" => "Jenjang", "searchable" => true, "orderable" => true, "exportable" => true],
-            ["data" => "DESC04", "name" => "Angkatan", "searchable" => true, "orderable" => true, "exportable" => true],
-            ["data" => "CODE04", "name" => "Gender", "searchable" => true, "orderable" => true, "exportable" => true],
-            ["data" => "DESC05", "name" => "Alamat", "searchable" => true, "orderable" => true, "exportable" => true],
-            ["data" => "GENUS", "name" => "Orang Tua", "searchable" => true, "orderable" => true, "exportable" => true],
-            ["data" => "NO_WA", "name" => "No WA", "searchable" => true, "orderable" => true, "exportable" => true],
-            ["data" => "musrifah_display", "name" => "Musrifah", "searchable" => true, "orderable" => false, "exportable" => true],
-            ["data" => "STCUST", "name" => "Status (1/0)", "searchable" => true, "orderable" => true, "exportable" => true],
+            ["data" => null, "name" => "no", "className" => "text-center", "columnType" => "row", "exportable" => true, "duplicate" => false],
+            ["data" => "nocust", "name" => "NIS", "searchable" => true, "orderable" => true, "exportable" => true, "duplicate" => false],
+            ["data" => "va_spp", "name" => "VA SPP", "searchable" => false, "orderable" => false, "exportable" => true, "duplicate" => false],
+            ["data" => "va_saku", "name" => "VA Saku", "searchable" => false, "orderable" => false, "exportable" => true, "duplicate" => false],
+            ["data" => "NUM2ND", "name" => "No Pendaftaran", "searchable" => true, "orderable" => true, "exportable" => true, "duplicate" => false],
+            ["data" => "nmcust", "name" => "NAMA", "searchable" => true, "orderable" => true, "exportable" => true, "duplicate" => false],
+            ["data" => "CODE02", "name" => "Unit", "searchable" => true, "orderable" => true, "exportable" => true, "duplicate" => false],
+            ["data" => "DESC02", "name" => "Kelas", "searchable" => true, "orderable" => true, "exportable" => true, "duplicate" => false],
+            ["data" => "DESC03", "name" => "Jenjang", "searchable" => true, "orderable" => true, "exportable" => true, "duplicate" => false],
+            ["data" => "DESC04", "name" => "Angkatan", "searchable" => true, "orderable" => true, "exportable" => true, "duplicate" => false],
+            ["data" => "CODE04", "name" => "Gender", "searchable" => true, "orderable" => true, "exportable" => true, "duplicate" => false],
+            ["data" => "DESC05", "name" => "Alamat", "searchable" => true, "orderable" => true, "exportable" => true, "duplicate" => false],
+            ["data" => "GENUS", "name" => "Orang Tua", "searchable" => true, "orderable" => true, "exportable" => true, "duplicate" => false],
+            ["data" => "NO_WA", "name" => "No WA", "searchable" => true, "orderable" => true, "exportable" => true, "duplicate" => false],
+            ["data" => "musrifah_display", "name" => "Musrifah", "searchable" => true, "orderable" => false, "exportable" => true, "duplicate" => false],
+            ["data" => "STCUST", "name" => "Status (1/0)", "searchable" => true, "orderable" => true, "exportable" => true, "duplicate" => false],
             [
                 "data" => "edit_siswa",
                 "name" => "Edit Data",
@@ -152,6 +153,7 @@ class DataSiswaController extends Controller
                 "buttonText" => "Edit",
                 "buttonClass" => "btn btn-sm btn-info button-edit-siswa",
                 "buttonIcon" => "ri-edit-line me-2",
+                "duplicate" => false,
             ],
             [
                 "data" => "set_status",
@@ -164,8 +166,19 @@ class DataSiswaController extends Controller
                 "buttonText" => "Edit Status",
                 "buttonClass" => "btn btn-sm btn-warning button-set-status-siswa",
                 "buttonIcon" => "ri-edit-box-line me-2",
+                "duplicate" => false,
             ],
         ];
+    }
+
+    private function dash(mixed $value): string
+    {
+        $v = trim((string) ($value ?? ''));
+        if ($v === '' || strcasecmp($v, 'null') === 0) {
+            return '-';
+        }
+
+        return $v;
     }
 
     public function getData(Request $request)
@@ -295,22 +308,34 @@ class DataSiswaController extends Controller
                 $nis = trim((string) ($item->nocust ?? ''));
                 $musrifah = trim((string) ($item->musrifah ?? ''));
                 $row["item_id"] = $item->CUSTID;
-                $row["nis"] = $item->nocust;
+                $row["nocust"] = $this->dash($item->nocust);
+                $row["nis"] = $this->dash($item->nocust);
                 $row["va_spp"] = ($nis !== '' && $nis !== '-')
                     ? scctcust::showVASpp($nis)
-                    : '';
+                    : '-';
                 $row["va_saku"] = ($nis !== '' && $nis !== '-')
                     ? scctcust::showVASaku($nis)
-                    : '';
-                $row["no_pendaftaran"] = $item->NUM2ND;
-                $row["nama"] = $item->nmcust;
-                $row["angkatan"] = $item->DESC04;
-                $row["gender"] = $item->CODE04;
-                $row["alamat"] = $item->DESC05;
-                $row["ayah"] = $item->GENUS;
-                $row["no_wa"] = $item->NO_WA;
+                    : '-';
+                $row["NUM2ND"] = $this->dash($item->NUM2ND);
+                $row["no_pendaftaran"] = $this->dash($item->NUM2ND);
+                $row["nmcust"] = $this->dash($item->nmcust);
+                $row["nama"] = $this->dash($item->nmcust);
+                $row["CODE02"] = $this->dash($item->CODE02);
+                $row["DESC02"] = $this->dash($item->DESC02);
+                $row["DESC03"] = $this->dash($item->DESC03);
+                $row["DESC04"] = $this->dash($item->DESC04);
+                $row["angkatan"] = $this->dash($item->DESC04);
+                $row["CODE04"] = $this->dash($item->CODE04);
+                $row["gender"] = $this->dash($item->CODE04);
+                $row["DESC05"] = $this->dash($item->DESC05);
+                $row["alamat"] = $this->dash($item->DESC05);
+                $row["GENUS"] = $this->dash($item->GENUS);
+                $row["ayah"] = $this->dash($item->GENUS);
+                $row["NO_WA"] = $this->dash($item->NO_WA);
+                $row["no_wa"] = $this->dash($item->NO_WA);
                 $row["musrifah"] = $musrifah;
-                $row["musrifah_display"] = $musrifah;
+                $row["musrifah_display"] = $this->dash($musrifah);
+                $row["STCUST"] = $this->dash($item->STCUST);
                 $row["edit_siswa"] = true;
                 $row["set_status"] = true;
                 unset($row["CUSTID"]);

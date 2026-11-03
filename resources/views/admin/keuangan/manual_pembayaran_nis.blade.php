@@ -179,7 +179,7 @@
     <script src="{{asset('main/libs/select2/select2.js')}}"></script>
     <script src="{{asset('main/libs/bootstrap-datepicker/bootstrap-datepicker.js')}}"></script>
     <script src="{{asset('js/helper/formattedNumber.min.js')}}"></script>
-    <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}"></script>
+    <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}?v=20261103-nodup"></script>
 
     <script type="module">
         import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';

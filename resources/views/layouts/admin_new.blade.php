@@ -143,10 +143,21 @@
 
                 <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
                     <div class="navbar-nav align-items-center d-xs-none">
+                        @php
+                            $navUser = Auth::user();
+                            $navUsername = trim((string) ($navUser->users ?? $navUser->username ?? ''));
+                            $navKet = trim((string) ($navUser->ket ?? $navUser->name ?? ''));
+                        @endphp
                         <span class="d-none d-md-inline-block">
                             <span>{{config('app.name')}} - </span>
                             <span>{{ Carbon::now()->locale('id_ID')->translatedFormat('l, d F Y') }} - </span>
                             <span id="clock"></span>
+                            @if($navUsername !== '')
+                                <span> - {{ $navUsername }}</span>
+                            @endif
+                            @if($navKet !== '' && strcasecmp($navKet, $navUsername) !== 0)
+                                <span> - {{ $navKet }}</span>
+                            @endif
                         </span>
                     </div>
 
@@ -407,7 +418,7 @@
 {{--    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.11/js/dataTables.bootstrap5.min.js"--}}
 {{--            integrity="sha256-3iXHrfSd4xzI1YyrooF0jG4OVwGiSAoU1+WdYwEwYZk=" crossorigin="anonymous" defer></script>--}}
     <script src="{{asset('main/libs/datatables-bs5/datatables-bootstrap5.js')}}"></script>
-    <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}" defer></script>
+    <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}?v=20261103-nodup" defer></script>
 
 {{--    @hasSection('datatable-responsive')--}}
 {{--        <script src="https://cdn.jsdelivr.net/npm/datatables.net-responsive@2.5.1/js/dataTables.responsive.min.js"--}}

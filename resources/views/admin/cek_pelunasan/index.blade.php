@@ -240,7 +240,7 @@
 @section('script')
     <script src="{{asset('main/libs/select2/select2.js')}}"></script>
     <script src="{{asset('main/libs/datatables-bs5/datatables-bootstrap5.js')}}"></script>
-    <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}"></script>
+    <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}?v=20261103-nodup"></script>
 
     <script>
         const select2 = $(`[data-control='select2']`);

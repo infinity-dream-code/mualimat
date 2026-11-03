@@ -442,7 +442,7 @@
 
 
     <script src="{{asset('main/libs/datatables-bs5/datatables-bootstrap5.min.js')}}"></script>
-    <script src="{{asset('js/datatableCustom/Datatable-0-4.js')}}?v=20260604-va"></script>
+    <script src="{{asset('js/datatableCustom/Datatable-0-4.js')}}?v=20261103-nodup"></script>
     <script src="{{asset('main/libs/select2/select2.min.js')}}"></script>
     <script src="{{asset('js/helper/errorInputHelper.min.js')}}"></script>
 

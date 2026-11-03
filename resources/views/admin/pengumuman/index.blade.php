@@ -48,7 +48,7 @@
 
 @section('script')
     <script src="{{asset('main/libs/datatables-bs5/datatables-bootstrap5.js')}}"></script>
-    <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}"></script>
+    <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}?v=20261103-nodup"></script>
     <script src="{{asset('js/helper/errorInputHelper.min.js')}}"></script>
 
     <form id="addForm" class="mainForm">

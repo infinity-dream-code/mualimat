@@ -1420,13 +1420,14 @@ async function getDT(options) {
                                 return data;
                             }
                             if (data === null || data === undefined || data === '') {
-                                return '';
+                                return '-';
                             }
                             return data;
                         }
                     }
 
-                    const isDuplicate = column.duplicate ?? true;
+                    // Default false: tampilkan nilai per baris (tidak digabung/jamak)
+                    const isDuplicate = column.duplicate ?? false;
                     const columnDef = {
                         data: column.data,
                         name: column.name,
