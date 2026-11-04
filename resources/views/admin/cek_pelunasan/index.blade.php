@@ -380,18 +380,18 @@
 
         document.getElementById('cetak-kartu-siswa').addEventListener('click', function (e) {
             e.preventDefault();
+            let data = DT[`${dtOptions.tableId}`].rows({selected: true}).data();
+            if (!data[0]) {
+                warningAlert('silahkan pilih siswa!')
+                return;
+            }
+
             loadingAlert('Membuat Kartu Siswa');
             let url = '{{route('admin.cek-pelunasan.cetak-kartu-siswa')}}';
             const form = new FormData(document.getElementById('filter-form'));
             const params = new URLSearchParams();
             for (const [key, value] of form.entries()) {
                 params.append(key, value);
-            }
-            let data = DT[`${dtOptions.tableId}`].rows({selected: true}).data();
-
-            if (!data[0]) {
-                warningAlert('silahkan pilih siswa!')
-                return;
             }
             params.append('custid', data[0].CUSTID)
             const fullUrl = `${url}?${params.toString()}`;

@@ -77,23 +77,63 @@ class CekPelunasanController extends Controller
         }
 
         $custid = $request->input('custid');
-        $siswa = scctcust::where('CUSTID', $custid)->first();
+        $siswaQuery = scctcust::query()->where('CUSTID', $custid)->where('STCUST', 1);
+        UnitScope::apply($siswaQuery, $this->unitScope, 'CODE01');
+        $siswa = $siswaQuery->first();
         if (!$siswa) {
             return response()->json(['message' => 'Siswa tidak ditemukan'], 422);
         }
 
-        $request->merge([
-            'filter' => array_merge($request->input('filter', []), [
-                'custid' => $custid,
-            ]),
-            'draw' => 2,
-            'start' => 0,
-            'length' => 'poll',
-        ]);
-
         try {
-            $tagihans = json_decode(json_encode($this->getData($request)), true);
-            $tagihans = $tagihans['original']['data'] ?? [];
+            // Query langsung per siswa — hindari getData (count/sum seluruh unit + LIMIT besar)
+            $query = scctbill::query()
+                ->where('CUSTID', $custid)
+                ->where('FSTSBolehBayar', 1);
+
+            $filter = $request->input('filter', []);
+            if (!empty($filter['tahun_akademik']) && strtolower((string) $filter['tahun_akademik']) !== 'all') {
+                $query->where('BTA', $filter['tahun_akademik']);
+            }
+            if (!empty($filter['status_bayar']) && strtolower((string) $filter['status_bayar']) !== 'all') {
+                $query->where('PAIDST', $filter['status_bayar']);
+            }
+            if (!empty($filter['metode_bayar']) && strtolower((string) $filter['metode_bayar']) !== 'all') {
+                $metode = $filter['metode_bayar'];
+                if ($metode === 'NULL') {
+                    $query->whereNull('FIDBANK');
+                } elseif ($metode === 'empty') {
+                    $query->where('FIDBANK', '');
+                } else {
+                    $query->where('FIDBANK', 'like', $metode);
+                }
+            }
+            if (!empty($filter['post']) && is_array($filter['post'])) {
+                $posts = array_values(array_filter($filter['post'], fn ($v) => $v !== 'all' && $v !== null && $v !== ''));
+                if ($posts !== []) {
+                    $query->whereIn('BILLNM', $posts);
+                }
+            }
+            if (!empty($filter['periode']) && is_array($filter['periode'])) {
+                $periodes = array_values(array_filter($filter['periode'], fn ($v) => $v !== 'all' && $v !== null && $v !== ''));
+                if ($periodes !== []) {
+                    $query->whereIn('BILLAC', $periodes);
+                }
+            }
+
+            $tagihans = $query
+                ->orderBy('BILLAC', 'asc')
+                ->orderBy('BILLNM', 'asc')
+                ->get(['BTA', 'BILLNM', 'BILLAC', 'BILLAM', 'PAIDST'])
+                ->map(function ($item) {
+                    $row = $item->toArray();
+                    $row['BILLAC'] = $item->BILLAC !== null && $item->BILLAC !== ''
+                        ? (string) $item->BILLAC
+                        : '-';
+                    return $row;
+                })
+                ->values()
+                ->all();
+
             if (empty($tagihans)) {
                 return response()->json(['message' => 'Tagihan Tidak Ditemukan'], 422);
             }
