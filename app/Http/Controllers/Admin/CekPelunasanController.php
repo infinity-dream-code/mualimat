@@ -10,6 +10,7 @@ use App\Models\scctbill;
 use App\Models\scctcust;
 use App\Support\UnitScope;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class CekPelunasanController extends Controller
@@ -66,6 +67,7 @@ class CekPelunasanController extends Controller
             ['data' => 'BILLNM', 'name' => 'Nama Tagihan', 'searchable' => true, 'orderable' => true],
             ['data' => 'BILLAC', 'name' => 'Periode', 'searchable' => true, 'orderable' => true, 'columnType' => 'periode'],
             ['data' => 'BILLAM', 'name' => 'Tagihan', 'searchable' => true, 'orderable' => true, 'columnType' => 'currency', 'classname' => 'text-end'],
+            ['data' => 'PAIDDT', 'name' => 'Tanggal Bayar', 'searchable' => true, 'orderable' => true, 'columnType' => 'date'],
             ['data' => 'PAIDST', 'name' => 'Lunas', 'searchable' => true, 'orderable' => true, 'columnType' => 'boolean', 'trueVal' => 'LUNAS', 'falseVal' => 'BELUM BAYAR'],
         ];
     }
@@ -123,11 +125,19 @@ class CekPelunasanController extends Controller
                     $query->whereIn('BILLAC', $periodes);
                 }
             }
+            $tanggalBayar = $filter['tanggal-bayar'] ?? null;
+            if (is_string($tanggalBayar) && preg_match('/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/', $tanggalBayar)) {
+                $tanggalBayar = preg_replace('/[-\/~]/', '-', $tanggalBayar);
+                [$startDate, $endDate] = explode(' - ', $tanggalBayar);
+                $startDate = Carbon::createFromFormat('d-m-Y', $startDate)->startOfDay();
+                $endDate = Carbon::createFromFormat('d-m-Y', $endDate)->endOfDay();
+                $query->whereBetween('PAIDDT', [$startDate, $endDate]);
+            }
 
             $tagihans = $query
                 ->orderBy('BILLAC', 'asc')
                 ->orderBy('BILLNM', 'asc')
-                ->get(['BTA', 'BILLNM', 'BILLAC', 'BILLAM', 'PAIDST'])
+                ->get(['BTA', 'BILLNM', 'BILLAC', 'BILLAM', 'PAIDDT', 'PAIDST'])
                 ->map(function ($item) {
                     $row = $item->toArray();
                     $row['BILLAC'] = $item->BILLAC !== null && $item->BILLAC !== ''
@@ -210,9 +220,31 @@ class CekPelunasanController extends Controller
                         'custid' => 'scctbill.CUSTID',
                         'status_bayar' => 'scctbill.PAIDST',
                         'metode_bayar' => 'scctbill.FIDBANK',
+                        'tanggal-bayar' => 'scctbill.PAIDDT',
                         default => null
                     };
                     switch ($key) {
+                        case "tanggal-bayar":
+                            if (
+                                preg_match(
+                                    '/^\d{2}-\d{2}-\d{4} [-\/~] \d{2}-\d{2}-\d{4}$/',
+                                    $val,
+                                )
+                            ) {
+                                $val = preg_replace("/[-\/~]/", "-", $val);
+                                [$startDate, $endDate] = explode(" - ", $val);
+                                $startDate = Carbon::createFromFormat("d-m-Y", $startDate)->startOfDay();
+                                $endDate = Carbon::createFromFormat("d-m-Y", $endDate)->endOfDay();
+                                if ($startDate && $endDate) {
+                                    $colName && ($filters[] = [
+                                        $colName,
+                                        $startDate,
+                                        $endDate,
+                                        "whereBetween",
+                                    ]);
+                                }
+                            }
+                            break;
                         case "metode_bayar":
                             if ($val === "NULL") {
                                 $colName && ($filters[] = [$colName, "=", null]);

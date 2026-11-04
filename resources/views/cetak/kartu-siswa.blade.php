@@ -47,6 +47,7 @@
             <th>Nama Tagihan</th>
             <th>Periode</th>
             <th>Jumlah</th>
+            <th>Tanggal Bayar</th>
             <th>Status</th>
         </tr>
         </thead>
@@ -98,6 +99,17 @@
                     $periodeLabel = $rawPeriode;
                 }
 
+                $rawPaidDt = $tagihan['PAIDDT'] ?? null;
+                if (blank($rawPaidDt) || $rawPaidDt === '0000-00-00' || $rawPaidDt === '0000-00-00 00:00:00') {
+                    $tanggalBayarLabel = '-';
+                } else {
+                    try {
+                        $tanggalBayarLabel = Carbon::parse($rawPaidDt)->format('d-m-Y');
+                    } catch (\Throwable $e) {
+                        $tanggalBayarLabel = '-';
+                    }
+                }
+
                 if ($tagihan['PAIDST'] == 0) {
                     $unpaid += $tagihan['BILLAM'];
                 } else{
@@ -110,6 +122,7 @@
                 <td class="{{$BILLNMClass}}">{{$BILLNM}}</td>
                 <td>{{$periodeLabel}}</td>
                 <td align="right">@rupiah($tagihan['BILLAM'])</td>
+                <td align="center">{{$tanggalBayarLabel}}</td>
                 <td align="center">{!! $tagihan['PAIDST'] == 0 ? '<span style="color:red;">BELUM LUNAS</span>': '<span style="color:green;">LUNAS</span>'!!}</td>
             </tr>
         @endforeach
@@ -118,7 +131,7 @@
         <tr>
             <td colspan="4">Total Tagihan</td>
             <td align="right">@rupiah($paid + $unpaid)</td>
-            <td rowspan="3"></td>
+            <td colspan="2" rowspan="3"></td>
         </tr>
         <tr>
             <td colspan="4">Total Tagihan Terbayar</td>

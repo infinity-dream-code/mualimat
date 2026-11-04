@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="{{asset('main/libs/datatables-bs5/datatables.bootstrap5.css')}}">
     <link rel="stylesheet" href="{{asset('main/libs/datatables-responsive-bs5/responsive.bootstrap5.css')}}">
     <link rel="stylesheet" href="{{asset('main/libs/bootstrap-datepicker/bootstrap-datepicker.css')}}">
+    <link rel="stylesheet" href="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.css')}}">
 
 @endsection
 @section('content')
@@ -206,6 +207,14 @@
                                     <input class="form-control" id="filter[siswa]" name="filter[siswa]"
                                            placeholder="Masukkan NIS/NAMA Siswa" data-placeholder="Pilih siswa">
                                 </div>
+                                <div class="col mb-5">
+                                    <label class="form-label" for="tanggal-bayar">
+                                        Tanggal Bayar
+                                    </label>
+                                    <input type="text" id="tanggal-bayar" name="filter[tanggal-bayar]"
+                                           placeholder="tanggal-bulan-tahun - tanggal-bulan-tahun"
+                                           class="form-control" autocomplete="off" inputmode="numeric"/>
+                                </div>
                             </div>
                         </div>
                         <div class="row">
@@ -256,6 +265,8 @@
 
 @section('script')
     <script src="{{asset('main/libs/select2/select2.js')}}"></script>
+    <script src="{{asset('main/libs/moment/moment.js')}}"></script>
+    <script src="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.js')}}"></script>
     <script src="{{asset('main/libs/datatables-bs5/datatables-bootstrap5.js')}}"></script>
     <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}?v=20261103-nodup"></script>
 
@@ -397,6 +408,33 @@
             }
             bindSelectAllToggle('#post');
             bindSelectAllToggle('#periode');
+
+            let dateBayar = $('#tanggal-bayar');
+            dateBayar.daterangepicker({
+                autoUpdateInput: false,
+                todayHighlight: true,
+                autoclose: true,
+                locale: {
+                    format: 'DD-MM-YYYY',
+                    separator: " - ",
+                    applyLabel: "Terapkan",
+                    cancelLabel: "Batal",
+                    fromLabel: "Dari",
+                    toLabel: "Ke",
+                    customRangeLabel: "Kustom",
+                    daysOfWeek: ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"],
+                    monthNames: ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"],
+                    firstDay: 0,
+                }
+            });
+            dateBayar.on('apply.daterangepicker hide.daterangepicker', function (ev, picker) {
+                if (picker.startDate && picker.endDate) {
+                    $(this).val(picker.startDate.format('DD-MM-YYYY') + ' - ' + picker.endDate.format('DD-MM-YYYY'));
+                }
+            });
+            dateBayar.on('cancel.daterangepicker', function () {
+                $(this).val('');
+            });
         })
 
         // document.getElementById('cetak-pelaporan').addEventListener('click', function (e) {
