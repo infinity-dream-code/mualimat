@@ -41,6 +41,12 @@ class CekPelunasanController extends Controller
         $data['datasUrl'] = $this->datasUrl;
         $data['post'] = mst_tagihan::select(['tagihan'])->get();
         $data['thn_aka'] = mst_thn_aka::select(['thn_aka'])->where('thn_aka', '!=', null)->get();
+        $data['periode'] = scctbill::select('BILLAC')
+            ->whereNotNull('BILLAC')
+            ->where('BILLAC', '!=', '')
+            ->distinct()
+            ->orderBy('BILLAC', 'desc')
+            ->get();
         $data["metode_bayar"] = MetodeBayar::attributes();
         $data['kelas'] = UnitScope::kelasOptions($this->unitScope);
         $data['unit'] = UnitScope::sekolahOptions($this->unitScope);
@@ -58,9 +64,9 @@ class CekPelunasanController extends Controller
             ['data' => 'NUM2ND', 'name' => 'No Pendaftaran', 'searchable' => true, 'orderable' => true],
             ['data' => 'NMCUST', 'name' => 'NAMA', 'searchable' => true, 'orderable' => true],
             ['data' => 'BILLNM', 'name' => 'Nama Tagihan', 'searchable' => true, 'orderable' => true],
+            ['data' => 'BILLAC', 'name' => 'Periode', 'searchable' => true, 'orderable' => true, 'columnType' => 'periode'],
             ['data' => 'BILLAM', 'name' => 'Tagihan', 'searchable' => true, 'orderable' => true, 'columnType' => 'currency', 'classname' => 'text-end'],
             ['data' => 'PAIDST', 'name' => 'Lunas', 'searchable' => true, 'orderable' => true, 'columnType' => 'boolean', 'trueVal' => 'LUNAS', 'falseVal' => 'BELUM BAYAR'],
-
         ];
     }
 
@@ -125,14 +131,21 @@ class CekPelunasanController extends Controller
         $search_arr = $request->get('search', []);
         $searchValue = $search_arr['value'] ?? '';
 
-        $columnName = 'scctbill.PAIDDT';
+        $hasUserOrder = false;
+        $columnName = 'scctcust.NOCUST';
         $columnSortOrder = 'asc';
 
         if (!empty($order_arr)) {
             $columnIndex = $columnIndex_arr[0]['column'] ?? null;
             if ($columnIndex !== null && !empty($columnName_arr[$columnIndex]['data']) && $columnName_arr[$columnIndex]['data'] !== 'no') {
-                $columnName = $columnName_arr[$columnIndex]['data'];
+                $rawColumn = $columnName_arr[$columnIndex]['data'];
+                $columnName = match ($rawColumn) {
+                    'NOCUST', 'NMCUST', 'NUM2ND' => 'scctcust.' . $rawColumn,
+                    'BILLAC', 'BILLNM', 'BILLAM', 'BTA', 'PAIDST', 'PAIDDT', 'AA', 'FIDBANK', 'FUrutan', 'CUSTID' => 'scctbill.' . $rawColumn,
+                    default => $rawColumn,
+                };
                 $columnSortOrder = $order_arr[0]['dir'] ?? 'desc';
+                $hasUserOrder = true;
             }
         }
 
@@ -146,6 +159,7 @@ class CekPelunasanController extends Controller
                     $colName = match ($key) {
                         "tahun_akademik" => "scctbill.BTA",
                         'post' => 'scctbill.BILLNM',
+                        'periode' => 'scctbill.BILLAC',
                         "unit" => "scctcust.CODE01",
                         'kelas' => 'scctcust.DESC02',
                         'siswa' => 'scctcust.nmcust',
@@ -173,6 +187,7 @@ class CekPelunasanController extends Controller
                             }
                             break;
                         case "post":
+                        case "periode":
                             $array = array_filter($val, function ($value) {
                                 return $value !== "all";
                             });
@@ -224,6 +239,7 @@ class CekPelunasanController extends Controller
         $select = array_unique(array_merge($whereAny, [
             'scctbill.AA',
             'scctbill.BILLNM',
+            'scctbill.BILLAC',
             'scctbill.BILLAM',
             'scctbill.PAIDST',
             'scctbill.PAIDDT',
@@ -234,7 +250,6 @@ class CekPelunasanController extends Controller
             'scctcust.DESC02',
             'scctcust.NUM2ND',
             'scctbill.CUSTID',
-
         ]));
 
         $query = scctbill::leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
@@ -247,23 +262,6 @@ class CekPelunasanController extends Controller
                 }
             });
         UnitScope::apply($query, $this->unitScope);
-        $query->orderByRaw("
-                CASE
-                    WHEN scctbill.BILLNM LIKE '%JULI%' THEN 1
-                    WHEN scctbill.BILLNM LIKE '%AGUSTUS%' THEN 2
-                    WHEN scctbill.BILLNM LIKE '%SEPTEMBER%' THEN 3
-                    WHEN scctbill.BILLNM LIKE '%OKTOBER%' THEN 4
-                    WHEN scctbill.BILLNM LIKE '%NOVEMBER%' THEN 5
-                    WHEN scctbill.BILLNM LIKE '%DESEMBER%' THEN 6
-                    WHEN scctbill.BILLNM LIKE '%JANUARI%' THEN 7
-                    WHEN scctbill.BILLNM LIKE '%FEBRUARI%' THEN 8
-                    WHEN scctbill.BILLNM LIKE '%MARET%' THEN 9
-                    WHEN scctbill.BILLNM LIKE '%APRIL%' THEN 10
-                    WHEN scctbill.BILLNM LIKE '%MEI%' THEN 11
-                    WHEN scctbill.BILLNM LIKE '%JUNI%' THEN 12
-                    ELSE 999
-                END
-            ");
 
         $totalRecordsQuery = scctbill::query()
             ->leftJoin('scctcust', 'scctcust.CUSTID', 'scctbill.CUSTID')
@@ -276,9 +274,20 @@ class CekPelunasanController extends Controller
         $totalTagihan = (float) ((clone $query)->sum('scctbill.BILLAM') ?? 0);
 
         $rowperpage = $rowperpage == "poll" ? $totalRecords : $rowperpage;
-        $records = (clone $query)->orderBy($columnName, $columnSortOrder)
-            ->select($select)
-            ->whereAny($whereAny, 'like', '%' . $searchValue . '%')
+        $recordsQuery = (clone $query)->select($select)
+            ->whereAny($whereAny, 'like', '%' . $searchValue . '%');
+
+        // Default / cetak: NIS asc, periode asc. User column click overrides primary sort.
+        if ($hasUserOrder) {
+            $recordsQuery->orderBy($columnName, $columnSortOrder)
+                ->orderBy('scctcust.NOCUST', 'asc')
+                ->orderBy('scctbill.BILLAC', 'asc');
+        } else {
+            $recordsQuery->orderBy('scctcust.NOCUST', 'asc')
+                ->orderBy('scctbill.BILLAC', 'asc');
+        }
+
+        $records = $recordsQuery
             ->skip($start)
             ->take($rowperpage)
             ->get();
@@ -287,6 +296,16 @@ class CekPelunasanController extends Controller
             $records = $records->map(function ($item, $index) {
                 $item->item_id = $item['AA'];
                 $item->CUSTID = $item['CUSTID'];
+                $item->BILLAC = $item->BILLAC !== null && $item->BILLAC !== ''
+                    ? (string) $item->BILLAC
+                    : '-';
+                return $item;
+            });
+        } else {
+            $records = $records->map(function ($item) {
+                $item->BILLAC = $item->BILLAC !== null && $item->BILLAC !== ''
+                    ? (string) $item->BILLAC
+                    : '-';
                 return $item;
             });
         }
@@ -303,7 +322,7 @@ class CekPelunasanController extends Controller
             "data" => $data,
             "totals" => [
                 "tagihan" => [
-                    "location" => 6,
+                    "location" => 7,
                     "value" => $totalTagihan,
                     "columnType" => "currency",
                 ],

@@ -45,6 +45,7 @@
             <th>#</th>
             <th>Tahun Akademik</th>
             <th>Nama Tagihan</th>
+            <th>Periode</th>
             <th>Jumlah</th>
             <th>Status</th>
         </tr>
@@ -53,6 +54,11 @@
         @php
             $paid = 0;
             $unpaid = 0;
+            $bulanNama = [
+                1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+            ];
         @endphp
         @foreach($tagihans as $tagihan)
             @php
@@ -77,6 +83,21 @@
                 if($nextBILLNM && $beforeBILLNM) $BILLNM = '';
                 if($beforeBILLNM) $BILLNM = '';
 
+                $rawPeriode = trim((string) ($tagihan['BILLAC'] ?? ''));
+                if ($rawPeriode === '' || $rawPeriode === '-') {
+                    $periodeLabel = '-';
+                } elseif (preg_match('/^\d{4}$/', $rawPeriode)) {
+                    $periodeLabel = $rawPeriode;
+                } elseif (preg_match('/^\d{6}$/', $rawPeriode)) {
+                    $tahun = (int) substr($rawPeriode, 0, 4);
+                    $bulan = (int) substr($rawPeriode, 4, 2);
+                    $periodeLabel = ($bulan >= 1 && $bulan <= 12)
+                        ? ($bulanNama[$bulan] . ' ' . $tahun)
+                        : $rawPeriode;
+                } else {
+                    $periodeLabel = $rawPeriode;
+                }
+
                 if ($tagihan['PAIDST'] == 0) {
                     $unpaid += $tagihan['BILLAM'];
                 } else{
@@ -87,6 +108,7 @@
                 <th scope="row">{{$loop->index + 1}}</th>
                 <td>{{$tagihan['BTA']}}</td>
                 <td class="{{$BILLNMClass}}">{{$BILLNM}}</td>
+                <td>{{$periodeLabel}}</td>
                 <td align="right">@rupiah($tagihan['BILLAM'])</td>
                 <td align="center">{!! $tagihan['PAIDST'] == 0 ? '<span style="color:red;">BELUM LUNAS</span>': '<span style="color:green;">LUNAS</span>'!!}</td>
             </tr>
@@ -94,16 +116,16 @@
         </tbody>
         <tfoot style="background-color: #ededed; font-weight: bold;">
         <tr>
-            <td colspan="3">Total Tagihan</td>
+            <td colspan="4">Total Tagihan</td>
             <td align="right">@rupiah($paid + $unpaid)</td>
             <td rowspan="3"></td>
         </tr>
         <tr>
-            <td colspan="3">Total Tagihan Terbayar</td>
+            <td colspan="4">Total Tagihan Terbayar</td>
             <td align="right">@rupiah($paid)</td>
         </tr>
         <tr>
-            <td colspan="3">Total Sisa Tagihan</td>
+            <td colspan="4">Total Sisa Tagihan</td>
             <td align="right">@rupiah($unpaid)</td>
         </tr>
         </tfoot>

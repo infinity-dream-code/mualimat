@@ -112,6 +112,25 @@
                                     </select>
                                 </div>
                                 <div class="mb-5">
+                                    <label class="form-label" for="periode">
+                                        Periode
+                                    </label>
+                                    <select class="form-select" id="periode"
+                                            name="filter[periode][]"
+                                            data-control="select2"
+                                            data-placeholder="Pilih Periode"
+                                            multiple="multiple">
+                                        <option value="all">Semua</option>
+                                        @isset($periode)
+                                            @foreach($periode as $item)
+                                                <option value="{{$item->BILLAC}}">{{$item->BILLAC}}</option>
+                                            @endforeach
+                                        @else
+                                            <option>data kosong</option>
+                                        @endisset
+                                    </select>
+                                </div>
+                                <div class="mb-5">
                                     <label class="form-label" for="status_bayar">
                                         Status bayar
                                     </label>
