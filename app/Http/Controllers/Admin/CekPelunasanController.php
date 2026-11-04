@@ -91,13 +91,17 @@ class CekPelunasanController extends Controller
                 ->where('FSTSBolehBayar', 1);
 
             $filter = $request->input('filter', []);
-            if (!empty($filter['tahun_akademik']) && strtolower((string) $filter['tahun_akademik']) !== 'all') {
+            $isActiveFilter = static function ($val): bool {
+                // Jangan pakai empty(): "0" (Belum Lunas) dianggap kosong di PHP
+                return $val !== null && $val !== '' && strtolower((string) $val) !== 'all';
+            };
+            if ($isActiveFilter($filter['tahun_akademik'] ?? null)) {
                 $query->where('BTA', $filter['tahun_akademik']);
             }
-            if (!empty($filter['status_bayar']) && strtolower((string) $filter['status_bayar']) !== 'all') {
+            if ($isActiveFilter($filter['status_bayar'] ?? null)) {
                 $query->where('PAIDST', $filter['status_bayar']);
             }
-            if (!empty($filter['metode_bayar']) && strtolower((string) $filter['metode_bayar']) !== 'all') {
+            if ($isActiveFilter($filter['metode_bayar'] ?? null)) {
                 $metode = $filter['metode_bayar'];
                 if ($metode === 'NULL') {
                     $query->whereNull('FIDBANK');
