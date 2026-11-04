@@ -374,21 +374,25 @@
 
             function bindSelectAllToggle(selector) {
                 const $input = $(selector);
+                // Klik "Semua" → centang semua opsi (tag Semua + semua periode)
                 $input.on('select2:select', function (e) {
                     if (e.params.data.id === 'all') {
-                        $input.val(['all']).trigger('change');
-                    } else {
-                        const selected = ($input.val() || []).filter((v) => v !== 'all');
-                        $input.val(selected.length ? selected : ['all']).trigger('change');
+                        $input.find('option').prop('selected', true);
+                        $input.trigger('change');
                     }
                 });
-                $input.on('select2:unselect', function () {
-                    setTimeout(function () {
-                        const selected = $input.val() || [];
-                        if (selected.length === 0) {
-                            $input.val(['all']).trigger('change');
+                $input.on('select2:unselect', function (e) {
+                    if (e.params.data.id === 'all') {
+                        let selected = $input.val() || [];
+                        if (selected.length > 0) {
+                            $input.val([selected[0]]).trigger('change');
+                        } else {
+                            $input.val(null).trigger('change');
                         }
-                    }, 0);
+                    } else {
+                        let selected = ($input.val() || []).filter((v) => v !== 'all');
+                        $input.val(selected.length ? selected : null).trigger('change');
+                    }
                 });
             }
             bindSelectAllToggle('#post');

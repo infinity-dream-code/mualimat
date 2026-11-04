@@ -325,22 +325,35 @@
 
             function bindSelectAllToggle(selector) {
                 const $input = $(selector);
-                // "Semua" = tanpa filter (jangan centang semua opsi periode)
+                // Klik "Semua" → centang semua opsi (tag Semua + semua periode)
                 $input.on('select2:select', function (e) {
                     if (e.params.data.id === 'all') {
-                        $input.val(['all']).trigger('change');
-                    } else {
-                        const selected = ($input.val() || []).filter((v) => v !== 'all');
-                        $input.val(selected.length ? selected : ['all']).trigger('change');
+                        $input.find('option').prop('selected', true);
+                        $input.trigger('change');
                     }
                 });
-                $input.on('select2:unselect', function () {
-                    setTimeout(function () {
-                        const selected = $input.val() || [];
-                        if (selected.length === 0) {
-                            $input.val(['all']).trigger('change');
+                $input.on('select2:unselect', function (e) {
+                    if (e.params.data.id === 'all') {
+                        let selected = $input.val() || [];
+                        if (selected.length > 0) {
+                            $input.val([selected[0]]).trigger('change');
+                        } else {
+                            $input.val(null).trigger('change');
                         }
-                    }, 0);
+                    } else {
+                        // Lepas salah satu periode → lepas juga "Semua"
+                        let selected = ($input.val() || []).filter((v) => v !== 'all');
+                        $input.val(selected.length ? selected : null).trigger('change');
+                    }
+                });
+                $input.on('change', function () {
+                    let selected = $input.val();
+                    if (!selected || selected.length === 0) {
+                        let fallbackOption = $input.find('option:not([value="all"])').first().val();
+                        if (fallbackOption) {
+                            $input.val([fallbackOption]).trigger('change');
+                        }
+                    }
                 });
             }
 
