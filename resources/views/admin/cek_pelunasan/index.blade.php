@@ -268,7 +268,7 @@
     <script src="{{asset('main/libs/moment/moment.js')}}"></script>
     <script src="{{asset('main/libs/bootstrap-daterangepicker/bootstrap-daterangepicker.js')}}"></script>
     <script src="{{asset('main/libs/datatables-bs5/datatables-bootstrap5.js')}}"></script>
-    <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}?v=20261103-nodup"></script>
+    <script src="{{asset('js/datatableCustom/Datatable-0-4.min.js')}}?v=20261104-paiddt"></script>
 
     <script>
         const select2 = $(`[data-control='select2']`);

@@ -372,23 +372,36 @@ class CekPelunasanController extends Controller
             ->take($rowperpage)
             ->get();
 
-        if ($request->get("length") != "poll") {
-            $records = $records->map(function ($item, $index) {
+        $normalizePaidDt = static function ($value) {
+            if ($value === null || $value === '' || $value === '-') {
+                return null;
+            }
+            $raw = trim((string) $value);
+            if ($raw === '0000-00-00' || str_starts_with($raw, '0000-00-00')) {
+                return null;
+            }
+            try {
+                $dt = Carbon::parse($raw);
+                if ((int) $dt->format('Y') < 1971) {
+                    return null;
+                }
+                return $dt->format('Y-m-d H:i:s');
+            } catch (\Throwable $e) {
+                return null;
+            }
+        };
+
+        $records = $records->map(function ($item) use ($normalizePaidDt, $request) {
+            if ($request->get("length") != "poll") {
                 $item->item_id = $item['AA'];
                 $item->CUSTID = $item['CUSTID'];
-                $item->BILLAC = $item->BILLAC !== null && $item->BILLAC !== ''
-                    ? (string) $item->BILLAC
-                    : '-';
-                return $item;
-            });
-        } else {
-            $records = $records->map(function ($item) {
-                $item->BILLAC = $item->BILLAC !== null && $item->BILLAC !== ''
-                    ? (string) $item->BILLAC
-                    : '-';
-                return $item;
-            });
-        }
+            }
+            $item->BILLAC = $item->BILLAC !== null && $item->BILLAC !== ''
+                ? (string) $item->BILLAC
+                : '-';
+            $item->PAIDDT = $normalizePaidDt($item->PAIDDT ?? null);
+            return $item;
+        });
 
         $data = $records->map(fn ($item) => $item instanceof \Illuminate\Database\Eloquent\Model
             ? $item->toArray()

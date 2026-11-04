@@ -1151,7 +1151,17 @@ async function getDT(options) {
                             case 'dateformat':
                                 renderFunc = function (data, type, row) {
                                     if (type === 'display' || type === 'filter') {
-                                        let date = new Date(data);
+                                        if (data === null || data === undefined || data === '' || data === '-') {
+                                            return '-';
+                                        }
+                                        const raw = String(data).trim();
+                                        if (raw.startsWith('0000-00-00')) {
+                                            return '-';
+                                        }
+                                        let date = new Date(raw);
+                                        if (Number.isNaN(date.getTime()) || date.getFullYear() < 1971) {
+                                            return '-';
+                                        }
                                         let options = {
                                             weekday: 'long',
                                             day: 'numeric',
