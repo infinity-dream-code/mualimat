@@ -371,6 +371,28 @@
                     });
                 });
             }
+
+            function bindSelectAllToggle(selector) {
+                const $input = $(selector);
+                $input.on('select2:select', function (e) {
+                    if (e.params.data.id === 'all') {
+                        $input.val(['all']).trigger('change');
+                    } else {
+                        const selected = ($input.val() || []).filter((v) => v !== 'all');
+                        $input.val(selected.length ? selected : ['all']).trigger('change');
+                    }
+                });
+                $input.on('select2:unselect', function () {
+                    setTimeout(function () {
+                        const selected = $input.val() || [];
+                        if (selected.length === 0) {
+                            $input.val(['all']).trigger('change');
+                        }
+                    }, 0);
+                });
+            }
+            bindSelectAllToggle('#post');
+            bindSelectAllToggle('#periode');
         })
 
         // document.getElementById('cetak-pelaporan').addEventListener('click', function (e) {

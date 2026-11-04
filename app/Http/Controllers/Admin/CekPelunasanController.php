@@ -107,13 +107,13 @@ class CekPelunasanController extends Controller
                     $query->where('FIDBANK', 'like', $metode);
                 }
             }
-            if (!empty($filter['post']) && is_array($filter['post'])) {
+            if (!empty($filter['post']) && is_array($filter['post']) && !in_array('all', $filter['post'], true)) {
                 $posts = array_values(array_filter($filter['post'], fn ($v) => $v !== 'all' && $v !== null && $v !== ''));
                 if ($posts !== []) {
                     $query->whereIn('BILLNM', $posts);
                 }
             }
-            if (!empty($filter['periode']) && is_array($filter['periode'])) {
+            if (!empty($filter['periode']) && is_array($filter['periode']) && !in_array('all', $filter['periode'], true)) {
                 $periodes = array_values(array_filter($filter['periode'], fn ($v) => $v !== 'all' && $v !== null && $v !== ''));
                 if ($periodes !== []) {
                     $query->whereIn('BILLAC', $periodes);
@@ -228,9 +228,13 @@ class CekPelunasanController extends Controller
                             break;
                         case "post":
                         case "periode":
-                            $array = array_filter($val, function ($value) {
-                                return $value !== "all";
-                            });
+                            // "all"/Semua → tampil semua (abaikan pilihan lain)
+                            if (is_array($val) && in_array("all", $val, true)) {
+                                break;
+                            }
+                            $array = array_values(array_filter((array) $val, function ($value) {
+                                return $value !== "all" && $value !== null && $value !== "";
+                            }));
                             if (count($array) > 0) {
                                 $colName &&
                                 ($filters[] = [$colName, "in", $array]);

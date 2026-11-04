@@ -217,11 +217,16 @@ class DataTagihanController extends Controller
                                 }
                             }
                         } elseif (in_array($key, ["post", "tahun_akademik", "periode"], true) && is_array($val)) {
-                            $array = array_filter($val, function ($value) {
-                                return $value !== "all";
-                            });
-                            if (count($array) > 0) {
-                                $colName && ($filters[] = [$colName, "in", $array]);
+                            // "Semua" → tanpa filter periode/post/tahun
+                            if (in_array("all", $val, true)) {
+                                // skip
+                            } else {
+                                $array = array_values(array_filter($val, function ($value) {
+                                    return $value !== "all" && $value !== null && $value !== "";
+                                }));
+                                if (count($array) > 0) {
+                                    $colName && ($filters[] = [$colName, "in", $array]);
+                                }
                             }
                         } elseif ($key == "siswa") {
                             $val = is_numeric($val) ? $val : "%" . $val . "%";
@@ -371,15 +376,21 @@ class DataTagihanController extends Controller
                             $filters[] = ["scctcust.DESC03", "=", $val[2]];
                         }
                     } elseif (in_array($key, ["post", "tahun_akademik", "periode"], true)) {
-                        $array = array_values(array_filter((array) $val, function ($value) {
-                            return $value !== "all" && $value !== null && $value !== "";
-                        }));
-                        if (count($array) > 0) {
-                            $colName &&
-                                ($filters[] = [$colName, "in", $array]);
-                        }
-                        if ($key == "post") {
-                            $post = $array;
+                        if (is_array($val) && in_array("all", $val, true)) {
+                            if ($key == "post") {
+                                $post = [];
+                            }
+                        } else {
+                            $array = array_values(array_filter((array) $val, function ($value) {
+                                return $value !== "all" && $value !== null && $value !== "";
+                            }));
+                            if (count($array) > 0) {
+                                $colName &&
+                                    ($filters[] = [$colName, "in", $array]);
+                            }
+                            if ($key == "post") {
+                                $post = $array;
+                            }
                         }
                     } elseif ($key == "siswa") {
                         $val = is_numeric($val) ? $val : "%" . $val . "%";
@@ -727,11 +738,15 @@ class DataTagihanController extends Controller
                             $filters[] = ["scctcust.DESC03", "=", $val[2]];
                         }
                     } elseif (in_array($key, ["post", "tahun_akademik", "periode"], true) && is_array($val)) {
-                        $array = array_filter($val, function ($value) {
-                            return $value !== "all";
-                        });
-                        if (count($array) > 0) {
-                            $colName && ($filters[] = [$colName, "in", $array]);
+                        if (in_array("all", $val, true)) {
+                            // Semua → tanpa filter
+                        } else {
+                            $array = array_values(array_filter($val, function ($value) {
+                                return $value !== "all" && $value !== null && $value !== "";
+                            }));
+                            if (count($array) > 0) {
+                                $colName && ($filters[] = [$colName, "in", $array]);
+                            }
                         }
                     } elseif ($key == "siswa") {
                         $val = is_numeric($val) ? $val : "%" . $val . "%";
@@ -910,15 +925,21 @@ class DataTagihanController extends Controller
                             $filters[] = ["scctcust.DESC03", "=", $val[2]];
                         }
                     } elseif (in_array($key, ["post", "tahun_akademik", "periode"], true)) {
-                        $array = array_values(array_filter((array) $val, function ($value) {
-                            return $value !== "all" && $value !== null && $value !== "";
-                        }));
-                        if (count($array) > 0) {
-                            $colName &&
-                                ($filters[] = [$colName, "in", $array]);
-                        }
-                        if ($key == "post") {
-                            $post = $array;
+                        if (is_array($val) && in_array("all", $val, true)) {
+                            if ($key == "post") {
+                                $post = [];
+                            }
+                        } else {
+                            $array = array_values(array_filter((array) $val, function ($value) {
+                                return $value !== "all" && $value !== null && $value !== "";
+                            }));
+                            if (count($array) > 0) {
+                                $colName &&
+                                    ($filters[] = [$colName, "in", $array]);
+                            }
+                            if ($key == "post") {
+                                $post = $array;
+                            }
                         }
                     } elseif ($key == "siswa") {
                         $val = is_numeric($val) ? $val : "%" . $val . "%";
